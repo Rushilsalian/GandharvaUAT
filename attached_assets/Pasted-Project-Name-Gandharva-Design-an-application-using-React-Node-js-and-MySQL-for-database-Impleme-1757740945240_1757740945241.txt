@@ -1,0 +1,152 @@
+Project Name: Gandharva 
+Design an application using React, Node.js and MySQL for database. Implement using restful APIs.
+Create 3 random user logins in each role.
+This application is accessible via Web Browser and Mobile Devices and is structured around three user roles (Admin / Leader / Client):
+ 
+•         Admin Role
+o   Dashboard
+  Total Count of Clients
+  Total investments
+  Trailing last 12 months new clients trend.
+  Trailing last 12 months investment trend.
+  Trailing last 12 months withdrawal trend.
+  Trailing last 12 months payout trend.
+  Trailing last 12 months client closure trend.
+  Trailing last 12 months referral trend.
+o   Master Module
+  Branch
+•         Manage Branch Information.
+•         Admin Rights: Create, Edit, Delete records.
+•         Fields: Code*, Name*, Address*, City*, State*, Country*, Email, Contact No, Mobile No, Pincode
+  Client
+•         Manage Client Information.
+•         Data Source: Excel output from Tally to be uploaded.
+•         Admin Rights: Only provision to select Branch. Rest all fields are read-only.
+•         Fields: Name*, Date of Birth*, PAN No*, Aadhaar No*, Mobile No*, Email*, Branch*, Address, City*, State*, Country*, Reference (Leader Name / Client Name)*.
+•         Once a new client is imported into this platform, system will auto send an email, to the client with a link to access his account. Password will be random generated with 8 char.
+o   Security
+  Role
+•         3 Pre-configured roles will be available in the system (Admin / Leader / Client).
+•         Admin Rights: View only.
+•         Access Control Pre-defined
+o   Admin : mentioned as Admin Rights across the required modules.
+o   Leader : functions defined in the below SOW.
+o   Client : functions defined in the below SOW.
+  User
+•         Manage User Information.
+•         Admin Rights: Create, Edit, Delete records.
+•         Fields: Name*, Role*, email address* (used for login), Mobile No*
+ 
+o   Transaction Module
+  Import Module
+•         Provision to import Investment, Withdrawal, Payout and Closure
+•         Data Source: Excel output from Tally.
+•         Investment Fields are Client PAN No, Investment Date, Investment No, Investment Details, Amount.
+•         Withdrawal Fields are Client PAN No, Withdrawal Date, Withdrawal No, Withdrawal Details, Amount.
+•         Payout Fields are Client PAN No, Payout Date, Payout No, Payout Details, Amount.
+•         Closure Fields are Client PAN No, Closure Date, Closure No, Closure Details, Amount.
+
+•         To import
+o   Select the Type : Investment, Withdrawal, Payout and Closure
+o   Choose the file
+o   Click on upload
+o   System to parse the data, and display if there is any error in the file.
+o   The error needs to be rectified 100% before uploading the file.
+o   Note: All the records has to be valid, to be imported into the system.
+•         Provision to view the list of uploads done with status, success or failure with reason.
+  Investment
+•         Client investment information.
+•         All the data imported as Investment will be displayed here.
+•         Provision to search on Client Name, Client Mobile and Investment Date Range
+•         Admin Rights: View Only (No Edit/Delete).
+  Withdrawal
+•         Client Withdrawal details.
+•         All the data imported as Withdrawal will be displayed here.
+•         Provision to search on Client Name, Client Mobile and Withdrawal Date Range
+•         Admin Rights: View Only (No Edit/Delete).
+  Payout
+•         Client Payout details (Interest Amount Earned).
+•         All the data imported as Payout will be displayed here.
+•         Provision to search on Client Name, Client Mobile and Payout Date Range
+•         Admin Rights: View Only (No Edit/Delete).
+  Closure
+•         Client Closure details.
+•         All the data imported as Closure will be displayed here.
+•         Provision to search on Client Name, Client Mobile and Closure Date Range
+•         Admin Rights: View Only (No Edit/Delete).
+o   Reports Module
+  Investment Report: Client-wise and date-wise investment details.
+  Payout Report: Client-wise and date-wise payout details.
+  Reference Report: Referral details client-wise.
+  Withdrawal Request Report: Client withdrawal requests for processing in Tally.
+  Online Investment Report: Online investment (Net Banking/UPI) data for accounting in Tally.
+  Referral Follow-up: Referral list for agents to contact and enroll new clients.
+o   To access this platform,
+  For second time onwards – enter your mobile no/email address and your password.
+o   Forgot Password
+  Provision to reset the password.
+  An reset password email, will be send to the registered email address.
+  Client has to click on the link and change his password.
+ 
+•         Client Role
+o   Dashboard
+o   To access this platform,
+  For first time user – click on the email link, and set your account password
+  For second time onwards – enter your mobile no/email address and your password.
+o   Forgot Password
+  Provision to reset the password.
+  An reset password email, will be send to the registered email address.
+  Client has to click on the link and change his password.
+o   Dashboard
+  Total Investment
+  Total Payout
+  Maturity Summary
+  Trailing last 12 months investment trend.
+  Trailing last 12 months withdrawal trend.
+  Trailing last 12 months payout trend.
+  Trailing last 12 months referral trend.
+o   Withdrawal Request
+  Clients can place withdrawal requests.
+  Fields: Amount, Reason.
+  Upon Submit, display the request submitted with the Withdrawal Request No.
+  Provision to view the list of Withdrawal Submitted and its status.
+  Provision to search on date range and status.
+o   Net Banking
+  Clients can make investments using Net Banking or UPI.
+  Post successful payment, display the payment received details with a Payment Receipt No.
+  Provision to view the list of Online Payments made and its status.
+  Provision to search on date range and status.
+o   Referral
+  Clients can refer friends/relatives.
+  Fields: Name, Mobile Number.
+  Provision to view the list of Referrals submitted.
+o   Reports
+  Investment Report: Own investment, date-wise.
+  Payout Report: Own payout, date-wise.
+  Withdrawal Report: Own payout, date-wise.
+  Referral Report: Own referrals.
+o   About Us
+  Read-only informative page.
+ 
+•         Leader Role
+o   To access this platform,
+  For first time user – click on the email link, and set your account password
+  For second time onwards – enter your mobile no/email address and your password.
+o   Forgot Password
+  Provision to reset the password.
+  An reset password email, will be send to the registered email address.
+  Client has to click on the link and change his password.
+o   Dashboard
+  Total Count of Clients
+  Total investments
+  Trailing last 12 months new clients trend.
+  Trailing last 12 months investment trend.
+  Trailing last 12 months withdrawal trend.
+  Trailing last 12 months payout trend.
+  Trailing last 12 months referral trend.
+o   Data pertaining to the leader (Clients tagged to him directly), will only be populated across all his/her report.
+o   Reports
+  Investment Report: Referral investments, client-wise and date-wise.
+  Payout Report: Referral payouts, client-wise and date-wise.
+  Referral Report: List of referrals under the leader.
+

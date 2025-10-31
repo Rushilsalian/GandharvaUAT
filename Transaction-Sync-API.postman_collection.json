@@ -1,0 +1,260 @@
+{
+  "info": {
+    "name": "Transaction Sync API",
+    "description": "Third-party API for syncing client-wise transactions",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "sync-api-token-2024",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Sync Transactions",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transactions\": [\n    {\n      \"clientCode\": \"CL001\",\n      \"indicatorName\": \"Investment\",\n      \"amount\": \"50000.00\",\n      \"transactionDate\": \"2024-01-15\",\n      \"remark\": \"Initial investment\"\n    },\n    {\n      \"clientCode\": \"CL002\",\n      \"indicatorName\": \"Withdrawal\",\n      \"amount\": \"25000.00\",\n      \"transactionDate\": \"2024-01-16\",\n      \"remark\": \"Partial withdrawal\"\n    },\n    {\n      \"clientCode\": \"CL001\",\n      \"indicatorName\": \"Payout\",\n      \"amount\": \"5000.00\",\n      \"transactionDate\": \"2024-01-17\",\n      \"remark\": \"Monthly payout\"\n    },\n    {\n      \"clientCode\": \"CL003\",\n      \"indicatorName\": \"Closure\",\n      \"amount\": \"100000.00\",\n      \"transactionDate\": \"2024-01-18\",\n      \"remark\": \"Account closure\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/sync/transactions",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "sync", "transactions"]
+        },
+        "description": "Sync multiple transactions for different clients with various indicator types"
+      }
+    },
+    {
+      "name": "Sync Single Investment Transaction",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transactions\": [\n    {\n      \"clientCode\": \"CL001\",\n      \"indicatorName\": \"Investment\",\n      \"amount\": \"75000.00\",\n      \"remark\": \"Additional investment\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/sync/transactions",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "sync", "transactions"]
+        },
+        "description": "Sync a single investment transaction (date will default to current date)"
+      }
+    },
+    {
+      "name": "Get All Transactions",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/sync/transactions",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "sync", "transactions"]
+        },
+        "description": "Get all synced transactions"
+      }
+    },
+    {
+      "name": "Get Transactions by Client Code",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/sync/transactions?clientCode=CL001",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "sync", "transactions"],
+          "query": [
+            {
+              "key": "clientCode",
+              "value": "CL001"
+            }
+          ]
+        },
+        "description": "Get transactions for a specific client"
+      }
+    },
+    {
+      "name": "Get Investment Transactions",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/sync/transactions?indicatorName=Investment",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "sync", "transactions"],
+          "query": [
+            {
+              "key": "indicatorName",
+              "value": "Investment"
+            }
+          ]
+        },
+        "description": "Get all investment transactions"
+      }
+    },
+    {
+      "name": "Get Withdrawal Transactions",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/sync/transactions?indicatorName=Withdrawal",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "sync", "transactions"],
+          "query": [
+            {
+              "key": "indicatorName",
+              "value": "Withdrawal"
+            }
+          ]
+        },
+        "description": "Get all withdrawal transactions"
+      }
+    },
+    {
+      "name": "Get Client Investments with Limit",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/sync/transactions?clientCode=CL001&indicatorName=Investment&limit=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "sync", "transactions"],
+          "query": [
+            {
+              "key": "clientCode",
+              "value": "CL001"
+            },
+            {
+              "key": "indicatorName",
+              "value": "Investment"
+            },
+            {
+              "key": "limit",
+              "value": "10"
+            }
+          ]
+        },
+        "description": "Get investment transactions for a specific client with limit"
+      }
+    },
+    {
+      "name": "Test Invalid Client Code",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transactions\": [\n    {\n      \"clientCode\": \"INVALID_CLIENT\",\n      \"indicatorName\": \"Investment\",\n      \"amount\": \"10000.00\",\n      \"remark\": \"Test invalid client\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/sync/transactions",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "sync", "transactions"]
+        },
+        "description": "Test error handling for invalid client code"
+      }
+    },
+    {
+      "name": "Test Invalid Indicator",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transactions\": [\n    {\n      \"clientCode\": \"CL001\",\n      \"indicatorName\": \"InvalidType\",\n      \"amount\": \"10000.00\",\n      \"remark\": \"Test invalid indicator\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/sync/transactions",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "sync", "transactions"]
+        },
+        "description": "Test error handling for invalid indicator name"
+      }
+    },
+    {
+      "name": "Test Missing Required Fields",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transactions\": [\n    {\n      \"clientCode\": \"CL001\",\n      \"remark\": \"Missing indicator and amount\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/sync/transactions",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "sync", "transactions"]
+        },
+        "description": "Test validation for missing required fields"
+      }
+    },
+    {
+      "name": "Test Unauthorized Access",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "invalid-token",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transactions\": [\n    {\n      \"clientCode\": \"CL001\",\n      \"indicatorName\": \"Investment\",\n      \"amount\": \"10000.00\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/sync/transactions",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "sync", "transactions"]
+        },
+        "description": "Test authentication with invalid token"
+      }
+    }
+  ]
+}

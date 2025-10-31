@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "test": "node test-kit.js",
+    "test:payment": "node -e \"require('./test-kit.js').testPaymentRedirect()\"",
+    "test:investment": "node -e \"require('./test-kit.js').testInvestmentRequest()\"",
+    "mock-gateway": "npx http-server . -p 8080 -o test-payment-mock.html"
+  }
+}

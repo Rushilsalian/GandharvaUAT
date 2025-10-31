@@ -1,0 +1,139 @@
+{
+  "info": {
+    "name": "Third-Party Client Sync API",
+    "description": "API collection for third-party client synchronization",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Sync Clients",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer sync-api-token-2024"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"clients\": [\n    {\n      \"code\": \"CL001\",\n      \"name\": \"John Doe\",\n      \"mobile\": \"9876543210\",\n      \"email\": \"john.doe@example.com\",\n      \"dob\": \"1990-01-15\",\n      \"panNo\": \"ABCDE1234F\",\n      \"aadhaarNo\": \"123456789012\",\n      \"branch\": \"Mumbai\",\n      \"address\": \"123 Main Street, Mumbai\",\n      \"city\": \"Mumbai\",\n      \"pincode\": 400001\n    },\n    {\n      \"code\": \"CL002\",\n      \"name\": \"Jane Smith\",\n      \"mobile\": \"9876543211\",\n      \"email\": \"jane.smith@example.com\",\n      \"dob\": \"1985-05-20\",\n      \"panNo\": \"FGHIJ5678K\",\n      \"aadhaarNo\": \"987654321098\",\n      \"branch\": \"Delhi\",\n      \"address\": \"456 Park Avenue, Delhi\",\n      \"city\": \"Delhi\",\n      \"pincode\": 110001\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/sync/clients",
+          "host": ["{{base_url}}"],
+          "path": ["api", "sync", "clients"]
+        },
+        "description": "Sync client data from third-party system. Prevents duplicate entries based on client code."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Synced Clients",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer sync-api-token-2024"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/sync/clients",
+          "host": ["{{base_url}}"],
+          "path": ["api", "sync", "clients"]
+        },
+        "description": "Retrieve all synced clients for verification"
+      },
+      "response": []
+    },
+    {
+      "name": "Sync Clients - Invalid Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer invalid-token"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"clients\": [\n    {\n      \"code\": \"CL003\",\n      \"name\": \"Test User\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/sync/clients",
+          "host": ["{{base_url}}"],
+          "path": ["api", "sync", "clients"]
+        },
+        "description": "Test with invalid token - should return 401"
+      },
+      "response": []
+    },
+    {
+      "name": "Sync Clients - Missing Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"clients\": [\n    {\n      \"code\": \"CL004\",\n      \"name\": \"Another Test User\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/sync/clients",
+          "host": ["{{base_url}}"],
+          "path": ["api", "sync", "clients"]
+        },
+        "description": "Test without authorization header - should return 401"
+      },
+      "response": []
+    },
+    {
+      "name": "Sync Clients - Duplicate Test",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer sync-api-token-2024"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"clients\": [\n    {\n      \"code\": \"CL001\",\n      \"name\": \"John Doe Updated\",\n      \"mobile\": \"9876543210\",\n      \"email\": \"john.updated@example.com\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/sync/clients",
+          "host": ["{{base_url}}"],
+          "path": ["api", "sync", "clients"]
+        },
+        "description": "Test duplicate prevention - should skip existing client with code CL001"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "description": "Base URL for the API"
+    }
+  ]
+}
