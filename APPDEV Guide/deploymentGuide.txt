@@ -1,0 +1,8 @@
+git pull
+npm install
+npm run build  # Creates dist/index.js + dist/public/*
+pm2 restart gandharva-app  # Runs dist/index.js
+
+
+
+root@linuxappdev:~# cd /opt/gandharva-app
