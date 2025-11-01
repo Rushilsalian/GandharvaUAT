@@ -13,8 +13,9 @@ if (!process.env.DATABASE_URL) {
 export const pool = mysql.createPool({
   uri: process.env.DATABASE_URL,
   connectionLimit: 10,
-  acquireTimeout: 60000,
-  idleTimeout: 300000,
+  acquireTimeout: 120000,
+  idleTimeout: 600000,
+  timeout: 60000,
   queueLimit: 0
 });
 

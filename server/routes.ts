@@ -989,14 +989,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Checking master user by email...');
         mstUser = await Promise.race([
           storage.getMstUserByEmail(email),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Database timeout')), 5000))
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Database timeout')), 15000))
         ]) as any;
         
         if (!mstUser && email) {
           console.log('Checking master user by mobile...');
           mstUser = await Promise.race([
             storage.getMstUserByMobile(email),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Database timeout')), 5000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Database timeout')), 15000))
           ]) as any;
         }
       } catch (dbError) {
@@ -1012,7 +1012,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Get role details with timeout
           const role = await Promise.race([
             storage.getMstRole(mstUser.roleId),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Role lookup timeout')), 3000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Role lookup timeout')), 10000))
           ]) as any;
           
           console.log('Role lookup result:', { roleId: mstUser.roleId, role });
@@ -1023,7 +1023,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               storage.getMstRoleRightsByRole(mstUser.roleId),
               storage.getAllMstModules()
             ]),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Module access timeout')), 3000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Module access timeout')), 10000))
           ]) as any;
           
           // Build module access object
@@ -1049,7 +1049,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
               clientData = await Promise.race([
                 storage.getMstClient(mstUser.clientId),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Client lookup timeout')), 2000))
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Client lookup timeout')), 8000))
               ]) as any;
             } catch (clientError) {
               console.warn('Client lookup failed:', clientError);
