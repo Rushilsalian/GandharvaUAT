@@ -1110,65 +1110,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Fallback to legacy user table
-      try {
-        console.log('Checking legacy user tables...');
-        let user = await Promise.race([
-          storage.getUserByEmail(email),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Legacy user timeout')), 3000))
-        ]) as any;
-        
-        if (!user) {
-          user = await Promise.race([
-            storage.getUserByMobile(email),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Legacy mobile timeout')), 3000))
-          ]) as any;
-        }
-        
-        if (!user || user.password !== password) {
-          return res.status(401).json({ error: 'Invalid credentials' });
-        }
-        
-        // Get client details for legacy users
-        let clientData = null;
-        if (user.role === 'client') {
-          try {
-            clientData = await Promise.race([
-              storage.getClientByUserId(user.id),
-              new Promise((_, reject) => setTimeout(() => reject(new Error('Legacy client timeout')), 2000))
-            ]) as any;
-          } catch (clientError) {
-            console.warn('Legacy client lookup failed:', clientError);
-          }
-        }
-        
-        const sessionData = {
-          userId: user.id,
-          email: user.email,
-          role: user.role,
-          clientId: clientData?.id || null,
-          userType: 'legacy',
-          loginTime: new Date().toISOString()
-        };
-        
-        const { password: _, ...userWithoutPassword } = user;
-        const token = generateToken(sessionData);
-        
-        const responseTime = Date.now() - startTime;
-        console.log(`Legacy login successful in ${responseTime}ms`);
-        
-        res.json({ 
-          user: userWithoutPassword,
-          client: clientData,
-          session: sessionData,
-          token,
-          message: 'Login successful', 
-          userType: 'legacy' 
-        });
-      } catch (legacyError) {
-        console.error('Legacy user lookup failed:', legacyError);
-        return res.status(401).json({ error: 'Invalid credentials' });
-      }
+      // Legacy user tables don't exist - return invalid credentials
+      console.log('Master user not found and legacy tables not available');
+      return res.status(401).json({ error: 'Invalid credentials' });
     } catch (error) {
       const responseTime = Date.now() - startTime;
       console.error(`Login failed after ${responseTime}ms:`, error);
@@ -1189,14 +1133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let user = await storage.getMstUserByEmail(email);
       let userName = user?.userName || 'User';
       
-      // Fallback to legacy user table
-      if (!user) {
-        const legacyUser = await storage.getUserByEmail(email);
-        if (legacyUser) {
-          user = { email: legacyUser.email } as any;
-          userName = `${legacyUser.firstName} ${legacyUser.lastName}`;
-        }
-      }
+      // No fallback needed - only use master user table
       
       if (!user) {
         return res.status(404).json({ error: 'User with this email not found' });
@@ -1245,19 +1182,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const email = decoded.email;
       
-      // Update password in master user table first
+      // Update password in master user table only
       let updated = false;
       const mstUser = await storage.getMstUserByEmail(email);
       if (mstUser) {
         await storage.updateMstUser(mstUser.userId, { password });
         updated = true;
-      } else {
-        // Fallback to legacy user table
-        const legacyUser = await storage.getUserByEmail(email);
-        if (legacyUser) {
-          await storage.updateUser(legacyUser.id, { password });
-          updated = true;
-        }
       }
       
       if (!updated) {
@@ -1610,14 +1540,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = clientCreationSchema.parse(req.body);
       
       // Check if user with email already exists
-      const existingUserByEmail = await storage.getUserByEmail(data.email);
+      const existingUserByEmail = await storage.getMstUserByEmail(data.email);
       if (existingUserByEmail) {
         return res.status(400).json({ error: 'User with this email already exists' });
       }
       
       // Check if user with mobile already exists (if mobile provided)
       if (data.mobile) {
-        const existingUserByMobile = await storage.getUserByMobile(data.mobile);
+        const existingUserByMobile = await storage.getMstUserByMobile(data.mobile);
         if (existingUserByMobile) {
           return res.status(400).json({ error: 'User with this mobile already exists' });
         }
@@ -1632,39 +1562,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate secure password server-side
       const temporaryPassword = generateSecurePassword();
       
-      // Create user first
+      // Create client record first
+      const clientData = {
+        code: data.clientCode,
+        name: `${data.firstName} ${data.lastName}`,
+        mobile: data.mobile || null,
+        email: data.email,
+        dob: data.dateOfBirth || null,
+        panNo: data.panNumber || null,
+        aadhaarNo: data.aadharNumber || null,
+        branch: null,
+        branchId: null,
+        address: data.address || null,
+        city: null,
+        pincode: null,
+        referenceId: null,
+        isActive: 1,
+        createdById: 1,
+        createdByUser: 'system',
+        createdDate: new Date(),
+        modifiedById: null,
+        modifiedByUser: null,
+        modifiedDate: null,
+        deletedById: null,
+        deletedByUser: null,
+        deletedDate: null
+      };
+      
+      const client = await storage.createMstClient(clientData);
+      
+      // Create user record
       const userData = {
-        firstName: data.firstName,
-        lastName: data.lastName,
+        userName: `${data.firstName} ${data.lastName}`,
+        password: temporaryPassword,
         email: data.email,
         mobile: data.mobile || null,
-        password: temporaryPassword,
-        role: 'client' as const
+        roleId: 3, // Client role
+        clientId: client.clientId,
+        isActive: 1,
+        createdById: 1,
+        createdByUser: 'system',
+        createdDate: new Date(),
+        mobileVerified: null,
+        emailVerified: null,
+        modifiedById: null,
+        modifiedByUser: null,
+        modifiedDate: null,
+        deletedById: null,
+        deletedByUser: null,
+        deletedDate: null
       };
       
-      const user = await storage.createUser(userData);
-      
-      // Create client record
-      const clientData = {
-        userId: user.id,
-        clientCode: data.clientCode,
-        panNumber: data.panNumber || null,
-        aadharNumber: data.aadharNumber || null,
-        dateOfBirth: data.dateOfBirth || null,
-        address: data.address || null,
-        nomineeDetails: data.nomineeDetails || null,
-        bankDetails: data.bankDetails || null,
-        kycStatus: data.kycStatus
-      };
-      
-      const client = await storage.createClient(clientData);
+      const user = await storage.createMstUser(userData);
       
       // Send welcome email with temporary password
-      const emailSent = await sendWelcomeEmail(
+      const emailSent = user.email ? await sendWelcomeEmail(
         user.email,
-        `${user.firstName} ${user.lastName}`,
+        user.userName,
         temporaryPassword
-      );
+      ) : false;
       
       // Return success response (no password in response)
       const { password: _, ...userWithoutPassword } = user;
@@ -2325,8 +2281,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           // Find client by PAN
-          const clients = await storage.getAllClients();
-          const client = clients.find(c => c.panNumber === row["Client PAN No"]);
+          const clients = await storage.getAllMstClients();
+          const client = clients.find(c => c.panNo === row["Client PAN No"]);
           if (!client) {
             errors.push({ row: rowIndex, message: `Client with PAN ${row["Client PAN No"]} not found` });
             continue;
@@ -2356,7 +2312,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Create transaction based on type
           const transactionData = {
-            clientId: client.id,
+            clientId: client.clientId.toString(),
             type: type,
             amount: amount.toString(),
             method: 'bank_transfer', // Default method for uploaded transactions
@@ -3156,15 +3112,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       } else {
-        currentUser = await storage.getUser(userSession.userId);
-        if (currentUser) {
-          const { password: _, ...userWithoutPassword } = currentUser;
-          currentUser = userWithoutPassword;
-          
-          if (currentUser.role === 'client') {
-            clientData = await storage.getClientByUserId(currentUser.id);
-          }
-        }
+        // Legacy user type - should not exist anymore
+        console.warn('Legacy user type detected, this should not happen');
       }
       
       if (!currentUser) {
