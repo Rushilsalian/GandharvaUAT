@@ -29,6 +29,7 @@ import { generateToken, generateResetToken, verifyToken, authenticateToken } fro
 import { registerDashboardRoutes } from "./dashboardRoutes";
 import { registerEnhancedDashboardRoutes } from "./enhancedDashboardRoutes";
 import { registerRoleBasedReportsRoutes } from "./roleBasedReportsRoutes";
+import { checkDatabaseHealth, warmupConnections } from "./db-health";
 
 // Configure multer for file uploads
 const upload = multer({ 
@@ -47,6 +48,14 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Warm up database connections
+  await warmupConnections();
+  
+  // Health check endpoint
+  app.get('/api/health', async (req, res) => {
+    const dbHealthy = await checkDatabaseHealth();
+    res.json({ status: dbHealthy ? 'healthy' : 'unhealthy', database: dbHealthy });
+  });
   // Master Role routes
   app.get('/api/mst/roles', async (req, res) => {
     try {
@@ -989,14 +998,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Checking master user by email...');
         mstUser = await Promise.race([
           storage.getMstUserByEmail(email),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Database timeout')), 15000))
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Database timeout')), 10000))
         ]) as any;
         
         if (!mstUser && email) {
           console.log('Checking master user by mobile...');
           mstUser = await Promise.race([
             storage.getMstUserByMobile(email),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Database timeout')), 15000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Database timeout')), 10000))
           ]) as any;
         }
       } catch (dbError) {
@@ -1023,7 +1032,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               storage.getMstRoleRightsByRole(mstUser.roleId),
               storage.getAllMstModules()
             ]),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Module access timeout')), 10000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Module access timeout')), 8000))
           ]) as any;
           
           // Build module access object
@@ -1049,7 +1058,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
               clientData = await Promise.race([
                 storage.getMstClient(mstUser.clientId),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Client lookup timeout')), 8000))
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Client lookup timeout')), 5000))
               ]) as any;
             } catch (clientError) {
               console.warn('Client lookup failed:', clientError);
