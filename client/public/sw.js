@@ -1,8 +1,7 @@
 const CACHE_NAME = 'gandharva-v1';
 const urlsToCache = [
   '/',
-  '/manifest.json',
-  '/favicon.svg'
+  '/manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
@@ -38,19 +37,13 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match('/');
-      })
-    );
-    return;
-  }
-  
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        return response || fetch(event.request);
+        if (response) {
+          return response;
+        }
+        return fetch(event.request);
       })
   );
 });
