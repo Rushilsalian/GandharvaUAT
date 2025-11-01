@@ -9,6 +9,11 @@ if ('serviceWorker' in navigator) {
       .then((registration) => {
         console.log('SW registered successfully:', registration.scope);
         
+        // Trigger user engagement for PWA installability
+        setTimeout(() => {
+          document.dispatchEvent(new Event('click'));
+        }, 1000);
+        
         // Check for updates
         registration.addEventListener('updatefound', () => {
           console.log('New service worker available');
