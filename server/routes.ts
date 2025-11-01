@@ -972,50 +972,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Authentication routes
   app.post('/api/auth/login', async (req, res) => {
+    const startTime = Date.now();
     try {
       console.log('LOGIN ROUTE HIT - Master user login attempt');
       const { email, password } = req.body;
       
-      // Try new master user table first
-      let mstUser = await storage.getMstUserByEmail(email);
-      if (!mstUser && email) {
-        mstUser = await storage.getMstUserByMobile(email);
+      if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required' });
+      }
+      
+      console.log('Attempting login for:', email);
+      
+      // Try new master user table first with timeout
+      let mstUser = null;
+      try {
+        console.log('Checking master user by email...');
+        mstUser = await Promise.race([
+          storage.getMstUserByEmail(email),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Database timeout')), 5000))
+        ]) as any;
+        
+        if (!mstUser && email) {
+          console.log('Checking master user by mobile...');
+          mstUser = await Promise.race([
+            storage.getMstUserByMobile(email),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Database timeout')), 5000))
+          ]) as any;
+        }
+      } catch (dbError) {
+        console.error('Database error during master user lookup:', dbError);
+        return res.status(500).json({ error: 'Database connection error' });
       }
       
       if (mstUser && mstUser.password === password) {
         console.log('MASTER USER LOGIN SUCCESS');
         const { password: _, ...userWithoutPassword } = mstUser;
         
-        // Get role details
-        const role = await storage.getMstRole(mstUser.roleId);
-        console.log('Role lookup result:', { roleId: mstUser.roleId, role });
-        
-        // Get role rights and modules
-        const roleRights = await storage.getMstRoleRightsByRole(mstUser.roleId);
-        const allModules = await storage.getAllMstModules();
-        
-        // Build module access object
-        const moduleAccess: Record<number, any> = {};
-        for (const right of roleRights) {
-          const module = allModules.find(m => m.moduleId === right.moduleId);
-          if (module) {
-            moduleAccess[module.moduleId] = {
-              moduleId: module.moduleId,
-              moduleName: module.name,
-              accessRead: right.accessRead,
-              accessWrite: right.accessWrite,
-              accessUpdate: right.accessUpdate,
-              accessDelete: right.accessDelete,
-              accessExport: right.accessExport
-            };
+        try {
+          // Get role details with timeout
+          const role = await Promise.race([
+            storage.getMstRole(mstUser.roleId),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Role lookup timeout')), 3000))
+          ]) as any;
+          
+          console.log('Role lookup result:', { roleId: mstUser.roleId, role });
+          
+          // Get role rights and modules with timeout
+          const [roleRights, allModules] = await Promise.race([
+            Promise.all([
+              storage.getMstRoleRightsByRole(mstUser.roleId),
+              storage.getAllMstModules()
+            ]),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Module access timeout')), 3000))
+          ]) as any;
+          
+          // Build module access object
+          const moduleAccess: Record<number, any> = {};
+          for (const right of roleRights) {
+            const module = allModules.find((m: any) => m.moduleId === right.moduleId);
+            if (module) {
+              moduleAccess[module.moduleId] = {
+                moduleId: module.moduleId,
+                moduleName: module.name,
+                accessRead: right.accessRead,
+                accessWrite: right.accessWrite,
+                accessUpdate: right.accessUpdate,
+                accessDelete: right.accessDelete,
+                accessExport: right.accessExport
+              };
+            }
           }
-        }
-        
-        // Get client details if user has clientId
-        let clientData = null;
-        if (mstUser.clientId) {
-          clientData = await storage.getMstClient(mstUser.clientId);
-        }
+          
+          // Get client details if user has clientId
+          let clientData = null;
+          if (mstUser.clientId) {
+            try {
+              clientData = await Promise.race([
+                storage.getMstClient(mstUser.clientId),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Client lookup timeout')), 2000))
+              ]) as any;
+            } catch (clientError) {
+              console.warn('Client lookup failed:', clientError);
+              // Continue without client data
+            }
+          }
         
         const sessionData = {
           userId: mstUser.userId,
@@ -1028,66 +1068,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
           moduleAccess
         };
         
-        const token = generateToken(sessionData);
-        
-        console.log('Sending login response:', {
-          user: userWithoutPassword,
-          client: clientData,
-          role: role,
-          session: sessionData,
-          token: token ? 'present' : 'missing',
-          message: 'Login successful',
-          userType: 'master'
-        });
-        
-        return res.json({ 
-          user: userWithoutPassword,
-          client: clientData,
-          role: role,
-          session: sessionData,
-          token,
-          message: 'Login successful', 
-          userType: 'master' 
-        });
+          const token = generateToken(sessionData);
+          
+          const responseTime = Date.now() - startTime;
+          console.log(`Login successful in ${responseTime}ms`);
+          
+          return res.json({ 
+            user: userWithoutPassword,
+            client: clientData,
+            role: role,
+            session: sessionData,
+            token,
+            message: 'Login successful', 
+            userType: 'master' 
+          });
+        } catch (roleError) {
+          console.error('Error fetching role/module data:', roleError);
+          // Return basic login without role data
+          const basicSessionData = {
+            userId: mstUser.userId,
+            email: mstUser.email,
+            roleId: mstUser.roleId,
+            roleName: 'client',
+            clientId: mstUser.clientId,
+            userType: 'master',
+            loginTime: new Date().toISOString(),
+            moduleAccess: {}
+          };
+          
+          const token = generateToken(basicSessionData);
+          
+          return res.json({ 
+            user: userWithoutPassword,
+            client: null,
+            role: null,
+            session: basicSessionData,
+            token,
+            message: 'Login successful (limited data)', 
+            userType: 'master' 
+          });
+        }
       }
       
       // Fallback to legacy user table
-      let user = await storage.getUserByEmail(email);
-      if (!user) {
-        user = await storage.getUserByMobile(email);
-      }
-      
-      if (!user || user.password !== password) {
+      try {
+        console.log('Checking legacy user tables...');
+        let user = await Promise.race([
+          storage.getUserByEmail(email),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Legacy user timeout')), 3000))
+        ]) as any;
+        
+        if (!user) {
+          user = await Promise.race([
+            storage.getUserByMobile(email),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Legacy mobile timeout')), 3000))
+          ]) as any;
+        }
+        
+        if (!user || user.password !== password) {
+          return res.status(401).json({ error: 'Invalid credentials' });
+        }
+        
+        // Get client details for legacy users
+        let clientData = null;
+        if (user.role === 'client') {
+          try {
+            clientData = await Promise.race([
+              storage.getClientByUserId(user.id),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Legacy client timeout')), 2000))
+            ]) as any;
+          } catch (clientError) {
+            console.warn('Legacy client lookup failed:', clientError);
+          }
+        }
+        
+        const sessionData = {
+          userId: user.id,
+          email: user.email,
+          role: user.role,
+          clientId: clientData?.id || null,
+          userType: 'legacy',
+          loginTime: new Date().toISOString()
+        };
+        
+        const { password: _, ...userWithoutPassword } = user;
+        const token = generateToken(sessionData);
+        
+        const responseTime = Date.now() - startTime;
+        console.log(`Legacy login successful in ${responseTime}ms`);
+        
+        res.json({ 
+          user: userWithoutPassword,
+          client: clientData,
+          session: sessionData,
+          token,
+          message: 'Login successful', 
+          userType: 'legacy' 
+        });
+      } catch (legacyError) {
+        console.error('Legacy user lookup failed:', legacyError);
         return res.status(401).json({ error: 'Invalid credentials' });
       }
-      
-      // Get client details for legacy users
-      let clientData = null;
-      if (user.role === 'client') {
-        clientData = await storage.getClientByUserId(user.id);
-      }
-      
-      const sessionData = {
-        userId: user.id,
-        email: user.email,
-        role: user.role,
-        clientId: clientData?.id || null,
-        userType: 'legacy',
-        loginTime: new Date().toISOString()
-      };
-      
-      const { password: _, ...userWithoutPassword } = user;
-      const token = generateToken(sessionData);
-      
-      res.json({ 
-        user: userWithoutPassword,
-        client: clientData,
-        session: sessionData,
-        token,
-        message: 'Login successful', 
-        userType: 'legacy' 
-      });
     } catch (error) {
+      const responseTime = Date.now() - startTime;
+      console.error(`Login failed after ${responseTime}ms:`, error);
       res.status(500).json({ error: 'Internal server error' });
     }
   });
