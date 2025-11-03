@@ -185,7 +185,7 @@ function ClientSegmentAnalytics() {
             />
           </ScatterChart>
         </ResponsiveContainer>
-        <div className="mt-4 grid grid-cols-2 gap-4">
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
           {clientSegmentData.map((segment) => (
             <div key={segment.segment} className="flex justify-between items-center p-2 rounded bg-muted/50">
               <span className="font-medium">{segment.segment}</span>
@@ -347,54 +347,62 @@ export function AnalyticsDashboard() {
 
       {/* Key Metrics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <BarChart3 className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
                 <p className="text-sm font-medium text-muted-foreground">Total AUM</p>
                 <p className="text-2xl font-bold">₹{(keyMetrics.totalAUM / 10000000).toFixed(1)}Cr</p>
-                <p className="text-xs text-green-600">+12.5% from last month</p>
+                <div className="flex items-center text-xs">
+                  <span className="text-green-500">+12.5%</span>
+                </div>
               </div>
+              <BarChart3 className="h-8 w-8 text-blue-500" />
             </div>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Users className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
                 <p className="text-sm font-medium text-muted-foreground">Active Clients</p>
                 <p className="text-2xl font-bold">{keyMetrics.activeClients.toLocaleString()}</p>
-                <p className="text-xs text-green-600">+8.2% from last month</p>
+                <div className="flex items-center text-xs">
+                  <span className="text-green-500">+8.2%</span>
+                </div>
               </div>
+              <Users className="h-8 w-8 text-green-500" />
             </div>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <TrendingUp className="h-8 w-8 text-purple-600" />
-              <div className="ml-4">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
                 <p className="text-sm font-medium text-muted-foreground">Avg. Return</p>
                 <p className="text-2xl font-bold">{keyMetrics.avgReturn}%</p>
-                <p className="text-xs text-green-600">+2.1% from benchmark</p>
+                <div className="flex items-center text-xs">
+                  <span className="text-green-500">+2.1%</span>
+                </div>
               </div>
+              <TrendingUp className="h-8 w-8 text-purple-500" />
             </div>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Target className="h-8 w-8 text-orange-600" />
-              <div className="ml-4">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
                 <p className="text-sm font-medium text-muted-foreground">Goal Achievement</p>
                 <p className="text-2xl font-bold">{keyMetrics.goalAchievement}%</p>
-                <p className="text-xs text-yellow-600">Target: 90%</p>
+                <div className="flex items-center text-xs">
+                  <span className="text-yellow-500">Target: 90%</span>
+                </div>
               </div>
+              <Target className="h-8 w-8 text-orange-500" />
             </div>
           </CardContent>
         </Card>
@@ -402,30 +410,36 @@ export function AnalyticsDashboard() {
 
       {/* Analytics Tabs */}
       <Tabs defaultValue="acquisition" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="acquisition">Client Acquisition</TabsTrigger>
-          <TabsTrigger value="investment">Investment Flow</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+          <TabsTrigger value="acquisition">Acquisition</TabsTrigger>
+          <TabsTrigger value="investment">Investment</TabsTrigger>
           <TabsTrigger value="performance">Performance</TabsTrigger>
           <TabsTrigger value="conversion">Conversion</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="acquisition" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+        <TabsContent value="acquisition" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
             <ClientAcquisitionAnalytics />
             <ClientSegmentAnalytics />
           </div>
         </TabsContent>
 
-        <TabsContent value="investment" className="space-y-4">
-          <InvestmentFlowAnalytics />
+        <TabsContent value="investment" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-1">
+            <InvestmentFlowAnalytics />
+          </div>
         </TabsContent>
 
-        <TabsContent value="performance" className="space-y-4">
-          <PerformanceRadarChart />
+        <TabsContent value="performance" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-1">
+            <PerformanceRadarChart />
+          </div>
         </TabsContent>
 
-        <TabsContent value="conversion" className="space-y-4">
-          <ConversionFunnelChart />
+        <TabsContent value="conversion" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-1">
+            <ConversionFunnelChart />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
