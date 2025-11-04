@@ -46,10 +46,10 @@ export function LoginForm({ onLogin, onSignup }: LoginFormProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 pb-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center font-semibold">
+          <CardTitle className="text-2xl text-center text-primary font-semibold">
             {isSignup ? "Join Gandharva" : "Welcome to Gandharva"}
           </CardTitle>
           <CardDescription className="text-center">
@@ -67,7 +67,7 @@ export function LoginForm({ onLogin, onSignup }: LoginFormProps) {
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
             {isSignup && (
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label htmlFor="name" data-testid="label-name">Full Name</Label>
                 <Input
                   id="name"
@@ -81,7 +81,7 @@ export function LoginForm({ onLogin, onSignup }: LoginFormProps) {
               </div>
             )}
             
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="email" data-testid="label-email">Email or Mobile</Label>
               <Input
                 id="email"
@@ -94,7 +94,7 @@ export function LoginForm({ onLogin, onSignup }: LoginFormProps) {
               />
             </div>
             
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="password" data-testid="label-password">Password</Label>
               <Input
                 id="password"
@@ -115,11 +115,19 @@ export function LoginForm({ onLogin, onSignup }: LoginFormProps) {
             >
               {isLoading ? (isSignup ? "Signing Up..." : "Signing In...") : (isSignup ? "Sign Up" : "Sign In")}
             </Button>
+            <div className="text-end mt-0" style={{marginTop:'0px'}}>
+            {!isSignup && (
+              <Link href="/forgot-password">
+                <Button variant="ghost" className="p-0 text-sm text-red-600 hover:text-red-700" data-testid="link-forgot-password">
+                  Forgot password?
+                </Button>
+              </Link>
+            )}</div>
           </form>
 
           <Separator className="my-4" />
           
-          <div className="text-center space-y-2">
+          <div className="text-center text-primary space-y-1">
             <Button 
               variant="ghost" 
               className="p-0 h-auto text-sm" 
@@ -132,13 +140,13 @@ export function LoginForm({ onLogin, onSignup }: LoginFormProps) {
               }
             </Button>
             
-            {!isSignup && (
+            {/* {!isSignup && (
               <Link href="/forgot-password">
                 <Button variant="ghost" className="p-0 h-auto text-sm" data-testid="link-forgot-password">
                   Forgot your password?
                 </Button>
               </Link>
-            )}
+            )} */}
           </div>
         </CardContent>
       </Card>

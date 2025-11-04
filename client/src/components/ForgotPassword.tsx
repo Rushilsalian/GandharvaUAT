@@ -41,10 +41,14 @@ export default function ForgotPassword() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Forgot Password</CardTitle>
+        <CardHeader className="text-primary items-center">
+          <CardTitle>Forgot Your Password</CardTitle>
+          <span className="text-gray-800 items-center text-xs">
+            Please enter the email address you'd like your password reset information sent to
+          </span>
         </CardHeader>
         <CardContent>
+          
           {message && <div className="text-green-600 mb-2">{message}</div>}
           {error && <div className="text-red-600 mb-2">{error}</div>}
           {resetToken && (
@@ -62,13 +66,16 @@ export default function ForgotPassword() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               type="email"
-              placeholder="Enter your email"
+              placeholder="Enter your email address"
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
             />
             <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? "Sending..." : "Send Reset Link"}
+              {isLoading ? "Sending..." : "Request reset link"}
+            </Button>
+            <Button variant="link" onClick={() => setLocation("/")} className="text-primary w-full pt-0">
+              Back to Sign In
             </Button>
           </form>
         </CardContent>
