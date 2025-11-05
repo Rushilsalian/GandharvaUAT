@@ -19,30 +19,20 @@ interface EnhancedDashboardProps {
   userRole: "admin" | "leader" | "client";
 }
 
-// Mock data for enhanced widgets - replace with actual API calls
-const mockPortfolioData = [
-  { name: "Equity", value: 45, amount: 450000 },
-  { name: "Mutual Funds", value: 30, amount: 300000 },
-  { name: "Bonds", value: 15, amount: 150000 },
-  { name: "FD", value: 10, amount: 100000 }
-];
+interface MonthlyData {
+  month: string;
+  investments: number;
+  payouts: number;
+  clients: number;
+}
 
-const mockMonthlyData = [
-  { month: "Jan", investments: 120000, payouts: 15000, clients: 25 },
-  { month: "Feb", investments: 150000, payouts: 18000, clients: 32 },
-  { month: "Mar", investments: 180000, payouts: 22000, clients: 28 },
-  { month: "Apr", investments: 200000, payouts: 25000, clients: 35 },
-  { month: "May", investments: 220000, payouts: 28000, clients: 40 },
-  { month: "Jun", investments: 250000, payouts: 32000, clients: 45 }
-];
+interface TopPerformer {
+  name: string;
+  amount: number;
+  growth: number;
+}
 
-const mockTopPerformers = [
-  { name: "Rajesh Kumar", amount: 500000, growth: 15.2 },
-  { name: "Priya Sharma", amount: 450000, growth: 12.8 },
-  { name: "Amit Patel", amount: 380000, growth: 10.5 },
-  { name: "Sunita Gupta", amount: 320000, growth: 8.9 },
-  { name: "Vikram Singh", amount: 280000, growth: 7.2 }
-];
+
 
 function QuickStatsCard({ title, value, change, icon: Icon, color = "blue" }: any) {
   return (
@@ -72,60 +62,9 @@ function QuickStatsCard({ title, value, change, icon: Icon, color = "blue" }: an
   );
 }
 
-function PortfolioDistribution() {
-  const [portfolioData, setPortfolioData] = useState(mockPortfolioData);
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
-  
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch('/api/dashboard/portfolio-distribution', {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setPortfolioData(data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch portfolio distribution:', error);
-      }
-    };
-    fetchData();
-  }, []);
-  
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Portfolio Distribution</CardTitle>
-        <CardDescription>Asset allocation breakdown</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <PieChart>
-            <Pie
-              data={portfolioData}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-              outerRadius={80}
-              fill="#8884d8"
-              dataKey="value"
-            >
-              {portfolioData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip formatter={(value, name) => [`₹${value.toLocaleString()}`, name]} />
-          </PieChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
-  );
-}
 
 function MonthlyTrends() {
-  const [monthlyData, setMonthlyData] = useState(mockMonthlyData);
+  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -182,6 +121,36 @@ function MonthlyTrends() {
 }
 
 function TopPerformers() {
+  const [topPerformers, setTopPerformers] = useState<TopPerformer[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setLoading(false);
+          return;
+        }
+        
+        const response = await fetch('/api/dashboard/top-performers', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setTopPerformers(data || []);
+        } else {
+          console.error('Failed to fetch top performers:', response.status, response.statusText);
+        }
+      } catch (error) {
+        console.error('Failed to fetch top performers:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+  
   return (
     <Card>
       <CardHeader>
@@ -189,26 +158,36 @@ function TopPerformers() {
         <CardDescription>Highest investment growth this month</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {mockTopPerformers.map((performer, index) => (
-            <div key={index} className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-medium">{index + 1}</span>
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-sm text-muted-foreground">Loading...</div>
+          </div>
+        ) : topPerformers.length > 0 ? (
+          <div className="space-y-4">
+            {topPerformers.map((performer, index) => (
+              <div key={index} className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-sm font-medium">{index + 1}</span>
+                  </div>
+                  <div>
+                    <p className="font-medium">{performer.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      ₹{performer.amount.toLocaleString()}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium">{performer.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    ₹{performer.amount.toLocaleString()}
-                  </p>
-                </div>
+                <Badge variant="secondary" className={performer.growth >= 0 ? "text-green-600" : "text-red-600"}>
+                  {performer.growth >= 0 ? '+' : ''}{performer.growth}%
+                </Badge>
               </div>
-              <Badge variant="secondary" className="text-green-600">
-                +{performer.growth}%
-              </Badge>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-sm text-muted-foreground">No top performers data available</div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -326,7 +305,7 @@ function GoalsProgress() {
 
 export function EnhancedDashboard({ userRole }: EnhancedDashboardProps) {
   const [activeTab, setActiveTab] = useState("overview");
-
+  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [quickStats, setQuickStats] = useState<any[]>([]);
   
   useEffect(() => {
@@ -367,7 +346,23 @@ export function EnhancedDashboard({ userRole }: EnhancedDashboardProps) {
         console.error('Failed to fetch quick stats:', error);
       }
     };
+    
+    const fetchMonthlyData = async () => {
+      try {
+        const response = await fetch('/api/dashboard/monthly-trends', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setMonthlyData(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch monthly data:', error);
+      }
+    };
+    
     fetchStats();
+    fetchMonthlyData();
   }, [userRole]);
   
   const getQuickStats = () => quickStats;
@@ -392,11 +387,10 @@ export function EnhancedDashboard({ userRole }: EnhancedDashboardProps) {
 
         <TabsContent value="overview" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
-            <PortfolioDistribution />
             <MonthlyTrends />
+            <TopPerformers />
           </div>
           <div className="grid gap-6 md:grid-cols-2">
-            <TopPerformers />
             <RecentActivity />
           </div>
         </TabsContent>
@@ -410,7 +404,7 @@ export function EnhancedDashboard({ userRole }: EnhancedDashboardProps) {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={mockMonthlyData}>
+                  <BarChart data={monthlyData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />

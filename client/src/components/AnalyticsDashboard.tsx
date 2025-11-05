@@ -114,7 +114,7 @@ function InvestmentFlowAnalytics() {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
             <YAxis />
-            <Tooltip formatter={(value) => `₹${(value / 100000).toFixed(1)}L`} />
+            <Tooltip formatter={(value) => `₹${(Number(value) / 100000).toFixed(1)}L`} />
             <Legend />
             <Area 
               type="monotone" 
@@ -172,8 +172,8 @@ function ClientSegmentAnalytics() {
             <Tooltip 
               cursor={{ strokeDasharray: '3 3' }}
               formatter={(value, name) => {
-                if (name === "AUM") return `₹${(value / 1000000).toFixed(1)}M`;
-                if (name === "Avg Ticket") return `₹${(value / 1000).toFixed(0)}K`;
+                if (name === "AUM") return `₹${(Number(value) / 1000000).toFixed(1)}M`;
+                if (name === "Avg Ticket") return `₹${(Number(value) / 1000).toFixed(0)}K`;
                 return value;
               }}
             />
