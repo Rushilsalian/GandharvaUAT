@@ -113,7 +113,7 @@ export function AppSidebar({ userRole, onLogout }: AppSidebarProps) {
                 <SidebarMenuItem key={item.title}>
                   {item.children ? (
                     <div>
-                      <SidebarMenuButton className="font-medium">
+                      <SidebarMenuButton className="font-medium cursor-default">
                         <item.icon />
                         <span>{item.title}</span>
                       </SidebarMenuButton>
