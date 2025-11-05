@@ -463,7 +463,7 @@ export function EnhancedDashboard({ userRole }: EnhancedDashboardProps) {
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
+          {/* <TabsTrigger value="performance">Performance</TabsTrigger> */}
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
 
