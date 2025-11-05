@@ -272,3 +272,14 @@
     inset: -1px;
   }
 }
+/* @media (min-width: 320px) and (max-width: 600px) {
+  .header-section {
+    flex-direction: column;       
+    align-items: flex-start;     
+  }
+
+  .header-section button {
+    margin-top: 10px;             
+    width: 100%;                 
+  }
+} */

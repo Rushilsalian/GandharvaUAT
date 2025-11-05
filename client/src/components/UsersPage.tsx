@@ -150,18 +150,18 @@ export function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="md:flex md:justify-between md:items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
-          <p className="text-muted-foreground">
+          <h1 className="md:text-3xl font-bold tracking-tight">User Management</h1>
+          <p className="text-sm text-muted-foreground">
             Manage active user accounts across the platform
           </p>
         </div>
         
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => { resetForm(); setIsModalOpen(true); }}>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button className="mt-2" onClick={() => { resetForm(); setIsModalOpen(true); }}>
+              <Plus className="h-4 w-4 mr-2 " />
               Add User
             </Button>
           </DialogTrigger>

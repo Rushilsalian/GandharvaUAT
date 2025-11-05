@@ -36,13 +36,13 @@ export function ClientManagementPage() {
   };
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="container mx-auto p-4">
+      <div className="md:flex md:justify-between md:items-center mb-4">
         <div>
           <h1 className="text-2xl font-bold">Client Records</h1>
           <p className="text-sm text-gray-600">Manage clients with bulk upload functionality</p>
         </div>
-        <Button onClick={downloadTemplate} variant="outline" className="flex items-center gap-2">
+        <Button onClick={downloadTemplate} variant="outline" className="flex items-center gap-2 mt-2">
           <Download className="h-4 w-4" />
           Download Template
         </Button>
