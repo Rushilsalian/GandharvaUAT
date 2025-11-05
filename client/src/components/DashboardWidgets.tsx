@@ -14,135 +14,14 @@ import {
   IndianRupee, Users2, Building2, CreditCard
 } from "lucide-react";
 
-// Investment Performance Widget
-function InvestmentPerformanceWidget() {
-  const [performanceData, setPerformanceData] = useState([
-    { period: "1M", return: 2.5, benchmark: 1.8 },
-    { period: "3M", return: 7.2, benchmark: 5.5 },
-    { period: "6M", return: 12.8, benchmark: 9.2 },
-    { period: "1Y", return: 18.5, benchmark: 14.2 }
-  ]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch('/api/dashboard/investment-performance', {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setPerformanceData(data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch investment performance:', error);
-      }
-    };
-    fetchData();
-  }, []);
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <TrendingUp className="h-5 w-5" />
-          Investment Performance
-        </CardTitle>
-        <CardDescription>Returns vs benchmark comparison</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={performanceData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="period" />
-            <YAxis />
-            <Tooltip formatter={(value) => `${value}%`} />
-            <Bar dataKey="return" fill="#22c55e" name="Your Return" />
-            <Bar dataKey="benchmark" fill="#94a3b8" name="Benchmark" />
-          </BarChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
-  );
-}
-
-// Client Demographics Widget
-function ClientDemographicsWidget() {
-  const [ageGroups, setAgeGroups] = useState([
-    { name: "18-25", value: 15, count: 45 },
-    { name: "26-35", value: 35, count: 105 },
-    { name: "36-45", value: 30, count: 90 },
-    { name: "46-55", value: 15, count: 45 },
-    { name: "55+", value: 5, count: 15 }
-  ]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch('/api/dashboard/client-demographics', {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setAgeGroups(data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch client demographics:', error);
-      }
-    };
-    fetchData();
-  }, []);
-
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Users2 className="h-5 w-5" />
-          Client Demographics
-        </CardTitle>
-        <CardDescription>Age distribution of clients</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-between">
-          <ResponsiveContainer width="60%" height={150}>
-            <PieChart>
-              <Pie
-                data={ageGroups}
-                cx="50%"
-                cy="50%"
-                innerRadius={30}
-                outerRadius={60}
-                paddingAngle={5}
-                dataKey="value"
-              >
-                {ageGroups.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value) => `${value}%`} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="space-y-2">
-            {ageGroups.map((group, index) => (
-              <div key={group.name} className="flex items-center gap-2 text-sm">
-                <div 
-                  className="w-3 h-3 rounded-full" 
-                  style={{ backgroundColor: COLORS[index] }}
-                />
-                <span>{group.name}: {group.count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 // Branch Performance Widget
 function BranchPerformanceWidget() {
-  const [branchData, setBranchData] = useState([]);
+  const [branchData, setBranchData] = useState<Array<{
+    branch: string;
+    clients: number;
+    aum: number;
+    growth: number;
+  }>>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -198,7 +77,13 @@ function BranchPerformanceWidget() {
 
 // Transaction Timeline Widget
 function TransactionTimelineWidget() {
-  const [transactions, setTransactions] = useState([
+  const [transactions, setTransactions] = useState<Array<{
+    id: string;
+    type: string;
+    client: string;
+    amount: number;
+    time: string;
+  }>>([
     { 
       id: "TXN001", 
       type: "Investment", 
@@ -345,7 +230,11 @@ function KYCStatusWidget() {
 
 // Monthly Revenue Widget
 function MonthlyRevenueWidget() {
-  const [revenueData, setRevenueData] = useState([]);
+  const [revenueData, setRevenueData] = useState<Array<{
+    source: string;
+    amount: number;
+    percentage: number;
+  }>>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -399,7 +288,11 @@ function MonthlyRevenueWidget() {
 
 // Risk Assessment Widget
 function RiskAssessmentWidget() {
-  const [riskMetrics, setRiskMetrics] = useState([]);
+  const [riskMetrics, setRiskMetrics] = useState<Array<{
+    metric: string;
+    value: number;
+    status: string;
+  }>>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -465,8 +358,6 @@ export function DashboardWidgets({ userRole }: DashboardWidgetsProps) {
   // Admin widgets - Full system access
   const AdminWidgets = () => (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      <InvestmentPerformanceWidget />
-      <ClientDemographicsWidget />
       <BranchPerformanceWidget />
       <TransactionTimelineWidget />
       <KYCStatusWidget />
@@ -478,7 +369,6 @@ export function DashboardWidgets({ userRole }: DashboardWidgetsProps) {
   // Leader widgets - Team and client data
   const LeaderWidgets = () => (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      <InvestmentPerformanceWidget />
       <TransactionTimelineWidget />
       <RiskAssessmentWidget />
       {/* Team-specific widgets could be added here */}
@@ -488,7 +378,6 @@ export function DashboardWidgets({ userRole }: DashboardWidgetsProps) {
   // Client widgets - Personal data only
   const ClientWidgets = () => (
     <div className="grid gap-6 md:grid-cols-2">
-      <InvestmentPerformanceWidget />
       <TransactionTimelineWidget />
       <RiskAssessmentWidget />
     </div>
