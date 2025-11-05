@@ -202,11 +202,12 @@ interface Activity {
 
 function RecentActivity() {
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('/api/dashboard/recent-transactions?limit=4', {
+        const response = await fetch('/api/dashboard/recent-transactions?limit=5', {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         if (response.ok) {
@@ -220,6 +221,8 @@ function RecentActivity() {
         }
       } catch (error) {
         console.error('Failed to fetch recent activity:', error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
@@ -242,20 +245,30 @@ function RecentActivity() {
         <CardDescription>Latest transactions and updates</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {activities.map((activity, index) => (
-            <div key={index} className="flex items-center space-x-3">
-              {getActivityIcon(activity.type)}
-              <div className="flex-1">
-                <p className="text-sm font-medium">{activity.user}</p>
-                <p className="text-xs text-muted-foreground">
-                  {activity.type} {activity.amount > 0 && `₹${activity.amount.toLocaleString()}`}
-                </p>
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-sm text-muted-foreground">Loading activities...</div>
+          </div>
+        ) : activities.length > 0 ? (
+          <div className="space-y-4">
+            {activities.map((activity, index) => (
+              <div key={index} className="flex items-center space-x-3">
+                {getActivityIcon(activity.type)}
+                <div className="flex-1">
+                  <p className="text-sm font-medium">{activity.user}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {activity.type} {activity.amount > 0 && `₹${activity.amount.toLocaleString()}`}
+                  </p>
+                </div>
+                <span className="text-xs text-muted-foreground">{activity.time}</span>
               </div>
-              <span className="text-xs text-muted-foreground">{activity.time}</span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-sm text-muted-foreground">No recent activity</div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -298,6 +311,75 @@ function GoalsProgress() {
             );
           })}
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface AlertsNotificationsProps {
+  userRole: "admin" | "leader" | "client";
+}
+
+function AlertsNotifications({ userRole }: AlertsNotificationsProps) {
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchAlerts = async () => {
+      try {
+        const response = await fetch(`/api/dashboard/alerts?userRole=${userRole}`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setAlerts(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch alerts:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAlerts();
+  }, [userRole]);
+
+  const getAlertIcon = (type: string, severity: string) => {
+    if (severity === 'high') return <AlertCircle className="h-4 w-4 text-red-500" />;
+    if (severity === 'medium') return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+    if (type === 'success') return <CheckCircle className="h-4 w-4 text-green-500" />;
+    return <AlertCircle className="h-4 w-4 text-blue-500" />;
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Alerts & Notifications</CardTitle>
+        <CardDescription>Important updates and system alerts</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="flex items-center justify-center py-4">
+            <div className="text-sm text-muted-foreground">Loading alerts...</div>
+          </div>
+        ) : alerts.length > 0 ? (
+          <div className="space-y-3">
+            {alerts.map((alert, index) => (
+              <div key={index} className="flex items-center space-x-2">
+                {getAlertIcon(alert.type, alert.severity)}
+                <span className="text-sm">{alert.message}</span>
+                {alert.count && (
+                  <Badge variant="secondary" className="ml-auto">
+                    {alert.count}
+                  </Badge>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center py-4">
+            <div className="text-sm text-muted-foreground">No alerts at this time</div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -390,9 +472,6 @@ export function EnhancedDashboard({ userRole }: EnhancedDashboardProps) {
             <MonthlyTrends />
             <TopPerformers />
           </div>
-          <div className="grid gap-6 md:grid-cols-2">
-            <RecentActivity />
-          </div>
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6">
@@ -453,27 +532,7 @@ export function EnhancedDashboard({ userRole }: EnhancedDashboardProps) {
         <TabsContent value="activity" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
             <RecentActivity />
-            <Card>
-              <CardHeader>
-                <CardTitle>Alerts & Notifications</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <AlertCircle className="h-4 w-4 text-yellow-500" />
-                    <span className="text-sm">KYC pending for 3 clients</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Monthly target 75% achieved</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <AlertCircle className="h-4 w-4 text-red-500" />
-                    <span className="text-sm">2 withdrawal requests pending</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <AlertsNotifications userRole={userRole} />
           </div>
         </TabsContent>
       </Tabs>
