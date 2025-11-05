@@ -274,47 +274,47 @@ function RecentActivity() {
   );
 }
 
-function GoalsProgress() {
-  const goals = [
-    { title: "Monthly Target", current: 750000, target: 1000000, color: "blue" },
-    { title: "New Clients", current: 35, target: 50, color: "green" },
-    { title: "Referrals", current: 12, target: 20, color: "purple" }
-  ];
+// function GoalsProgress() {
+//   const goals = [
+//     { title: "Monthly Target", current: 750000, target: 1000000, color: "blue" },
+//     { title: "New Clients", current: 35, target: 50, color: "green" },
+//     { title: "Referrals", current: 12, target: 20, color: "purple" }
+//   ];
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Goals & Targets</CardTitle>
-        <CardDescription>Progress towards monthly objectives</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          {goals.map((goal, index) => {
-            const progress = (goal.current / goal.target) * 100;
-            return (
-              <div key={index} className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="font-medium">{goal.title}</span>
-                  <span className="text-muted-foreground">
-                    {typeof goal.current === 'number' && goal.current > 1000 
-                      ? `₹${goal.current.toLocaleString()}` 
-                      : goal.current} / {typeof goal.target === 'number' && goal.target > 1000 
-                      ? `₹${goal.target.toLocaleString()}` 
-                      : goal.target}
-                  </span>
-                </div>
-                <Progress value={progress} className="h-2" />
-                <div className="text-xs text-muted-foreground">
-                  {progress.toFixed(1)}% complete
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+//   return (
+//     <Card>
+//       <CardHeader>
+//         <CardTitle>Goals & Targets</CardTitle>
+//         <CardDescription>Progress towards monthly objectives</CardDescription>
+//       </CardHeader>
+//       <CardContent>
+//         <div className="space-y-6">
+//           {goals.map((goal, index) => {
+//             const progress = (goal.current / goal.target) * 100;
+//             return (
+//               <div key={index} className="space-y-2">
+//                 <div className="flex justify-between text-sm">
+//                   <span className="font-medium">{goal.title}</span>
+//                   <span className="text-muted-foreground">
+//                     {typeof goal.current === 'number' && goal.current > 1000 
+//                       ? `₹${goal.current.toLocaleString()}` 
+//                       : goal.current} / {typeof goal.target === 'number' && goal.target > 1000 
+//                       ? `₹${goal.target.toLocaleString()}` 
+//                       : goal.target}
+//                   </span>
+//                 </div>
+//                 <Progress value={progress} className="h-2" />
+//                 <div className="text-xs text-muted-foreground">
+//                   {progress.toFixed(1)}% complete
+//                 </div>
+//               </div>
+//             );
+//           })}
+//         </div>
+//       </CardContent>
+//     </Card>
+//   );
+// }
 
 interface AlertsNotificationsProps {
   userRole: "admin" | "leader" | "client";
@@ -493,7 +493,7 @@ export function EnhancedDashboard({ userRole }: EnhancedDashboardProps) {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
-            <GoalsProgress />
+            {/* <GoalsProgress /> */}
           </div>
         </TabsContent>
 
