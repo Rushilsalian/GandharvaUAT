@@ -6,6 +6,8 @@ import { DollarSign, Users, FileText, Download, Upload } from "lucide-react";
 import { format, isWithinInterval } from "date-fns";
 import { TransactionFilters } from "@/components/TransactionFilters";
 import { TransactionExcelUpload } from "@/components/TransactionExcelUpload";
+import { PaginationControls } from "@/components/PaginationControls";
+import { usePagination } from "@/hooks/usePagination";
 import { DateRange } from "react-day-picker";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -108,6 +110,19 @@ export default function WithdrawalPage() {
       return true;
     });
   }, [withdrawals, filters]);
+
+  // Pagination
+  const {
+    currentPage,
+    totalPages,
+    paginatedData: paginatedWithdrawals,
+    goToPage,
+    canGoNext,
+    canGoPrevious,
+    startIndex,
+    endIndex,
+    totalItems
+  } = usePagination({ data: filteredWithdrawals, itemsPerPage: 10 });
 
   const stats = {
     totalWithdrawals: filteredWithdrawals.length,
@@ -291,7 +306,7 @@ export default function WithdrawalPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredWithdrawals.map((withdrawal: Transaction) => (
+                  {(paginatedWithdrawals as Transaction[]).map((withdrawal) => (
                     <tr key={withdrawal.id} className="border-b hover:bg-muted/50">
                       <td className="p-2">
                         {format(new Date(withdrawal.processedAt || withdrawal.createdAt), 'MMM dd, yyyy')}
@@ -321,6 +336,21 @@ export default function WithdrawalPage() {
                   }
                 </div>
               )}
+            </div>
+          )}
+          
+          {filteredWithdrawals.length > 0 && (
+            <div className="mt-4">
+              <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={goToPage}
+                canGoPrevious={canGoPrevious}
+                canGoNext={canGoNext}
+                startIndex={startIndex}
+                endIndex={endIndex}
+                totalItems={totalItems}
+              />
             </div>
           )}
         </CardContent>
