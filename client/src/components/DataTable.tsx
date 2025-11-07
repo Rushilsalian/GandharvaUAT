@@ -92,9 +92,14 @@ export function DataTable({
   const [filterValue, setFilterValue] = useState("");
 
   const filteredData = (data || []).filter(row => {
-    const matchesSearch = !searchTerm || Object.values(row).some(value => 
-      String(value).toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const matchesSearch = !searchTerm || Object.values(row).some(value => {
+      if (value && typeof value === 'object') {
+        return Object.values(value).some(nestedValue => 
+          String(nestedValue).toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+      return String(value).toLowerCase().includes(searchTerm.toLowerCase());
+    });
     const matchesFilter = !filterValue || filterValue === "all" || row.status === filterValue;
     return matchesSearch && matchesFilter;
   });
