@@ -76,7 +76,8 @@ export default function ReferralRequestPage() {
 
   const columns = [
     { key: "date", label: "Date", render: (value: string) => value ? new Date(value).toLocaleDateString() : 'N/A' },
-    { key: "name", label: "Name" },
+    { key: "client", label: "Client Name", render: (client: any) => client ? `${client.name}` : 'N/A' },
+    { key: "name", label: "Referee Name" },
     { key: "mobile", label: "Mobile" }
   ];
 

@@ -15,7 +15,9 @@ import {
   BarChart3,
   PieChart,
   Calendar,
-  Filter
+  Filter,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { format } from "date-fns";
 import { 
@@ -56,6 +58,9 @@ interface AnalyticsData {
 export default function EnhancedReportsPage() {
   const { token, user, session } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
+  const [transactionPage, setTransactionPage] = useState(1);
+  const [clientPage, setClientPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Fetch role-based report data
   const { data: reportData, isLoading: reportLoading } = useQuery<RoleBasedReportData>({
@@ -198,7 +203,7 @@ export default function EnhancedReportsPage() {
                 <div key={index} className="flex items-center justify-between p-2 border rounded">
                   <div>
                     <span className="font-medium">{client.clientName}</span>
-                    <span className="text-sm text-muted-foreground ml-2">({client.clientCode})</span>
+                    {/* <span className="text-sm text-muted-foreground ml-2">({client.clientCode})</span> */}
                   </div>
                   <span className="font-bold">₹{client.totalInvestment.toLocaleString()}</span>
                 </div>
@@ -307,7 +312,7 @@ export default function EnhancedReportsPage() {
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Investment</CardTitle>
@@ -335,6 +340,16 @@ export default function EnhancedReportsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">₹{(reportData?.summary.totalWithdrawal || 0).toLocaleString()}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Closure</CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">₹{(reportData?.summary.totalClosure || 0).toLocaleString()}</div>
           </CardContent>
         </Card>
         
@@ -376,83 +391,126 @@ export default function EnhancedReportsPage() {
     </div>
   );
 
-  const renderTransactionsTable = () => (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <div>
-            <CardTitle>Transaction History</CardTitle>
-            <CardDescription>
-              {reportData?.transactions.length || 0} transactions found
-            </CardDescription>
+  const renderTransactionsTable = () => {
+    const transactions = reportData?.transactions || [];
+    const totalPages = Math.ceil(transactions.length / itemsPerPage);
+    const startIndex = (transactionPage - 1) * itemsPerPage;
+    const paginatedTransactions = transactions.slice(startIndex, startIndex + itemsPerPage);
+
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <CardTitle>Transaction History</CardTitle>
+              <CardDescription>
+                {transactions.length} transactions found
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => exportToCSV(transactions, 'transactions')}
+              disabled={!transactions.length}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            onClick={() => exportToCSV(reportData?.transactions || [], 'transactions')}
-            disabled={!reportData?.transactions?.length}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left p-2 font-medium">Date</th>
-                {reportData?.role !== 'client' && <th className="text-left p-2 font-medium">Client</th>}
-                <th className="text-left p-2 font-medium">Type</th>
-                <th className="text-left p-2 font-medium">Amount</th>
-                <th className="text-left p-2 font-medium">Remark</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reportData?.transactions.map((transaction, index) => (
-                <tr key={index} className="border-b hover:bg-muted/50">
-                  <td className="p-2">
-                    {format(new Date(transaction.date), 'MMM dd, yyyy')}
-                  </td>
-                  {reportData?.role !== 'client' && (
-                    <td className="p-2">
-                      <div>
-                        <div className="font-medium">{transaction.clientName}</div>
-                        <div className="text-sm text-muted-foreground">({transaction.clientCode})</div>
-                      </div>
-                    </td>
-                  )}
-                  <td className="p-2">
-                    <Badge variant={
-                      transaction.type === 'Investment' ? 'default' : 
-                      transaction.type === 'Payout' ? 'secondary' : 'outline'
-                    }>
-                      {transaction.type}
-                    </Badge>
-                  </td>
-                  <td className="p-2 font-medium">
-                    ₹{transaction.amount.toLocaleString()}
-                  </td>
-                  <td className="p-2 text-sm text-muted-foreground">
-                    {transaction.remark || 'N/A'}
-                  </td>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left p-2 font-medium">Date</th>
+                  {reportData?.role !== 'client' && <th className="text-left p-2 font-medium">Client</th>}
+                  <th className="text-left p-2 font-medium">Type</th>
+                  <th className="text-left p-2 font-medium">Amount</th>
+                  <th className="text-left p-2 font-medium">Remark</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {paginatedTransactions.map((transaction, index) => (
+                  <tr key={startIndex + index} className="border-b hover:bg-muted/50">
+                    <td className="p-2">
+                      {format(new Date(transaction.date), 'MMM dd, yyyy')}
+                    </td>
+                    {reportData?.role !== 'client' && (
+                      <td className="p-2">
+                        <div>
+                          <div className="font-medium">{transaction.clientName}</div>
+                          {/* <div className="text-sm text-muted-foreground">({transaction.clientCode})</div> */}
+                        </div>
+                      </td>
+                    )}
+                    <td className="p-2">
+                      <Badge variant={
+                        transaction.type === 'Investment' ? 'default' : 
+                        transaction.type === 'Payout' ? 'secondary' : 'outline'
+                      }>
+                        {transaction.type}
+                      </Badge>
+                    </td>
+                    <td className="p-2 font-medium">
+                      ₹{transaction.amount.toLocaleString()}
+                    </td>
+                    <td className="p-2 text-sm text-muted-foreground">
+                      {transaction.remark || 'N/A'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            
+            {!transactions.length && (
+              <div className="text-center py-8 text-muted-foreground">
+                No transactions found.
+              </div>
+            )}
+          </div>
           
-          {!reportData?.transactions?.length && (
-            <div className="text-center py-8 text-muted-foreground">
-              No transactions found.
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-sm text-muted-foreground">
+                Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, transactions.length)} of {transactions.length} transactions
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTransactionPage(prev => Math.max(prev - 1, 1))}
+                  disabled={transactionPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                <span className="text-sm">
+                  Page {transactionPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTransactionPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={transactionPage === totalPages}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           )}
-        </div>
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    );
+  };
 
   const renderClientsTable = () => {
     if (reportData?.role === 'client' || !reportData?.clients) return null;
+
+    const clients = reportData.clients;
+    const totalPages = Math.ceil(clients.length / itemsPerPage);
+    const startIndex = (clientPage - 1) * itemsPerPage;
+    const paginatedClients = clients.slice(startIndex, startIndex + itemsPerPage);
 
     return (
       <Card>
@@ -461,13 +519,13 @@ export default function EnhancedReportsPage() {
             <div>
               <CardTitle>Client Summary</CardTitle>
               <CardDescription>
-                {reportData.clients.length} clients found
+                {clients.length} clients found
               </CardDescription>
             </div>
             <Button
               variant="outline"
-              onClick={() => exportToCSV(reportData.clients || [], 'clients')}
-              disabled={!reportData.clients?.length}
+              onClick={() => exportToCSV(clients, 'clients')}
+              disabled={!clients.length}
             >
               <Download className="h-4 w-4 mr-2" />
               Export CSV
@@ -483,17 +541,19 @@ export default function EnhancedReportsPage() {
                   <th className="text-left p-2 font-medium">Contact</th>
                   <th className="text-left p-2 font-medium">Investment</th>
                   <th className="text-left p-2 font-medium">Payout</th>
+                  <th className="text-left p-2 font-medium">Withdrawal</th>
+                  <th className="text-left p-2 font-medium">Closure</th>
                   <th className="text-left p-2 font-medium">Transactions</th>
                   <th className="text-left p-2 font-medium">Last Activity</th>
                 </tr>
               </thead>
               <tbody>
-                {reportData.clients.map((client, index) => (
-                  <tr key={index} className="border-b hover:bg-muted/50">
+                {paginatedClients.map((client, index) => (
+                  <tr key={startIndex + index} className="border-b hover:bg-muted/50">
                     <td className="p-2">
                       <div>
                         <div className="font-medium">{client.clientName}</div>
-                        <div className="text-sm text-muted-foreground">({client.clientCode})</div>
+                        {/* <div className="text-sm text-muted-foreground">({client.clientCode})</div> */}
                       </div>
                     </td>
                     <td className="p-2">
@@ -507,6 +567,12 @@ export default function EnhancedReportsPage() {
                     </td>
                     <td className="p-2 font-medium text-blue-600">
                       ₹{client.totalPayout.toLocaleString()}
+                    </td>
+                    <td className="p-2 font-medium text-yellow-600">
+                      ₹{client.totalWithdrawal.toLocaleString()}
+                    </td>
+                    <td className="p-2 font-medium text-red-600">
+                      ₹{client.totalClosure.toLocaleString()}
                     </td>
                     <td className="p-2">
                       {client.transactionCount}
@@ -522,6 +588,37 @@ export default function EnhancedReportsPage() {
               </tbody>
             </table>
           </div>
+          
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-sm text-muted-foreground">
+                Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, clients.length)} of {clients.length} clients
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setClientPage(prev => Math.max(prev - 1, 1))}
+                  disabled={clientPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                <span className="text-sm">
+                  Page {clientPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setClientPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={clientPage === totalPages}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     );

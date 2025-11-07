@@ -79,13 +79,17 @@ export default function InvestmentRequestPage() {
   };
 
   const columns = [
-    { key: "date", label: "Date" },
+    { key: "date", label: "Date", render: (value: string) => {
+      const date = new Date(value);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    }},
+    { key: "client", label: "Client Name", render: (client: any) => client ? `${client.name}` : 'N/A' },
     { key: "amount", label: "Amount", render: (value: number) => `₹${value.toLocaleString()}` },
-    { key: "investmentRemark", label: "Remark" },
-    { key: "transactionNo", label: "Transaction No" },
-    { key: "status", label: "Status", render: () => (
-      <Badge variant="default">Completed</Badge>
-    )}
+    { key: "investmentRemark", label: "Reason" },
+    { key: "transactionNo", label: "Transaction No" }
   ];
 
   return (
