@@ -6,6 +6,8 @@ import { DollarSign, Users, FileText, Download, Upload } from "lucide-react";
 import { format, isWithinInterval } from "date-fns";
 import { TransactionFilters } from "@/components/TransactionFilters";
 import { TransactionExcelUpload } from "@/components/TransactionExcelUpload";
+import { PaginationControls } from "@/components/PaginationControls";
+import { usePagination } from "@/hooks/usePagination";
 import { DateRange } from "react-day-picker";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -108,6 +110,19 @@ export default function PayoutPage() {
       return true;
     });
   }, [payouts, filters]);
+
+  // Pagination
+  const {
+    currentPage,
+    totalPages,
+    paginatedData: paginatedPayouts,
+    goToPage,
+    canGoNext,
+    canGoPrevious,
+    startIndex,
+    endIndex,
+    totalItems
+  } = usePagination({ data: filteredPayouts, itemsPerPage: 10 });
 
   const stats = {
     totalPayouts: filteredPayouts.length,
@@ -291,7 +306,7 @@ export default function PayoutPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredPayouts.map((payout: Transaction) => (
+                  {(paginatedPayouts as Transaction[]).map((payout) => (
                     <tr key={payout.id} className="border-b hover:bg-muted/50">
                       <td className="p-2">
                         {format(new Date(payout.processedAt || payout.createdAt), 'MMM dd, yyyy')}
@@ -321,6 +336,21 @@ export default function PayoutPage() {
                   }
                 </div>
               )}
+            </div>
+          )}
+          
+          {filteredPayouts.length > 0 && (
+            <div className="mt-4">
+              <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={goToPage}
+                canGoPrevious={canGoPrevious}
+                canGoNext={canGoNext}
+                startIndex={startIndex}
+                endIndex={endIndex}
+                totalItems={totalItems}
+              />
             </div>
           )}
         </CardContent>

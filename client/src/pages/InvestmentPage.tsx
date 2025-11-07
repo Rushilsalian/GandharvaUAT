@@ -7,6 +7,8 @@ import { TrendingUp, DollarSign, Users, FileText, Eye, Download, Upload } from "
 import { format, isWithinInterval } from "date-fns";
 import { TransactionFilters } from "@/components/TransactionFilters";
 import { InvestmentExcelUpload } from "@/components/InvestmentExcelUpload";
+import { PaginationControls } from "@/components/PaginationControls";
+import { usePagination } from "@/hooks/usePagination";
 import { DateRange } from "react-day-picker";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -116,6 +118,19 @@ export default function InvestmentPage() {
       return true;
     });
   }, [investments, filters]);
+
+  // Pagination
+  const {
+    currentPage,
+    totalPages,
+    paginatedData: paginatedInvestments,
+    goToPage,
+    canGoNext,
+    canGoPrevious,
+    startIndex,
+    endIndex,
+    totalItems
+  } = usePagination({ data: filteredInvestments, itemsPerPage: 10 });
 
   // Calculate investment statistics from filtered data
   const stats = {
@@ -306,7 +321,7 @@ export default function InvestmentPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredInvestments.map((investment: Transaction) => (
+                  {(paginatedInvestments as Transaction[]).map((investment) => (
                     <tr key={investment.id} className="border-b hover:bg-muted/50">
                       <td className="p-2">
                         {format(new Date(investment.processedAt || investment.createdAt), 'MMM dd, yyyy')}
@@ -336,6 +351,21 @@ export default function InvestmentPage() {
                   }
                 </div>
               )}
+            </div>
+          )}
+          
+          {filteredInvestments.length > 0 && (
+            <div className="mt-4">
+              <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={goToPage}
+                canGoPrevious={canGoPrevious}
+                canGoNext={canGoNext}
+                startIndex={startIndex}
+                endIndex={endIndex}
+                totalItems={totalItems}
+              />
             </div>
           )}
         </CardContent>
