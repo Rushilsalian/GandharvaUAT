@@ -83,7 +83,7 @@ export default function WithdrawalRequestPage() {
   // Role-based columns
   const getColumns = () => {
     const roleName = session?.roleName || session?.role;
-    const baseColumns = [
+    const baseColumns: any[] = [
       { key: "date", label: "Date", render: (value: string) => value ? new Date(value).toLocaleDateString() : 'N/A' },
       { key: "amount", label: "Amount", render: (value: number) => `₹${value.toLocaleString()}` },
       { key: "reason", label: "Reason" }
@@ -93,7 +93,8 @@ export default function WithdrawalRequestPage() {
     baseColumns.splice(1, 0, {
       key: "client",
       label: "Client",
-      render: (client: any) => client ? `${client.name} (${client.code})` : 'N/A'
+      render: (client: any) => client ? `${client.name} (${client.code})` : 'N/A',
+      exportValue: (row: any) => row.client ? `${row.client.name} (${row.client.code})` : 'N/A'
     });
 
     return baseColumns;

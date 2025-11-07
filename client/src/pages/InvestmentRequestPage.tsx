@@ -78,7 +78,7 @@ export default function InvestmentRequestPage() {
     }
   };
 
-  const columns = [
+  const columns: any[] = [
     { key: "date", label: "Date", render: (value: string) => {
       const date = new Date(value);
       const day = date.getDate().toString().padStart(2, '0');
@@ -86,7 +86,7 @@ export default function InvestmentRequestPage() {
       const year = date.getFullYear();
       return `${day}/${month}/${year}`;
     }},
-    { key: "client", label: "Client Name", render: (client: any) => client ? `${client.name}` : 'N/A' },
+    { key: "client", label: "Client Name", render: (client: any) => client ? `${client.name}` : 'N/A', exportValue: (row: any) => row.client ? row.client.name : 'N/A' },
     { key: "amount", label: "Amount", render: (value: number) => `₹${value.toLocaleString()}` },
     { key: "investmentRemark", label: "Reason" },
     { key: "transactionNo", label: "Transaction No" }
