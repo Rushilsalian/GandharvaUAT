@@ -79,30 +79,44 @@ export default function PayoutPage() {
   });
 
   const filteredPayouts = useMemo(() => {
+    if (!payouts || payouts.length === 0) return [];
+    
     return payouts.filter((payout: Transaction) => {
+      // Date range filter
       if (filters.dateRange?.from || filters.dateRange?.to) {
         const transactionDate = new Date(payout.processedAt || payout.createdAt);
+        
+        // Reset time to start of day for accurate comparison
+        const transactionDateOnly = new Date(transactionDate.getFullYear(), transactionDate.getMonth(), transactionDate.getDate());
+        
         if (filters.dateRange.from && filters.dateRange.to) {
-          if (!isWithinInterval(transactionDate, {
-            start: filters.dateRange.from,
-            end: filters.dateRange.to
-          })) {
+          const fromDate = new Date(filters.dateRange.from.getFullYear(), filters.dateRange.from.getMonth(), filters.dateRange.from.getDate());
+          const toDate = new Date(filters.dateRange.to.getFullYear(), filters.dateRange.to.getMonth(), filters.dateRange.to.getDate());
+          
+          if (transactionDateOnly < fromDate || transactionDateOnly > toDate) {
             return false;
           }
         } else if (filters.dateRange.from) {
-          if (transactionDate < filters.dateRange.from) return false;
+          const fromDate = new Date(filters.dateRange.from.getFullYear(), filters.dateRange.from.getMonth(), filters.dateRange.from.getDate());
+          if (transactionDateOnly < fromDate) return false;
         } else if (filters.dateRange.to) {
-          if (transactionDate > filters.dateRange.to) return false;
+          const toDate = new Date(filters.dateRange.to.getFullYear(), filters.dateRange.to.getMonth(), filters.dateRange.to.getDate());
+          if (transactionDateOnly > toDate) return false;
         }
       }
 
-      if (filters.clientId && payout.client?.id !== filters.clientId) {
-        return false;
+      // Client filter
+      if (filters.clientId && filters.clientId.trim() !== '') {
+        if (!payout.client?.id || String(payout.client.id) !== String(filters.clientId)) {
+          return false;
+        }
       }
 
-      if (filters.description) {
-        const description = payout.description || '';
-        if (!description.toLowerCase().includes(filters.description.toLowerCase())) {
+      // Description filter
+      if (filters.description && filters.description.trim() !== '') {
+        const description = (payout.description || '').toLowerCase();
+        const searchTerm = filters.description.toLowerCase().trim();
+        if (!description.includes(searchTerm)) {
           return false;
         }
       }
