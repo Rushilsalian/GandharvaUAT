@@ -166,15 +166,15 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
               <p className="text-lg font-medium">
                 Drop your Excel file here, or{' '}
                 <Button
-                  variant="link"
-                  className="p-0 h-auto font-medium text-primary"
+                  variant="ghost"
+                  className="p-0 h-auto font-medium text-primary underline hover:no-underline"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   browse
                 </Button>
               </p>
               <p className="text-sm text-gray-500">
-                Supports .xls, .xlsx, and .csv files up to 10MB
+                Supports .xls and .xlsx files up to 10MB
               </p>
             </div>
             <Input

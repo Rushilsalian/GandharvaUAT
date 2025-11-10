@@ -7,11 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/DataTable";
 import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/apiClient";
+import { useToast } from "@/hooks/use-toast";
 import { Smartphone, Building2, CreditCard } from "lucide-react";
 
 
 
 export default function InvestmentRequestPage() {
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     amount: "",
     investmentRemark: ""
@@ -35,28 +37,94 @@ export default function InvestmentRequestPage() {
     fetchRequests();
   }, []);
 
-  const handlePayment = async (method: string) => {
+  const handlePayment = async () => {
     if (!formData.amount) return;
     
     setLoading(true);
     try {
-      localStorage.setItem('pendingInvestment', JSON.stringify({...formData, paymentMethod: method}));
+      // Create Razorpay order
+      const orderResponse = await apiClient.post('/payment/razorpay/create-order', {
+        amount: parseFloat(formData.amount)
+      });
       
-      // For local testing, redirect directly to mock gateway
-      const mockUrl = `http://localhost:8080/test-payment-mock.html?` +
-        `merchant_id=test_merchant&` +
-        `order_id=INV${Date.now()}&` +
-        `amount=${formData.amount}&` +
-        `currency=INR&` +
-        `payment_method=${method}&` +
-        `return_url=${window.location.origin}/payment-callback&` +
-        `cancel_url=${window.location.origin}/investment-request`;
+      const { orderId, amount, currency, keyId } = orderResponse;
       
-      console.log('Redirecting to mock gateway:', mockUrl);
-      window.location.href = mockUrl;
+      // Load Razorpay script
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => {
+        const options = {
+          key: keyId,
+          amount: amount,
+          currency: currency,
+          name: 'Gandharva Investment',
+          description: 'Investment Request',
+          order_id: orderId,
+          handler: async (response: any) => {
+            try {
+              // Verify payment
+              const verifyResponse = await apiClient.post('/payment/razorpay/verify', {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              });
+              
+              if (verifyResponse.success) {
+                // Create investment request
+                await handlePaymentCallback({
+                  transactionId: response.razorpay_payment_id,
+                  transactionNo: response.razorpay_order_id,
+                  amount: verifyResponse.amount
+                });
+                toast({
+                  title: "Payment Successful!",
+                  description: "Investment request created successfully.",
+                  variant: "default"
+                });
+              } else {
+                toast({
+                  title: "Payment Failed",
+                  description: "Payment verification failed!",
+                  variant: "destructive"
+                });
+              }
+            } catch (error) {
+              console.error('Payment verification error:', error);
+              toast({
+                title: "Payment Failed",
+                description: "Payment verification failed!",
+                variant: "destructive"
+              });
+            } finally {
+              setLoading(false);
+            }
+          },
+          prefill: {
+            name: 'User',
+            email: 'user@example.com'
+          },
+          theme: {
+            color: '#3399cc'
+          },
+          modal: {
+            ondismiss: () => {
+              setLoading(false);
+            }
+          }
+        };
+        
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+      };
+      
+      document.body.appendChild(script);
     } catch (error) {
-      console.error('Payment redirect failed:', error);
-      alert('Payment redirect failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      console.error('Payment initiation failed:', error);
+      toast({
+        title: "Payment Failed",
+        description: `Payment initiation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive"
+      });
       setLoading(false);
     }
   };
@@ -127,48 +195,16 @@ export default function InvestmentRequestPage() {
               />
             </div>
             
-            <div className="space-y-2">
-              <Label>Payment Method</Label>
-              <div className="grid grid-cols-3 gap-3">
-                <Button 
-                  onClick={() => handlePayment('upi')} 
-                  disabled={loading || !formData.amount}
-                  variant="outline"
-                  className="flex flex-col items-center gap-2 p-4 h-20 bg-white border-2 hover:bg-gray-50"
-                >
-                  <div className="flex items-center gap-1">
-                    <span className="text-lg font-bold text-gray-700">UPI</span>
-                    <div className="w-0 h-0 border-l-4 border-l-orange-500 border-t-4 border-t-transparent border-b-4 border-b-transparent"></div>
-                    <div className="w-0 h-0 border-l-4 border-l-green-500 border-t-4 border-t-transparent border-b-4 border-b-transparent"></div>
-                    <div className="w-0 h-0 border-l-4 border-l-blue-500 border-t-4 border-t-transparent border-b-4 border-b-transparent"></div>
-                  </div>
-                  <span className="text-xs text-gray-500">UNIFIED PAYMENTS INTERFACE</span>
-                </Button>
-                <Button 
-                  onClick={() => handlePayment('netbanking')} 
-                  disabled={loading || !formData.amount}
-                  variant="outline"
-                  className="flex flex-col items-center gap-2 p-4 h-20 bg-white border-2 hover:bg-gray-50"
-                >
-                  <span className="text-2xl font-bold text-blue-600">NET</span>
-                  <span className="text-lg font-bold text-blue-600 -mt-2">Banking</span>
-                </Button>
-                <Button 
-                  onClick={() => handlePayment('card')} 
-                  disabled={loading || !formData.amount}
-                  variant="outline"
-                  className="flex flex-col items-center gap-2 p-4 h-20 bg-white border-2 hover:bg-gray-50"
-                >
-                  <div className="flex gap-1">
-                    <div className="w-8 h-5 bg-blue-600 rounded-sm flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">VISA</span>
-                    </div>
-                    <div className="w-8 h-5 bg-red-500 rounded-sm flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">MC</span>
-                    </div>
-                  </div>
-                  <span className="text-sm font-medium text-gray-700">Debit/Credit Card</span>
-                </Button>
+            <div className="space-y-4">
+              <Button 
+                onClick={handlePayment} 
+                disabled={loading || !formData.amount}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg font-semibold"
+              >
+                {loading ? 'Processing...' : `Pay ₹${formData.amount || '0'} with Razorpay`}
+              </Button>
+              <div className="text-center text-sm text-gray-500">
+                Secure payment powered by Razorpay
               </div>
             </div>
           </div>

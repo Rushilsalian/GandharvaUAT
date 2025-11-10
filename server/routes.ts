@@ -26,6 +26,8 @@ import {
 import { z } from "zod";
 import { generateSecurePassword, sendWelcomeEmail, sendPasswordResetEmail, sendInvestmentReceipt } from "./emailService";
 import { generateToken, generateResetToken, verifyToken, authenticateToken } from "./jwtUtils";
+import Razorpay from "razorpay";
+import crypto from "crypto";
 import { registerDashboardRoutes } from "./dashboardRoutes";
 import { registerEnhancedDashboardRoutes } from "./enhancedDashboardRoutes";
 import { registerRoleBasedReportsRoutes } from "./roleBasedReportsRoutes";
@@ -632,49 +634,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // JustPay Payment Gateway integration
-  app.post('/api/payment/justpay-redirect', authenticateToken, async (req, res) => {
+  // Razorpay Payment Gateway integration
+  app.post('/api/payment/razorpay/create-order', authenticateToken, async (req, res) => {
     try {
-      console.log('JustPay redirect endpoint hit:', req.body);
       const { amount } = req.body;
-      const orderId = `INV${Date.now()}`;
+      const userSession = (req as any).user;
       
-      const paymentData = {
-        merchant_id: process.env.JUSTPAY_MERCHANT_ID || 'test_merchant',
-        order_id: orderId,
-        amount: amount,
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ error: 'Valid amount is required' });
+      }
+      
+      const razorpay = new Razorpay({
+        key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_RdxhZzk786Z3ZV',
+        key_secret: process.env.RAZORPAY_KEY_SECRET || 'T3aXb25tGqXmu0sw0ghiqmqH'
+      });
+      
+      const options = {
+        amount: Math.round(amount * 100), // Convert to paise
         currency: 'INR',
-        return_url: `${process.env.CLIENT_URL}/payment/callback`,
-        cancel_url: `${process.env.CLIENT_URL}/investment-request`
+        receipt: `inv_${Date.now()}`,
+        notes: {
+          userId: userSession.userId.toString(),
+          email: userSession.email || '',
+          type: 'investment'
+        }
       };
       
-      const redirectUrl = `${process.env.JUSTPAY_PAYMENT_URL}?${new URLSearchParams(paymentData).toString()}`;
-      console.log('Generated redirect URL:', redirectUrl);
-      res.json({ redirectUrl, orderId });
+      const order = await razorpay.orders.create(options);
+      
+      res.json({
+        orderId: order.id,
+        amount: order.amount,
+        currency: order.currency,
+        keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_1DP5mmOlF5G5ag'
+      });
     } catch (error) {
-      console.error('Payment setup error:', error);
-      res.status(500).json({ error: 'Payment setup failed' });
+      console.error('Razorpay order creation error:', error);
+      res.status(500).json({ error: 'Failed to create payment order' });
     }
   });
 
-  // Payment callback handler
-  app.post('/api/payment/callback', async (req, res) => {
+  // Razorpay payment verification
+  app.post('/api/payment/razorpay/verify', authenticateToken, async (req, res) => {
     try {
-      const { order_id, transaction_id, transaction_no, status, amount } = req.body;
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
       
-      if (status === 'SUCCESS') {
-        res.json({ 
-          success: true, 
-          orderId: order_id,
-          transactionId: transaction_id,
-          transactionNo: transaction_no,
-          amount 
+      const razorpay = new Razorpay({
+        key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_1DP5mmOlF5G5ag',
+        key_secret: process.env.RAZORPAY_KEY_SECRET || 'YOUR_KEY_SECRET'
+      });
+      
+      const expectedSignature = crypto
+        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || 'YOUR_KEY_SECRET')
+        .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+        .digest('hex');
+      
+      if (expectedSignature === razorpay_signature) {
+        // Payment is verified
+        const payment = await razorpay.payments.fetch(razorpay_payment_id);
+        
+        res.json({
+          success: true,
+          paymentId: razorpay_payment_id,
+          orderId: razorpay_order_id,
+          amount: payment.amount / 100, // Convert from paise to rupees
+          status: payment.status
         });
       } else {
-        res.json({ success: false, message: 'Payment failed' });
+        res.status(400).json({ success: false, error: 'Invalid payment signature' });
       }
     } catch (error) {
-      res.status(500).json({ error: 'Payment callback failed' });
+      console.error('Payment verification error:', error);
+      res.status(500).json({ error: 'Payment verification failed' });
     }
   });
 
