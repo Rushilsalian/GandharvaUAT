@@ -7,11 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/DataTable";
 import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/apiClient";
+import { useToast } from "@/hooks/use-toast";
 import { Smartphone, Building2, CreditCard } from "lucide-react";
 
 
 
 export default function InvestmentRequestPage() {
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     amount: "",
     investmentRemark: ""
@@ -74,13 +76,25 @@ export default function InvestmentRequestPage() {
                   transactionNo: response.razorpay_order_id,
                   amount: verifyResponse.amount
                 });
-                alert('Payment successful! Investment request created.');
+                toast({
+                  title: "Payment Successful!",
+                  description: "Investment request created successfully.",
+                  variant: "default"
+                });
               } else {
-                alert('Payment verification failed!');
+                toast({
+                  title: "Payment Failed",
+                  description: "Payment verification failed!",
+                  variant: "destructive"
+                });
               }
             } catch (error) {
               console.error('Payment verification error:', error);
-              alert('Payment verification failed!');
+              toast({
+                title: "Payment Failed",
+                description: "Payment verification failed!",
+                variant: "destructive"
+              });
             } finally {
               setLoading(false);
             }
@@ -106,7 +120,11 @@ export default function InvestmentRequestPage() {
       document.body.appendChild(script);
     } catch (error) {
       console.error('Payment initiation failed:', error);
-      alert('Payment initiation failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      toast({
+        title: "Payment Failed",
+        description: `Payment initiation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive"
+      });
       setLoading(false);
     }
   };

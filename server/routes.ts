@@ -645,8 +645,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const razorpay = new Razorpay({
-        key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_1DP5mmOlF5G5ag',
-        key_secret: process.env.RAZORPAY_KEY_SECRET || 'YOUR_KEY_SECRET'
+        key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_RdxhZzk786Z3ZV',
+        key_secret: process.env.RAZORPAY_KEY_SECRET || 'T3aXb25tGqXmu0sw0ghiqmqH'
       });
       
       const options = {
