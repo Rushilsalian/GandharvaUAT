@@ -233,7 +233,7 @@ export default function InvestmentPage() {
       </div>
 
       {/* Filters and Upload */}
-      <div className="flex justify-between items-end gap-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
         <div className="flex-1">
           <TransactionFilters
             clients={clients}
@@ -243,7 +243,7 @@ export default function InvestmentPage() {
           />
         </div>
         {(session?.roleName === 'admin' || session?.roleName === 'Admin' || session?.roleName === 'leader' || session?.roleName === 'Leader') && (
-          <Button onClick={() => setShowUpload(!showUpload)} variant="outline">
+          <Button onClick={() => setShowUpload(!showUpload)} variant="outline" className="w-full sm:w-auto">
             <Upload className="h-4 w-4 mr-2" />
             Excel Upload
           </Button>
@@ -258,7 +258,7 @@ export default function InvestmentPage() {
       )}
 
       {/* Investment Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Investments</CardTitle>
@@ -292,14 +292,14 @@ export default function InvestmentPage() {
 
       {/* Investment Transactions Table */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <CardTitle>Investment Transactions</CardTitle>
             <CardDescription>
               Showing {filteredInvestments.length} of {investments.length} investment transactions
             </CardDescription>
           </div>
-          <Button onClick={handleExport} disabled={filteredInvestments.length === 0}>
+          <Button onClick={handleExport} disabled={filteredInvestments.length === 0} className="w-full sm:w-auto">
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
@@ -311,19 +311,19 @@ export default function InvestmentPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[600px]">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left p-2 font-medium">Date</th>
-                    <th className="text-left p-2 font-medium">Client</th>
-                    <th className="text-left p-2 font-medium">Amount</th>
-                    <th className="text-left p-2 font-medium">Description</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap">Date</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap">Client</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap">Amount</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap">Description</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(paginatedInvestments as Transaction[]).map((investment) => (
                     <tr key={investment.id} className="border-b hover:bg-muted/50">
-                      <td className="p-2">
+                      <td className="p-2 whitespace-nowrap">
                         {format(new Date(investment.processedAt || investment.createdAt), 'MMM dd, yyyy')}
                       </td>
                       <td className="p-2">
@@ -332,11 +332,13 @@ export default function InvestmentPage() {
                           : investment.client?.clientCode || 'Unknown Client'
                         }
                       </td>
-                      <td className="p-2 font-medium">
+                      <td className="p-2 font-medium whitespace-nowrap">
                         ₹{Number(investment.amount).toLocaleString()}
                       </td>
                       <td className="p-2 text-sm text-muted-foreground">
-                        {investment.description || 'N/A'}
+                        <div className="max-w-[200px] truncate">
+                          {investment.description || 'N/A'}
+                        </div>
                       </td>
                     </tr>
                   ))}

@@ -234,7 +234,7 @@ export default function PayoutPage() {
         </p>
       </div>
 
-      <div className="flex justify-between items-end gap-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
         <div className="flex-1">
           <TransactionFilters
             clients={clients}
@@ -244,7 +244,7 @@ export default function PayoutPage() {
           />
         </div>
         {(session?.roleName === 'admin' || session?.roleName === 'Admin' || session?.roleName === 'leader' || session?.roleName === 'Leader') && (
-          <Button onClick={() => setShowUpload(!showUpload)} variant="outline">
+          <Button onClick={() => setShowUpload(!showUpload)} variant="outline" className="w-full sm:w-auto">
             <Upload className="h-4 w-4 mr-2" />
             Excel Upload
           </Button>
@@ -258,7 +258,7 @@ export default function PayoutPage() {
         />
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Payouts</CardTitle>
@@ -291,14 +291,14 @@ export default function PayoutPage() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <CardTitle>Payout Transactions</CardTitle>
             <CardDescription>
               Showing {filteredPayouts.length} of {payouts.length} payout transactions
             </CardDescription>
           </div>
-          <Button onClick={handleExport} disabled={filteredPayouts.length === 0}>
+          <Button onClick={handleExport} disabled={filteredPayouts.length === 0} className="w-full sm:w-auto">
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
@@ -309,32 +309,32 @@ export default function PayoutPage() {
               <p>Loading payout transactions...</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div>
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
                     <th className="text-left p-2 font-medium">Date</th>
                     <th className="text-left p-2 font-medium">Client</th>
                     <th className="text-left p-2 font-medium">Amount</th>
-                    <th className="text-left p-2 font-medium">Description</th>
+                    <th className="text-left p-2 font-medium hidden sm:table-cell">Description</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(paginatedPayouts as Transaction[]).map((payout) => (
                     <tr key={payout.id} className="border-b hover:bg-muted/50">
-                      <td className="p-2">
-                        {format(new Date(payout.processedAt || payout.createdAt), 'MMM dd, yyyy')}
+                      <td className="p-2 text-sm">
+                        {format(new Date(payout.processedAt || payout.createdAt), 'MMM dd')}
                       </td>
-                      <td className="p-2">
+                      <td className="p-2 text-sm">
                         {payout.client?.user 
                           ? `${payout.client.user.firstName} ${payout.client.user.lastName}`
                           : payout.client?.clientCode || 'Unknown Client'
                         }
                       </td>
-                      <td className="p-2 font-medium">
+                      <td className="p-2 font-medium text-sm">
                         ₹{Number(payout.amount).toLocaleString()}
                       </td>
-                      <td className="p-2 text-sm text-muted-foreground">
+                      <td className="p-2 text-sm text-muted-foreground hidden sm:table-cell">
                         {payout.description || 'N/A'}
                       </td>
                     </tr>
