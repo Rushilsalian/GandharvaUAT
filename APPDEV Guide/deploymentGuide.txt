@@ -6,3 +6,7 @@ pm2 restart gandharva-app  # Runs dist/index.js
 
 
 root@linuxappdev:~# cd /opt/gandharva-app
+
+echo 'RAZORPAY_KEY_ID="rzp_test_RdxhZzk786Z3ZV"' >> .env
+echo 'RAZORPAY_KEY_SECRET="T3aXb25tGqXmu0sw0ghiqmqH"' >> .env
+
