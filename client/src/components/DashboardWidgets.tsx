@@ -412,7 +412,7 @@ export function DashboardWidgets({ userRole }: DashboardWidgetsProps) {
 
   // Leader widgets - Team and client data
   const LeaderWidgets = () => (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-2">
       <TransactionTimelineWidget />
       <RiskAssessmentWidget />
       {/* Team-specific widgets could be added here */}

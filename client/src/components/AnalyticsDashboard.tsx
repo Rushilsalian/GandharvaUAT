@@ -268,11 +268,11 @@ export function AnalyticsDashboard() {
   };
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-2">
       {/* Analytics Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mt-2">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Analytics Dashboard</h2>
+          <h2 className="text-1xl font-bold tracking-tight">Analytics Dashboard</h2>
           <p className="text-muted-foreground">
             Comprehensive business intelligence and performance metrics
           </p>

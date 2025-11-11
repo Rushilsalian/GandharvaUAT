@@ -73,7 +73,7 @@ export function RoleBasedDashboard() {
       </Card>
 
       {/* Role-based Dashboard Tabs */}
-      <Tabs defaultValue="overview" className="space-y-4">
+      <Tabs defaultValue="overview" className="space-y-2">
         <TabsList className={`grid w-full ${hasLeaderAccess ? 'grid-cols-3' : 'grid-cols-2'}`}>
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
