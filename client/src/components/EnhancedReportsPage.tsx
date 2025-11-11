@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { 
   FileText, 
   Download, 
@@ -15,9 +16,7 @@ import {
   BarChart3,
   PieChart,
   Calendar,
-  Filter,
-  ChevronLeft,
-  ChevronRight
+  Filter
 } from "lucide-react";
 import { format } from "date-fns";
 import { 
@@ -474,29 +473,68 @@ export default function EnhancedReportsPage() {
               <div className="text-sm text-muted-foreground">
                 Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, transactions.length)} of {transactions.length} transactions
               </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setTransactionPage(prev => Math.max(prev - 1, 1))}
-                  disabled={transactionPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
-                <span className="text-sm">
-                  Page {transactionPage} of {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setTransactionPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={transactionPage === totalPages}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setTransactionPage(prev => Math.max(prev - 1, 1))}
+                      className={transactionPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  {(() => {
+                    const getVisiblePages = () => {
+                      if (totalPages <= 10) {
+                        return Array.from({ length: totalPages }, (_, i) => i + 1);
+                      }
+                      const delta = 2;
+                      const range = [];
+                      const rangeWithDots = [];
+                      
+                      for (let i = Math.max(2, transactionPage - delta); i <= Math.min(totalPages - 1, transactionPage + delta); i++) {
+                        range.push(i);
+                      }
+                      
+                      if (transactionPage - delta > 2) {
+                        rangeWithDots.push(1, '...');
+                      } else {
+                        rangeWithDots.push(1);
+                      }
+                      
+                      rangeWithDots.push(...range);
+                      
+                      if (transactionPage + delta < totalPages - 1) {
+                        rangeWithDots.push('...', totalPages);
+                      } else if (totalPages > 1) {
+                        rangeWithDots.push(totalPages);
+                      }
+                      
+                      return rangeWithDots;
+                    };
+                    
+                    return getVisiblePages().map((page, index) => (
+                      <PaginationItem key={index}>
+                        {page === '...' ? (
+                          <span className="flex h-9 w-9 items-center justify-center text-muted-foreground">...</span>
+                        ) : (
+                          <PaginationLink
+                            onClick={() => setTransactionPage(page as number)}
+                            isActive={transactionPage === page}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        )}
+                      </PaginationItem>
+                    ));
+                  })()}
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setTransactionPage(prev => Math.min(prev + 1, totalPages))}
+                      className={transactionPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
             </div>
           )}
         </CardContent>
@@ -594,29 +632,68 @@ export default function EnhancedReportsPage() {
               <div className="text-sm text-muted-foreground">
                 Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, clients.length)} of {clients.length} clients
               </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setClientPage(prev => Math.max(prev - 1, 1))}
-                  disabled={clientPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
-                <span className="text-sm">
-                  Page {clientPage} of {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setClientPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={clientPage === totalPages}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setClientPage(prev => Math.max(prev - 1, 1))}
+                      className={clientPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  {(() => {
+                    const getVisiblePages = () => {
+                      if (totalPages <= 10) {
+                        return Array.from({ length: totalPages }, (_, i) => i + 1);
+                      }
+                      const delta = 2;
+                      const range = [];
+                      const rangeWithDots = [];
+                      
+                      for (let i = Math.max(2, clientPage - delta); i <= Math.min(totalPages - 1, clientPage + delta); i++) {
+                        range.push(i);
+                      }
+                      
+                      if (clientPage - delta > 2) {
+                        rangeWithDots.push(1, '...');
+                      } else {
+                        rangeWithDots.push(1);
+                      }
+                      
+                      rangeWithDots.push(...range);
+                      
+                      if (clientPage + delta < totalPages - 1) {
+                        rangeWithDots.push('...', totalPages);
+                      } else if (totalPages > 1) {
+                        rangeWithDots.push(totalPages);
+                      }
+                      
+                      return rangeWithDots;
+                    };
+                    
+                    return getVisiblePages().map((page, index) => (
+                      <PaginationItem key={index}>
+                        {page === '...' ? (
+                          <span className="flex h-9 w-9 items-center justify-center text-muted-foreground">...</span>
+                        ) : (
+                          <PaginationLink
+                            onClick={() => setClientPage(page as number)}
+                            isActive={clientPage === page}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        )}
+                      </PaginationItem>
+                    ));
+                  })()}
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setClientPage(prev => Math.min(prev + 1, totalPages))}
+                      className={clientPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
             </div>
           )}
         </CardContent>
