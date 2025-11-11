@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, Download, Eye } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { ClientDetailsModal } from "./ClientDetailsModal";
 import { format } from "date-fns";
 
@@ -90,6 +91,8 @@ export function DataTable({
 }: DataTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterValue, setFilterValue] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const filteredData = (data || []).filter(row => {
     const matchesSearch = !searchTerm || Object.values(row).some(value => {
@@ -103,6 +106,19 @@ export function DataTable({
     const matchesFilter = !filterValue || filterValue === "all" || row.status === filterValue;
     return matchesSearch && matchesFilter;
   });
+
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
 
   return (
     <Card className="hover-elevate">
@@ -136,7 +152,7 @@ export function DataTable({
                 <Input
                   placeholder="Search..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   className="pl-8"
                   data-testid="input-search"
                 />
@@ -176,10 +192,10 @@ export function DataTable({
               </tr>
             </thead>
             <tbody>
-              {filteredData.map((row, index) => (
-                <tr key={row.id || index} className="border-b hover-elevate">
+              {paginatedData.map((row, index) => (
+                <tr key={row.id || (startIndex + index)} className="border-b hover-elevate">
                   {columns.map((column) => (
-                    <td key={column.key} className="p-2" data-testid={`cell-${column.key}-${index}`}>
+                    <td key={column.key} className="p-2" data-testid={`cell-${column.key}-${startIndex + index}`}>
                       {column.render ? column.render(row[column.key], row) : (row[column.key] || "-")}
                     </td>
                   ))}
@@ -188,7 +204,7 @@ export function DataTable({
                       <Button 
                         variant="ghost" 
                         size="sm"
-                        data-testid={`button-view-${index}`}
+                        data-testid={`button-view-${startIndex + index}`}
                         onClick={() => onViewDetails(row)}
                       >
                         <Eye className="h-4 w-4" />
@@ -206,6 +222,76 @@ export function DataTable({
             </div>
           )}
         </div>
+        
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-4">
+            <div className="text-sm text-muted-foreground">
+              Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredData.length)} of {filteredData.length} entries
+            </div>
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+                {(() => {
+                  const getVisiblePages = () => {
+                    if (totalPages <= 10) {
+                      return Array.from({ length: totalPages }, (_, i) => i + 1);
+                    }
+                    const delta = 2;
+                    const range = [];
+                    const rangeWithDots = [];
+                    
+                    for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+                      range.push(i);
+                    }
+                    
+                    if (currentPage - delta > 2) {
+                      rangeWithDots.push(1, '...');
+                    } else {
+                      rangeWithDots.push(1);
+                    }
+                    
+                    rangeWithDots.push(...range);
+                    
+                    if (currentPage + delta < totalPages - 1) {
+                      rangeWithDots.push('...', totalPages);
+                    } else if (totalPages > 1) {
+                      rangeWithDots.push(totalPages);
+                    }
+                    
+                    return rangeWithDots;
+                  };
+                  
+                  return getVisiblePages().map((page, index) => (
+                    <PaginationItem key={index}>
+                      {page === '...' ? (
+                        <span className="flex h-9 w-9 items-center justify-center text-muted-foreground">...</span>
+                      ) : (
+                        <PaginationLink
+                          onClick={() => handlePageChange(page as number)}
+                          isActive={currentPage === page}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      )}
+                    </PaginationItem>
+                  ));
+                })()}
+                <PaginationItem>
+                  <PaginationNext 
+                    onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

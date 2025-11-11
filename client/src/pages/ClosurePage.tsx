@@ -220,7 +220,7 @@ export default function ClosurePage() {
         </p>
       </div>
 
-      <div className="flex justify-between items-end gap-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
         <div className="flex-1">
           <TransactionFilters
             clients={clients}
@@ -230,7 +230,7 @@ export default function ClosurePage() {
           />
         </div>
         {(session?.roleName === 'admin' || session?.roleName === 'Admin' || session?.roleName === 'leader' || session?.roleName === 'Leader') && (
-          <Button onClick={() => setShowUpload(!showUpload)} variant="outline">
+          <Button onClick={() => setShowUpload(!showUpload)} variant="outline" className="w-full sm:w-auto">
             <Upload className="h-4 w-4 mr-2" />
             Excel Upload
           </Button>
@@ -244,7 +244,7 @@ export default function ClosurePage() {
         />
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Closures</CardTitle>
@@ -277,14 +277,14 @@ export default function ClosurePage() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <CardTitle>Closure Transactions</CardTitle>
             <CardDescription>
               Showing {filteredClosures.length} of {closures.length} closure transactions
             </CardDescription>
           </div>
-          <Button onClick={handleExport} disabled={filteredClosures.length === 0}>
+          <Button onClick={handleExport} disabled={filteredClosures.length === 0} className="w-full sm:w-auto">
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
@@ -295,32 +295,32 @@ export default function ClosurePage() {
               <p>Loading closure transactions...</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div>
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
                     <th className="text-left p-2 font-medium">Date</th>
                     <th className="text-left p-2 font-medium">Client</th>
                     <th className="text-left p-2 font-medium">Amount</th>
-                    <th className="text-left p-2 font-medium">Description</th>
+                    <th className="text-left p-2 font-medium hidden sm:table-cell">Description</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(paginatedClosures as Transaction[]).map((closure) => (
                     <tr key={closure.id} className="border-b hover:bg-muted/50">
-                      <td className="p-2">
-                        {format(new Date(closure.processedAt || closure.createdAt), 'MMM dd, yyyy')}
+                      <td className="p-2 text-sm">
+                        {format(new Date(closure.processedAt || closure.createdAt), 'MMM dd')}
                       </td>
-                      <td className="p-2">
+                      <td className="p-2 text-sm">
                         {closure.client?.user 
                           ? `${closure.client.user.firstName} ${closure.client.user.lastName}`
                           : closure.client?.clientCode || 'Unknown Client'
                         }
                       </td>
-                      <td className="p-2 font-medium">
+                      <td className="p-2 font-medium text-sm">
                         ₹{Number(closure.amount).toLocaleString()}
                       </td>
-                      <td className="p-2 text-sm text-muted-foreground">
+                      <td className="p-2 text-sm text-muted-foreground hidden sm:table-cell">
                         {closure.description || 'N/A'}
                       </td>
                     </tr>
