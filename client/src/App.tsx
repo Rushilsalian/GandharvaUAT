@@ -147,14 +147,14 @@ function AppContent() {
         ) : (
           <SessionGuard>
             <SidebarProvider style={style as React.CSSProperties}>
-              <div className="flex h-screen w-full">
+              <div className="flex w-full">
                 <AppSidebar userRole={user?.role || "admin"} onLogout={logout} />
                 <div className="flex flex-col flex-1">
                   <header className="flex items-center justify-between p-4 border-b">
                     <SidebarTrigger data-testid="button-sidebar-toggle" />
                     <ThemeToggle />
                   </header>
-                  <main className="flex-1 overflow-auto p-6">
+                  <main className="flex-1 overflow-auto p-3">
                     <Router userRole={user?.role || "admin"} isLoggedIn={isLoggedIn} onLogin={handleLogin} onSignup={handleSignup} />
                   </main>
                 </div>

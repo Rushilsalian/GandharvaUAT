@@ -199,7 +199,7 @@ export default function WithdrawalPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{pageInfo.title}</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{pageInfo.title}</h1>
           <p className="text-muted-foreground">{pageInfo.description}</p>
         </div>
         <Card>
@@ -212,16 +212,16 @@ export default function WithdrawalPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full overflow-x-hidden">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">{pageInfo.title}</h1>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{pageInfo.title}</h1>
         <p className="text-muted-foreground">
           {pageInfo.description}
         </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
-        <div className="flex-1">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 w-full">
+        <div className="flex-1 min-w-0">
           <TransactionFilters
             clients={clients}
             filters={filters}
@@ -244,7 +244,7 @@ export default function WithdrawalPage() {
         />
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Withdrawals</CardTitle>
@@ -277,7 +277,7 @@ export default function WithdrawalPage() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full">
           <div>
             <CardTitle>Withdrawal Transactions</CardTitle>
             <CardDescription>
@@ -295,14 +295,14 @@ export default function WithdrawalPage() {
               <p>Loading withdrawal transactions...</p>
             </div>
           ) : (
-            <div>
-              <table className="w-full">
+            <div className="overflow-x-auto w-full">
+              <table className="w-full min-w-[600px] table-fixed">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left p-2 font-medium">Date</th>
-                    <th className="text-left p-2 font-medium">Client</th>
-                    <th className="text-left p-2 font-medium">Amount</th>
-                    <th className="text-left p-2 font-medium hidden sm:table-cell">Description</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Date</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[150px]">Client</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Amount</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[200px]">Description</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -312,10 +312,12 @@ export default function WithdrawalPage() {
                         {format(new Date(withdrawal.processedAt || withdrawal.createdAt), 'MMM dd')}
                       </td>
                       <td className="p-2 text-sm">
+                        <div className="truncate">
                         {withdrawal.client?.user 
                           ? `${withdrawal.client.user.firstName} ${withdrawal.client.user.lastName}`
                           : withdrawal.client?.clientCode || 'Unknown Client'
                         }
+                        </div>
                       </td>
                       <td className="p-2 font-medium text-sm">
                         ₹{Number(withdrawal.amount).toLocaleString()}
@@ -336,10 +338,7 @@ export default function WithdrawalPage() {
                   }
                 </div>
               )}
-            </div>
-          )}
-          
-          {filteredWithdrawals.length > 0 && (
+              {filteredWithdrawals.length > 0 && (
             <div className="mt-4">
               <PaginationControls
                 currentPage={currentPage}
@@ -353,6 +352,10 @@ export default function WithdrawalPage() {
               />
             </div>
           )}
+            </div>
+          )}
+          
+          
         </CardContent>
       </Card>
     </div>

@@ -163,18 +163,18 @@ export default function InvestmentPage() {
   const handleExport = () => {
     const csvData = filteredInvestments.map((investment: Transaction) => ({
       Date: format(new Date(investment.processedAt || investment.createdAt), 'yyyy-MM-dd'),
-      Client: investment.client?.user 
+      Client: investment.client?.user
         ? `${investment.client.user.firstName} ${investment.client.user.lastName}`
         : investment.client?.clientCode || 'Unknown Client',
       Amount: Number(investment.amount),
       Description: investment.description || 'N/A'
     }));
-    
+
     const csv = [
       Object.keys(csvData[0] || {}).join(','),
       ...csvData.map((row: any) => Object.values(row).join(','))
     ].join('\n');
-    
+
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -211,7 +211,7 @@ export default function InvestmentPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{pageInfo.title}</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{pageInfo.title}</h1>
           <p className="text-muted-foreground">{pageInfo.description}</p>
         </div>
         <Card>
@@ -224,17 +224,17 @@ export default function InvestmentPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full overflow-x-hidden">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">{pageInfo.title}</h1>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{pageInfo.title}</h1>
         <p className="text-muted-foreground">
           {pageInfo.description}
         </p>
       </div>
 
       {/* Filters and Upload */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
-        <div className="flex-1">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 w-full">
+        <div className="flex-1 min-w-0">
           <TransactionFilters
             clients={clients}
             filters={filters}
@@ -258,17 +258,17 @@ export default function InvestmentPage() {
       )}
 
       {/* Investment Statistics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Investments</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <FileText className="p-2text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalInvestments}</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Investment Amount</CardTitle>
@@ -278,7 +278,7 @@ export default function InvestmentPage() {
             <div className="text-2xl font-bold">₹{stats.totalAmount.toLocaleString()}</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Unique Investors</CardTitle>
@@ -292,7 +292,7 @@ export default function InvestmentPage() {
 
       {/* Investment Transactions Table */}
       <Card>
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full">
           <div>
             <CardTitle>Investment Transactions</CardTitle>
             <CardDescription>
@@ -310,14 +310,14 @@ export default function InvestmentPage() {
               <p>Loading investment transactions...</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[600px]">
+            <div className="overflow-x-auto w-full">
+              <table className="w-full min-w-[600px] table-fixed">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left p-2 font-medium whitespace-nowrap">Date</th>
-                    <th className="text-left p-2 font-medium whitespace-nowrap">Client</th>
-                    <th className="text-left p-2 font-medium whitespace-nowrap">Amount</th>
-                    <th className="text-left p-2 font-medium whitespace-nowrap">Description</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Date</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[150px]">Client</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Amount</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[200px]">Description</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -327,10 +327,12 @@ export default function InvestmentPage() {
                         {format(new Date(investment.processedAt || investment.createdAt), 'MMM dd, yyyy')}
                       </td>
                       <td className="p-2">
-                        {investment.client?.user 
-                          ? `${investment.client.user.firstName} ${investment.client.user.lastName}`
-                          : investment.client?.clientCode || 'Unknown Client'
-                        }
+                        <div className="truncate">
+                          {investment.client?.user
+                            ? `${investment.client.user.firstName} ${investment.client.user.lastName}`
+                            : investment.client?.clientCode || 'Unknown Client'
+                          }
+                        </div>
                       </td>
                       <td className="p-2 font-medium whitespace-nowrap">
                         ₹{Number(investment.amount).toLocaleString()}
@@ -344,32 +346,33 @@ export default function InvestmentPage() {
                   ))}
                 </tbody>
               </table>
-              
+
               {filteredInvestments.length === 0 && !isLoading && (
                 <div className="text-center py-8 text-muted-foreground">
-                  {investments.length === 0 
+                  {investments.length === 0
                     ? "No investment transactions found."
                     : "No investment transactions match the current filters."
                   }
                 </div>
               )}
+              {filteredInvestments.length > 0 && (
+                <div className="mt-4">
+                  <PaginationControls
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={goToPage}
+                    canGoPrevious={canGoPrevious}
+                    canGoNext={canGoNext}
+                    startIndex={startIndex}
+                    endIndex={endIndex}
+                    totalItems={totalItems}
+                  />
+                </div>
+              )}
             </div>
           )}
-          
-          {filteredInvestments.length > 0 && (
-            <div className="mt-4">
-              <PaginationControls
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={goToPage}
-                canGoPrevious={canGoPrevious}
-                canGoNext={canGoNext}
-                startIndex={startIndex}
-                endIndex={endIndex}
-                totalItems={totalItems}
-              />
-            </div>
-          )}
+
+
         </CardContent>
       </Card>
     </div>

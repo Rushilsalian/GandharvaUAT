@@ -64,16 +64,16 @@ export function TransactionFilters({ clients = [], filters, onFiltersChange, onR
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-1">
             <Filter className="h-4 w-4" />
             Filters
             {getActiveFiltersCount() > 0 && (
-              <Badge variant="secondary">{getActiveFiltersCount()}</Badge>
+              <Badge variant="secondary" className="mr-2">{getActiveFiltersCount()}</Badge>
             )}
           </CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {getActiveFiltersCount() > 0 && (
-              <Button variant="outline" size="sm" onClick={onReset} data-testid="button-reset-filters">
+              <Button variant="outline" size="sm" onClick={onReset} data-testid="button-reset-filters" className="px-1 gap-0">
                 <X className="h-4 w-4 mr-1" />
                 Clear All
               </Button>
