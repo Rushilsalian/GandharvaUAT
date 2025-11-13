@@ -72,38 +72,7 @@ export function RoleBasedDashboard() {
         </CardHeader>
       </Card>
 
-      {/* Role-based Dashboard Tabs */}
-      <Tabs defaultValue="overview" className="space-y-2">
-        <TabsList className={`grid w-full ${hasLeaderAccess ? 'grid-cols-3' : 'grid-cols-2'}`}>
-          <TabsTrigger value="overview" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Overview
-          </TabsTrigger>
-          {hasLeaderAccess && (
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
-              <PieChart className="h-4 w-4" />
-              Analytics
-            </TabsTrigger>
-          )}
-        </TabsList>
-
-        {/* Overview Tab - Enhanced Dashboard */}
-        <TabsContent value="overview">
-          <EnhancedDashboard userRole={userRole as "admin" | "leader" | "client"} />
-        </TabsContent>
-
-        {/* Analytics Tab - Only for Admin and Leader */}
-        {hasLeaderAccess && (
-          <TabsContent value="analytics">
-            <AnalyticsDashboard />
-          </TabsContent>
-        )}
-
-        {/* Widgets Tab - Role-based widgets */}
-        <TabsContent value="widgets">
-          <DashboardWidgets userRole={userRole as "admin" | "leader" | "client"} />
-        </TabsContent>
-      </Tabs>
+      <EnhancedDashboard userRole={userRole as "admin" | "leader" | "client"} />
 
       {/* Access Level Info */}
       <Alert>

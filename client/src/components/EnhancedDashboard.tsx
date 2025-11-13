@@ -1,19 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area, 
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend 
-} from "recharts";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { 
   TrendingUp, TrendingDown, Users, DollarSign, Target, 
-  Calendar, Activity, Award, AlertCircle, CheckCircle,
+  Activity, Award, AlertCircle, CheckCircle,
   ArrowUpRight, ArrowDownRight, Wallet, CreditCard
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { dashboardApi } from "@/lib/dashboardApi";
-import { useSession } from "@/hooks/useSession";
 
 interface EnhancedDashboardProps {
   userRole: "admin" | "leader" | "client";
@@ -248,6 +241,70 @@ interface AlertsNotificationsProps {
   userRole: "admin" | "leader" | "client";
 }
 
+function ActiveClients({ userRole }: { userRole: "admin" | "leader" | "client" }) {
+  const [clients, setClients] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const response = await fetch(`/api/dashboard/active-clients?userRole=${userRole}`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setClients(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch active clients:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchClients();
+  }, [userRole]);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Active Clients</CardTitle>
+        <CardDescription>Client investments overview</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-sm text-muted-foreground">Loading clients...</div>
+          </div>
+        ) : clients.length > 0 ? (
+          <div className="space-y-4">
+            {clients.map((client, index) => (
+              <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Users className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium">{client.name}</p>
+                    <p className="text-sm text-muted-foreground">{client.email}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold">₹{client.totalInvestment?.toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground">{client.activeInvestments} investments</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-sm text-muted-foreground">No active clients</div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function AlertsNotifications({ userRole }: AlertsNotificationsProps) {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -314,8 +371,6 @@ function AlertsNotifications({ userRole }: AlertsNotificationsProps) {
 }
 
 export function EnhancedDashboard({ userRole }: EnhancedDashboardProps) {
-  const [activeTab, setActiveTab] = useState("overview");
-  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [quickStats, setQuickStats] = useState<any[]>([]);
   
   useEffect(() => {
@@ -357,89 +412,25 @@ export function EnhancedDashboard({ userRole }: EnhancedDashboardProps) {
       }
     };
     
-    const fetchMonthlyData = async () => {
-      try {
-        const response = await fetch('/api/dashboard/monthly-trends', {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setMonthlyData(data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch monthly data:', error);
-      }
-    };
-    
     fetchStats();
-    fetchMonthlyData();
   }, [userRole]);
-  
-  const getQuickStats = () => quickStats;
 
   return (
     <div className="space-y-6">
-      {/* Quick Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {getQuickStats().map((stat, index) => (
+        {quickStats.map((stat, index) => (
           <QuickStatsCard key={index} {...stat} />
         ))}
       </div>
-
-      {/* Main Dashboard Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          {/* <TabsTrigger value="analytics">Analytics</TabsTrigger> */}
-          {/* <TabsTrigger value="performance">Performance</TabsTrigger> */}
-          <TabsTrigger value="activity">Activity</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            <MonthlyTrends />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="performance" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <CardTitle>ROI Analysis</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-green-600">+12.5%</div>
-                <p className="text-sm text-muted-foreground">Average annual return</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Risk Score</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-yellow-600">Medium</div>
-                <p className="text-sm text-muted-foreground">Portfolio risk level</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Diversification</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-blue-600">85%</div>
-                <p className="text-sm text-muted-foreground">Portfolio balance</p>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="activity" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            <RecentActivity />
-            <AlertsNotifications userRole={userRole} />
-          </div>
-        </TabsContent>
-      </Tabs>
+      
+      <div className="grid gap-6 md:grid-cols-2">
+        <MonthlyTrends />
+        <RecentActivity />
+      </div>
+      
+      <div className="grid gap-6 md:grid-cols-2">
+        <AlertsNotifications userRole={userRole} />
+      </div>
     </div>
   );
 }
