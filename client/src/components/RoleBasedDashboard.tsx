@@ -85,10 +85,6 @@ export function RoleBasedDashboard() {
               Analytics
             </TabsTrigger>
           )}
-          <TabsTrigger value="widgets" className="flex items-center gap-2">
-            <Activity className="h-4 w-4" />
-            Widgets
-          </TabsTrigger>
         </TabsList>
 
         {/* Overview Tab - Enhanced Dashboard */}

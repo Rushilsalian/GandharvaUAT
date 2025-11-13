@@ -15,75 +15,6 @@ import {
   IndianRupee, Users2, Building2, CreditCard
 } from "lucide-react";
 
-// Branch Performance Widget
-function BranchPerformanceWidget() {
-  const [branchData, setBranchData] = useState<Array<{
-    branch: string;
-    clients: number;
-    aum: number;
-    growth: number;
-  }>>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch('/api/dashboard/branch-performance', {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setBranchData(data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch branch performance:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Building2 className="h-5 w-5" />
-          Branch Performance
-        </CardTitle>
-        <CardDescription>Top performing branches</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin" />
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {branchData.map((branch, index) => (
-              <div key={branch.branch} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                    <MapPin className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <p className="font-medium">{branch.branch}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {branch.clients} clients • ₹{(branch.aum / 1000000).toFixed(1)}M AUM
-                    </p>
-                  </div>
-                </div>
-                <Badge variant={branch.growth > 15 ? "default" : "secondary"}>
-                  +{branch.growth}%
-                </Badge>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
 
 // Transaction Timeline Widget
 function TransactionTimelineWidget() {
@@ -402,7 +333,6 @@ export function DashboardWidgets({ userRole }: DashboardWidgetsProps) {
   // Admin widgets - Full system access
   const AdminWidgets = () => (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      <BranchPerformanceWidget />
       <TransactionTimelineWidget />
       <KYCStatusWidget />
       <MonthlyRevenueWidget />

@@ -50,31 +50,6 @@ const conversionFunnelData = [
   { name: "Closed", value: 0, fill: "#a4de6c" }
 ];
 
-function ClientAcquisitionAnalytics() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Client Acquisition Analysis</CardTitle>
-        <CardDescription>Multi-channel acquisition trends</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={350}>
-          <ComposedChart data={clientAcquisitionData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="organic" stackId="a" fill="#8884d8" name="Organic" />
-            <Bar dataKey="referral" stackId="a" fill="#82ca9d" name="Referral" />
-            <Bar dataKey="marketing" stackId="a" fill="#ffc658" name="Marketing" />
-            <Line type="monotone" dataKey="total" stroke="#ff7300" strokeWidth={3} name="Total" />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
-  );
-}
 
 function InvestmentFlowAnalytics() {
   return (
@@ -308,19 +283,13 @@ export function AnalyticsDashboard() {
       </div>
 
       {/* Analytics Tabs */}
-      <Tabs defaultValue="acquisition" className="space-y-4">
+      <Tabs defaultValue="investment" className="space-y-4">
         <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
-          <TabsTrigger value="acquisition">Acquisition</TabsTrigger>
+          {/* <TabsTrigger value="acquisition">Acquisition</TabsTrigger> */}
           <TabsTrigger value="investment">Investment</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
-          <TabsTrigger value="conversion">Conversion</TabsTrigger>
+          {/* <TabsTrigger value="performance">Performance</TabsTrigger> */}
+          {/* <TabsTrigger value="conversion">Conversion</TabsTrigger> */}
         </TabsList>
-
-        <TabsContent value="acquisition" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            <ClientAcquisitionAnalytics />
-          </div>
-        </TabsContent>
 
         <TabsContent value="investment" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-1">

@@ -120,78 +120,6 @@ function MonthlyTrends() {
   );
 }
 
-function TopPerformers() {
-  const [topPerformers, setTopPerformers] = useState<TopPerformer[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          setLoading(false);
-          return;
-        }
-        
-        const response = await fetch('/api/dashboard/top-performers', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setTopPerformers(data || []);
-        } else {
-          console.error('Failed to fetch top performers:', response.status, response.statusText);
-        }
-      } catch (error) {
-        console.error('Failed to fetch top performers:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
-  
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Top Performers</CardTitle>
-        <CardDescription>Highest investment growth this month</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="text-sm text-muted-foreground">Loading...</div>
-          </div>
-        ) : topPerformers.length > 0 ? (
-          <div className="space-y-4">
-            {topPerformers.map((performer, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-medium">{index + 1}</span>
-                  </div>
-                  <div>
-                    <p className="font-medium">{performer.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      ₹{performer.amount.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-                <Badge variant="secondary" className={performer.growth >= 0 ? "text-green-600" : "text-red-600"}>
-                  {performer.growth >= 0 ? '+' : ''}{performer.growth}%
-                </Badge>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex items-center justify-center py-8">
-            <div className="text-sm text-muted-foreground">No top performers data available</div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
 
 interface Activity {
   type: string;
@@ -462,7 +390,7 @@ export function EnhancedDashboard({ userRole }: EnhancedDashboardProps) {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          {/* <TabsTrigger value="analytics">Analytics</TabsTrigger> */}
           {/* <TabsTrigger value="performance">Performance</TabsTrigger> */}
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
@@ -470,30 +398,6 @@ export function EnhancedDashboard({ userRole }: EnhancedDashboardProps) {
         <TabsContent value="overview" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
             <MonthlyTrends />
-            <TopPerformers />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="analytics" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Client Growth</CardTitle>
-                <CardDescription>Monthly client acquisition</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="clients" fill="#8884d8" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-            {/* <GoalsProgress /> */}
           </div>
         </TabsContent>
 
