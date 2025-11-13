@@ -139,7 +139,7 @@ export function AppSidebar({ userRole, onLogout }: AppSidebarProps) {
                       <div className="group-data-[collapsible=icon]:hidden">
                         <Collapsible open={expandedItems[item.title]} onOpenChange={() => toggleExpanded(item.title)}>
                           <SidebarMenuButton asChild>
-                            <CollapsibleTrigger className="w-full">
+                            <CollapsibleTrigger className="w-full hover:bg-[#f15a24] hover:text-white">
                               <item.icon />
                               <span>{item.title}</span>
                               <ChevronDown className={`h-4 w-4 ml-auto transition-transform ${expandedItems[item.title] ? 'rotate-180' : ''}`} />
@@ -149,7 +149,7 @@ export function AppSidebar({ userRole, onLogout }: AppSidebarProps) {
                             <SidebarMenuSub>
                               {item.children.map((child) => (
                                 <SidebarMenuSubItem key={child.title}>
-                                  <SidebarMenuSubButton asChild>
+                                  <SidebarMenuSubButton asChild className="hover:bg-[#f15a24] hover:text-white">
                                     <Link href={child.url!} data-testid={`link-${child.title.toLowerCase().replace(/\\s+/g, '-')}`}>
                                       <child.icon className="h-4 w-4" />
                                       <span>{child.title}</span>
@@ -163,7 +163,7 @@ export function AppSidebar({ userRole, onLogout }: AppSidebarProps) {
                       </div>
                       <div className="group-data-[collapsible=icon]:block hidden">
                         {item.children.map((child) => (
-                          <SidebarMenuButton key={child.title} asChild>
+                          <SidebarMenuButton key={child.title} asChild className="hover:bg-[#f15a24] hover:text-white">
                             <Link href={child.url!} data-testid={`link-${child.title.toLowerCase().replace(/\\s+/g, '-')}`} title={child.title}>
                               <child.icon />
                             </Link>
@@ -172,7 +172,7 @@ export function AppSidebar({ userRole, onLogout }: AppSidebarProps) {
                       </div>
                     </>
                   ) : (
-                    <SidebarMenuButton asChild>
+                    <SidebarMenuButton asChild className="hover:bg-[#f15a24] hover:text-white">
                       <Link href={item.url!} data-testid={`link-${item.title.toLowerCase().replace(/\\s+/g, '-')}`} title={item.title}>
                         <item.icon />
                         <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
