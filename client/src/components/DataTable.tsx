@@ -195,7 +195,7 @@ export function DataTable({
               {paginatedData.map((row, index) => (
                 <tr key={row.id || (startIndex + index)} className="border-b hover-elevate">
                   {columns.map((column) => (
-                    <td key={column.key} className="p-2" data-testid={`cell-${column.key}-${startIndex + index}`}>
+                    <td key={column.key} className="p-2 text-sm" data-testid={`cell-${column.key}-${startIndex + index}`}>
                       {column.render ? column.render(row[column.key], row) : (row[column.key] || "-")}
                     </td>
                   ))}

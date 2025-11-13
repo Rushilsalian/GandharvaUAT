@@ -152,18 +152,18 @@ export default function ClosurePage() {
   const handleExport = () => {
     const csvData = filteredClosures.map((closure: Transaction) => ({
       Date: format(new Date(closure.processedAt || closure.createdAt), 'yyyy-MM-dd'),
-      Client: closure.client?.user 
+      Client: closure.client?.user
         ? `${closure.client.user.firstName} ${closure.client.user.lastName}`
         : closure.client?.clientCode || 'Unknown Client',
       Amount: Number(closure.amount),
       Description: closure.description || 'N/A'
     }));
-    
+
     const csv = [
       Object.keys(csvData[0] || {}).join(','),
       ...csvData.map((row: any) => Object.values(row).join(','))
     ].join('\n');
-    
+
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -199,7 +199,7 @@ export default function ClosurePage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{pageInfo.title}</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{pageInfo.title}</h1>
           <p className="text-muted-foreground">{pageInfo.description}</p>
         </div>
         <Card>
@@ -212,16 +212,16 @@ export default function ClosurePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full overflow-x-hidden">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">{pageInfo.title}</h1>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{pageInfo.title}</h1>
         <p className="text-muted-foreground">
           {pageInfo.description}
         </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
-        <div className="flex-1">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 w-full">
+        <div className="flex-1 min-w-0">
           <TransactionFilters
             clients={clients}
             filters={filters}
@@ -244,7 +244,7 @@ export default function ClosurePage() {
         />
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Closures</CardTitle>
@@ -254,7 +254,7 @@ export default function ClosurePage() {
             <div className="text-2xl font-bold">{stats.totalClosures}</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Closure Amount</CardTitle>
@@ -264,7 +264,7 @@ export default function ClosurePage() {
             <div className="text-2xl font-bold">₹{stats.totalAmount.toLocaleString()}</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Unique Clients</CardTitle>
@@ -277,7 +277,7 @@ export default function ClosurePage() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full">
           <div>
             <CardTitle>Closure Transactions</CardTitle>
             <CardDescription>
@@ -295,14 +295,14 @@ export default function ClosurePage() {
               <p>Loading closure transactions...</p>
             </div>
           ) : (
-            <div>
-              <table className="w-full">
+            <div className="overflow-x-auto w-full">
+              <table className="w-full min-w-[600px] table-fixed">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left p-2 font-medium">Date</th>
-                    <th className="text-left p-2 font-medium">Client</th>
-                    <th className="text-left p-2 font-medium">Amount</th>
-                    <th className="text-left p-2 font-medium hidden sm:table-cell">Description</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Date</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[200px]">Client</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Amount</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[200px]">Description</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -312,10 +312,12 @@ export default function ClosurePage() {
                         {format(new Date(closure.processedAt || closure.createdAt), 'MMM dd')}
                       </td>
                       <td className="p-2 text-sm">
-                        {closure.client?.user 
+                          <div className="truncate">
+                        {closure.client?.user
                           ? `${closure.client.user.firstName} ${closure.client.user.lastName}`
                           : closure.client?.clientCode || 'Unknown Client'
                         }
+                        </div>
                       </td>
                       <td className="p-2 font-medium text-sm">
                         ₹{Number(closure.amount).toLocaleString()}
@@ -327,30 +329,29 @@ export default function ClosurePage() {
                   ))}
                 </tbody>
               </table>
-              
+
               {filteredClosures.length === 0 && !isLoading && (
                 <div className="text-center py-8 text-muted-foreground">
-                  {closures.length === 0 
+                  {closures.length === 0
                     ? "No closure transactions found."
                     : "No closure transactions match the current filters."
                   }
                 </div>
               )}
-            </div>
-          )}
-          
-          {filteredClosures.length > 0 && (
-            <div className="mt-4">
-              <PaginationControls
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={goToPage}
-                canGoPrevious={canGoPrevious}
-                canGoNext={canGoNext}
-                startIndex={startIndex}
-                endIndex={endIndex}
-                totalItems={totalItems}
-              />
+              {filteredClosures.length > 0 && (
+                <div className="mt-4">
+                  <PaginationControls
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={goToPage}
+                    canGoPrevious={canGoPrevious}
+                    canGoNext={canGoNext}
+                    startIndex={startIndex}
+                    endIndex={endIndex}
+                    totalItems={totalItems}
+                  />
+                </div>
+              )}
             </div>
           )}
         </CardContent>

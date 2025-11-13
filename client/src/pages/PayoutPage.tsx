@@ -80,19 +80,19 @@ export default function PayoutPage() {
 
   const filteredPayouts = useMemo(() => {
     if (!payouts || payouts.length === 0) return [];
-    
+
     return payouts.filter((payout: Transaction) => {
       // Date range filter
       if (filters.dateRange?.from || filters.dateRange?.to) {
         const transactionDate = new Date(payout.processedAt || payout.createdAt);
-        
+
         // Reset time to start of day for accurate comparison
         const transactionDateOnly = new Date(transactionDate.getFullYear(), transactionDate.getMonth(), transactionDate.getDate());
-        
+
         if (filters.dateRange.from && filters.dateRange.to) {
           const fromDate = new Date(filters.dateRange.from.getFullYear(), filters.dateRange.from.getMonth(), filters.dateRange.from.getDate());
           const toDate = new Date(filters.dateRange.to.getFullYear(), filters.dateRange.to.getMonth(), filters.dateRange.to.getDate());
-          
+
           if (transactionDateOnly < fromDate || transactionDateOnly > toDate) {
             return false;
           }
@@ -166,18 +166,18 @@ export default function PayoutPage() {
   const handleExport = () => {
     const csvData = filteredPayouts.map((payout: Transaction) => ({
       Date: format(new Date(payout.processedAt || payout.createdAt), 'yyyy-MM-dd'),
-      Client: payout.client?.user 
+      Client: payout.client?.user
         ? `${payout.client.user.firstName} ${payout.client.user.lastName}`
         : payout.client?.clientCode || 'Unknown Client',
       Amount: Number(payout.amount),
       Description: payout.description || 'N/A'
     }));
-    
+
     const csv = [
       Object.keys(csvData[0] || {}).join(','),
       ...csvData.map((row: any) => Object.values(row).join(','))
     ].join('\n');
-    
+
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -213,7 +213,7 @@ export default function PayoutPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{pageInfo.title}</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{pageInfo.title}</h1>
           <p className="text-muted-foreground">{pageInfo.description}</p>
         </div>
         <Card>
@@ -226,16 +226,16 @@ export default function PayoutPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full overflow-x-hidden">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">{pageInfo.title}</h1>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{pageInfo.title}</h1>
         <p className="text-muted-foreground">
           {pageInfo.description}
         </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
-        <div className="flex-1">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 w-full">
+        <div className="flex-1 min-w-0">
           <TransactionFilters
             clients={clients}
             filters={filters}
@@ -258,7 +258,7 @@ export default function PayoutPage() {
         />
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Payouts</CardTitle>
@@ -268,7 +268,7 @@ export default function PayoutPage() {
             <div className="text-2xl font-bold">{stats.totalPayouts}</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Payout Amount</CardTitle>
@@ -278,7 +278,7 @@ export default function PayoutPage() {
             <div className="text-2xl font-bold">₹{stats.totalAmount.toLocaleString()}</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Unique Clients</CardTitle>
@@ -291,7 +291,7 @@ export default function PayoutPage() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full">
           <div>
             <CardTitle>Payout Transactions</CardTitle>
             <CardDescription>
@@ -309,14 +309,14 @@ export default function PayoutPage() {
               <p>Loading payout transactions...</p>
             </div>
           ) : (
-            <div>
-              <table className="w-full">
+            <div className="overflow-x-auto w-full">
+              <table className="w-full  min-w-[600px] table-fixed">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left p-2 font-medium">Date</th>
-                    <th className="text-left p-2 font-medium">Client</th>
-                    <th className="text-left p-2 font-medium">Amount</th>
-                    <th className="text-left p-2 font-medium hidden sm:table-cell">Description</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Date</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[150px]">Client</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Amount</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[200px]">Description</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -326,10 +326,12 @@ export default function PayoutPage() {
                         {format(new Date(payout.processedAt || payout.createdAt), 'MMM dd')}
                       </td>
                       <td className="p-2 text-sm">
-                        {payout.client?.user 
-                          ? `${payout.client.user.firstName} ${payout.client.user.lastName}`
-                          : payout.client?.clientCode || 'Unknown Client'
-                        }
+                        <div className="truncate">
+                          {payout.client?.user
+                            ? `${payout.client.user.firstName} ${payout.client.user.lastName}`
+                            : payout.client?.clientCode || 'Unknown Client'
+                          }
+                        </div>
                       </td>
                       <td className="p-2 font-medium text-sm">
                         ₹{Number(payout.amount).toLocaleString()}
@@ -341,32 +343,33 @@ export default function PayoutPage() {
                   ))}
                 </tbody>
               </table>
-              
+
               {filteredPayouts.length === 0 && !isLoading && (
                 <div className="text-center py-8 text-muted-foreground">
-                  {payouts.length === 0 
+                  {payouts.length === 0
                     ? "No payout transactions found."
                     : "No payout transactions match the current filters."
                   }
                 </div>
               )}
+              {filteredPayouts.length > 0 && (
+                <div className="mt-4">
+                  <PaginationControls
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={goToPage}
+                    canGoPrevious={canGoPrevious}
+                    canGoNext={canGoNext}
+                    startIndex={startIndex}
+                    endIndex={endIndex}
+                    totalItems={totalItems}
+                  />
+                </div>
+              )}
             </div>
           )}
-          
-          {filteredPayouts.length > 0 && (
-            <div className="mt-4">
-              <PaginationControls
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={goToPage}
-                canGoPrevious={canGoPrevious}
-                canGoNext={canGoNext}
-                startIndex={startIndex}
-                endIndex={endIndex}
-                totalItems={totalItems}
-              />
-            </div>
-          )}
+
+
         </CardContent>
       </Card>
     </div>

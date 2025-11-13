@@ -152,7 +152,7 @@ export function UsersPage() {
     <div className="space-y-6">
       <div className="md:flex md:justify-between md:items-center">
         <div>
-          <h1 className="md:text-3xl font-bold tracking-tight">User Management</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">User Management</h1>
           <p className="text-sm text-muted-foreground">
             Manage active user accounts across the platform
           </p>
@@ -298,7 +298,7 @@ export function UsersPage() {
               Error loading users: {(error as Error).message}
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-x-auto w-full">
               <ScrollArea className="h-[500px] w-full">
                 <Table>
                   <TableHeader>

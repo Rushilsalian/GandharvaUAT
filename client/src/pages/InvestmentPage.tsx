@@ -262,7 +262,7 @@ export default function InvestmentPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Investments</CardTitle>
-            <FileText className="p-2text-muted-foreground" />
+            <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalInvestments}</div>
@@ -323,10 +323,10 @@ export default function InvestmentPage() {
                 <tbody>
                   {(paginatedInvestments as Transaction[]).map((investment) => (
                     <tr key={investment.id} className="border-b hover:bg-muted/50">
-                      <td className="p-2 whitespace-nowrap">
+                      <td className="p-2 whitespace-nowrap text-sm">
                         {format(new Date(investment.processedAt || investment.createdAt), 'MMM dd, yyyy')}
                       </td>
-                      <td className="p-2">
+                      <td className="p-2 text-sm">
                         <div className="truncate">
                           {investment.client?.user
                             ? `${investment.client.user.firstName} ${investment.client.user.lastName}`
@@ -334,10 +334,10 @@ export default function InvestmentPage() {
                           }
                         </div>
                       </td>
-                      <td className="p-2 font-medium whitespace-nowrap">
+                      <td className="p-2 font-medium text-sm whitespace-nowrap">
                         ₹{Number(investment.amount).toLocaleString()}
                       </td>
-                      <td className="p-2 text-sm text-muted-foreground">
+                      <td className="p-2 text-sm text-muted-foreground hidden sm:table-cell">
                         <div className="max-w-[200px] truncate">
                           {investment.description || 'N/A'}
                         </div>
