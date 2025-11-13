@@ -135,7 +135,7 @@ function AppContent() {
 
   // Custom sidebar width for better content display
   const style = {
-    "--sidebar-width": "20rem",       // 320px for better content
+    "--sidebar-width": "14rem",       // 224px for compact sidebar
     "--sidebar-width-icon": "4rem",   // default icon width
   };
 

@@ -1,4 +1,4 @@
-import { BarChart3, Building2, DollarSign, FileText, Home, Settings, TrendingUp, TrendingDown, Users, UserCheck, LogOut, Upload, Send, Banknote, HandCoins, UserPlus } from "lucide-react";
+import { BarChart3, Building2, DollarSign, FileText, Home, Settings, TrendingUp, TrendingDown, Users, UserCheck, LogOut, Upload, Send, Banknote, HandCoins, UserPlus, ChevronDown } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
+import { useState } from "react";
 
 type MenuItem = {
   title: string;
@@ -89,10 +90,17 @@ export function AppSidebar({ userRole, onLogout }: AppSidebarProps) {
   const { user, session, client } = useAuth();
   const [, setLocation] = useLocation();
   const menuItems = session?.moduleAccess ? getMenuItems(session.moduleAccess) : [];
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(
+    menuItems.reduce((acc, item) => ({ ...acc, [item.title]: false }), {})
+  );
 
   const handleLogout = () => {
     onLogout();
     setLocation('/');
+  };
+
+  const toggleExpanded = (title: string) => {
+    setExpandedItems(prev => ({ ...prev, [title]: !prev[title] }));
   };
 
   return (
@@ -116,20 +124,26 @@ export function AppSidebar({ userRole, onLogout }: AppSidebarProps) {
                 <SidebarMenuItem key={item.title}>
                   {item.children ? (
                     <div>
-                      <SidebarMenuButton className="font-medium cursor-default">
+                      <SidebarMenuButton 
+                        className="font-medium cursor-pointer" 
+                        onClick={() => toggleExpanded(item.title)}
+                      >
                         <item.icon />
                         <span>{item.title}</span>
+                        <ChevronDown className={`h-4 w-4 ml-auto transition-transform ${expandedItems[item.title] ? 'rotate-180' : ''}`} />
                       </SidebarMenuButton>
-                      <div className="ml-6 mt-1 space-y-1">
-                        {item.children.map((child) => (
-                          <SidebarMenuButton key={child.title} asChild size="sm">
-                            <Link href={child.url!} data-testid={`link-${child.title.toLowerCase().replace(/\\s+/g, '-')}`}>
-                              <child.icon className="h-4 w-4" />
-                              <span>{child.title}</span>
-                            </Link>
-                          </SidebarMenuButton>
-                        ))}
-                      </div>
+                      {expandedItems[item.title] && (
+                        <div className="ml-6 mt-1 space-y-1">
+                          {item.children.map((child) => (
+                            <SidebarMenuButton key={child.title} asChild size="sm">
+                              <Link href={child.url!} data-testid={`link-${child.title.toLowerCase().replace(/\\s+/g, '-')}`}>
+                                <child.icon className="h-4 w-4" />
+                                <span>{child.title}</span>
+                              </Link>
+                            </SidebarMenuButton>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <SidebarMenuButton asChild>
