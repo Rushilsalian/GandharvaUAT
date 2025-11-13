@@ -110,11 +110,19 @@ export function AppSidebar({ userRole, onLogout }: AppSidebarProps) {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="p-4">
+      <SidebarHeader className="p-2">
         <div className="flex flex-col space-y-1">
-          <div className="flex items-center space-x-2">
-            <img src="/icons/Gandharva_Logo_2.png" alt="Gandharva Logo" className="h-8 w-8" />
-            <h2 className="text-lg font-semibold group-data-[collapsible=icon]:hidden">Gandharva Finchart LLP</h2>
+          <div className="flex items-center -ml-1">
+            <img 
+              src="/icons/Gandharva.png" 
+              alt="Gandharva Logo" 
+              className="group-data-[collapsible=icon]:hidden"
+            />
+            <img 
+              src="/icons/Gandharva_Logo_2.png" 
+              alt="Gandharva Logo" 
+              className="group-data-[collapsible=icon]:block hidden"
+            />
           </div>
         </div>
       </SidebarHeader>
