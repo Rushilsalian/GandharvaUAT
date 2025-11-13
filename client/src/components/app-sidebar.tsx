@@ -10,8 +10,13 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  SidebarMenuAction,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
@@ -104,14 +109,13 @@ export function AppSidebar({ userRole, onLogout }: AppSidebarProps) {
   };
 
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon">
       <SidebarHeader className="p-4">
         <div className="flex flex-col space-y-1">
           <div className="flex items-center space-x-2">
             <img src="/icons/Gandharva_Logo_2.png" alt="Gandharva Logo" className="h-8 w-8" />
-            <h2 className="text-lg font-semibold">Gandharva Finchart LLP</h2>
+            <h2 className="text-lg font-semibold group-data-[collapsible=icon]:hidden">Gandharva Finchart LLP</h2>
           </div>
-          {/* <p className="text-sm text-muted-foreground">Investment Platform</p> */}
         </div>
       </SidebarHeader>
 
@@ -123,33 +127,47 @@ export function AppSidebar({ userRole, onLogout }: AppSidebarProps) {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   {item.children ? (
-                    <div>
-                      <SidebarMenuButton 
-                        className="font-medium cursor-pointer" 
-                        onClick={() => toggleExpanded(item.title)}
-                      >
-                        <item.icon />
-                        <span>{item.title}</span>
-                        <ChevronDown className={`h-4 w-4 ml-auto transition-transform ${expandedItems[item.title] ? 'rotate-180' : ''}`} />
-                      </SidebarMenuButton>
-                      {expandedItems[item.title] && (
-                        <div className="ml-6 mt-1 space-y-1">
-                          {item.children.map((child) => (
-                            <SidebarMenuButton key={child.title} asChild size="sm">
-                              <Link href={child.url!} data-testid={`link-${child.title.toLowerCase().replace(/\\s+/g, '-')}`}>
-                                <child.icon className="h-4 w-4" />
-                                <span>{child.title}</span>
-                              </Link>
-                            </SidebarMenuButton>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    <>
+                      <div className="group-data-[collapsible=icon]:hidden">
+                        <Collapsible open={expandedItems[item.title]} onOpenChange={() => toggleExpanded(item.title)}>
+                          <SidebarMenuButton asChild>
+                            <CollapsibleTrigger className="w-full">
+                              <item.icon />
+                              <span>{item.title}</span>
+                              <ChevronDown className={`h-4 w-4 ml-auto transition-transform ${expandedItems[item.title] ? 'rotate-180' : ''}`} />
+                            </CollapsibleTrigger>
+                          </SidebarMenuButton>
+                          <CollapsibleContent>
+                            <SidebarMenuSub>
+                              {item.children.map((child) => (
+                                <SidebarMenuSubItem key={child.title}>
+                                  <SidebarMenuSubButton asChild>
+                                    <Link href={child.url!} data-testid={`link-${child.title.toLowerCase().replace(/\\s+/g, '-')}`}>
+                                      <child.icon className="h-4 w-4" />
+                                      <span>{child.title}</span>
+                                    </Link>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              ))}
+                            </SidebarMenuSub>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      </div>
+                      <div className="group-data-[collapsible=icon]:block hidden">
+                        {item.children.map((child) => (
+                          <SidebarMenuButton key={child.title} asChild>
+                            <Link href={child.url!} data-testid={`link-${child.title.toLowerCase().replace(/\\s+/g, '-')}`} title={child.title}>
+                              <child.icon />
+                            </Link>
+                          </SidebarMenuButton>
+                        ))}
+                      </div>
+                    </>
                   ) : (
                     <SidebarMenuButton asChild>
-                      <Link href={item.url!} data-testid={`link-${item.title.toLowerCase().replace(/\\s+/g, '-')}`}>
+                      <Link href={item.url!} data-testid={`link-${item.title.toLowerCase().replace(/\\s+/g, '-')}`} title={item.title}>
                         <item.icon />
-                        <span>{item.title}</span>
+                        <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   )}
@@ -162,7 +180,7 @@ export function AppSidebar({ userRole, onLogout }: AppSidebarProps) {
 
       <SidebarFooter className="p-4">
         <div className="space-y-2">
-          <div className="text-sm">
+          <div className="text-sm group-data-[collapsible=icon]:hidden">
             <p className="font-medium">{client?.name || user?.userName}</p>
             <p className="text-muted-foreground capitalize">{session?.roleName || userRole}</p>
           </div>
@@ -174,7 +192,7 @@ export function AppSidebar({ userRole, onLogout }: AppSidebarProps) {
             onClick={handleLogout}
           >
             <LogOut className="h-4 w-4 mr-2" />
-            Logout
+            <span className="group-data-[collapsible=icon]:hidden">Logout</span>
           </Button>
         </div>
       </SidebarFooter>
