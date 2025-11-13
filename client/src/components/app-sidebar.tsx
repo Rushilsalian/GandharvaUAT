@@ -99,8 +99,11 @@ export function AppSidebar({ userRole, onLogout }: AppSidebarProps) {
     <Sidebar>
       <SidebarHeader className="p-4">
         <div className="flex flex-col space-y-1">
-          <h2 className="text-lg font-semibold">Gandharva</h2>
-          <p className="text-sm text-muted-foreground">Investment Platform</p>
+          <div className="flex items-center space-x-2">
+            <img src="/icons/Gandharva_Logo_2.png" alt="Gandharva Logo" className="h-8 w-8" />
+            <h2 className="text-lg font-semibold">Gandharva Finchart LLP</h2>
+          </div>
+          {/* <p className="text-sm text-muted-foreground">Investment Platform</p> */}
         </div>
       </SidebarHeader>
 
