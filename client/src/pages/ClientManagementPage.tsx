@@ -36,7 +36,7 @@ export function ClientManagementPage() {
   };
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container">
       <div className="md:flex md:justify-between md:items-center mb-4">
         <div>
           <h1 className="text-2xl font-bold">Client Records</h1>

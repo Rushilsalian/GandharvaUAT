@@ -145,16 +145,17 @@ export function ClientTable() {
               <span className="ml-2">Loading clients...</span>
             </div>
           ) : (
-            <div className="space-y-4">
-              <ScrollArea className="h-[500px] w-full">
+           <div className="space-y-4 w-full">
+              <div className="overflow-x-auto">
+              {/* <ScrollArea className="h-[500px] w-full"> */}
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Actions</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Mobile</TableHead>
-                      <TableHead>Created Date</TableHead>
+                      <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[100px]">Actions</TableHead>
+                      <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[150px]">Name</TableHead>
+                      <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[200px]">Email</TableHead>
+                      <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Mobile</TableHead>
+                      <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[130px]">Created Date</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -192,7 +193,7 @@ export function ClientTable() {
                       : "No clients found."}
                   </div>
                 )}
-              </ScrollArea>
+              {/* </ScrollArea> */}
 
               {totalPages > 1 && (
                 <div className="flex items-center justify-between">
@@ -228,6 +229,7 @@ export function ClientTable() {
                   </Pagination>
                 </div>
               )}
+            </div>
             </div>
           )}
         </CardContent>

@@ -5,14 +5,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "wouter";
+import { url } from "inspector";
 
 interface LoginFormProps {
   onLogin?: (email: string, password: string) => void;
+  onSignup?: (email: string, password: string, name: string) => void;
 }
 
-export function LoginForm({ onLogin }: LoginFormProps) {
+export function LoginForm({ onLogin, onSignup }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [isSignup, setIsSignup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -20,10 +24,21 @@ export function LoginForm({ onLogin }: LoginFormProps) {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-    
+
     try {
-      console.log("Login attempted with:", { email, password: "***" });
-      await onLogin?.(email, password);
+      if (isSignup) {
+        if (!name.trim()) {
+          throw new Error("Name is required");
+        }
+        if (password.length < 6) {
+          throw new Error("Password must be at least 6 characters");
+        }
+        console.log("Signup attempted with:", { name, email, password: "***" });
+        await onSignup?.(email, password, name);
+      } else {
+        console.log("Login attempted with:", { email, password: "***" });
+        await onLogin?.(email, password);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -32,14 +47,27 @@ export function LoginForm({ onLogin }: LoginFormProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 pb-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat p-4"
+      style={{ background: "linear-gradient(135deg, #170372ff, #1533a6 50%, #f15a24)" }}
+    >
+
+      <Card className="w-full max-w-md bg-white/80 backdrop-blur-md shadow-xl">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center text-primary font-semibold">
-            Welcome to Gandharva
+          <div className="flex justify-center">
+            <img
+              src="/icons/Gandharva.png"
+              className="object-contain"
+              style={{ width: "60%" }}
+            />
+          </div>
+          <CardTitle className="login text-2xl text-center font-semibold">
+            {isSignup ? "Join Gandharva" : "Welcome to Gandharva"}
           </CardTitle>
           <CardDescription className="text-center">
-            Enter your credentials to access your investment portfolio
+            {isSignup
+              ? "Create your account to start your investment journey"
+              : "Enter your credentials to access your investment portfolio"
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -49,7 +77,21 @@ export function LoginForm({ onLogin }: LoginFormProps) {
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
-            
+            {isSignup && (
+              <div className="space-y-1">
+                <Label htmlFor="name" data-testid="label-name">Full Name</Label>
+                <Input
+                  id="name"
+                  data-testid="input-name"
+                  type="text"
+                  placeholder="Enter your full name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </div>
+            )}
+
             <div className="space-y-1">
               <Label htmlFor="email" data-testid="label-email">Email or Mobile</Label>
               <Input
@@ -62,7 +104,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
                 required
               />
             </div>
-            
+
             <div className="space-y-1">
               <Label htmlFor="password" data-testid="label-password">Password</Label>
               <Input
@@ -76,22 +118,47 @@ export function LoginForm({ onLogin }: LoginFormProps) {
               />
             </div>
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full"
               disabled={isLoading}
-              data-testid="button-login"
+              data-testid={isSignup ? "button-signup" : "button-login"}
             >
-              {isLoading ? "Signing In..." : "Sign In"}
+              {isLoading ? (isSignup ? "Signing Up..." : "Signing In...") : (isSignup ? "Sign Up" : "Sign In")}
             </Button>
-            <div className="text-end mt-0" style={{marginTop:'0px'}}>
+            <div className="text-end mt-0" style={{ marginTop: '0px' }}>
+              {!isSignup && (
+                <Link href="/forgot-password">
+                  <Button variant="ghost" className="p-0 text-sm text-red-600 hover:text-red-700" data-testid="link-forgot-password">
+                    Forgot password?
+                  </Button>
+                </Link>
+              )}</div>
+          </form>
+
+          <Separator className="my-4" />
+
+          <div className="text-center text-primary space-y-1">
+            <Button
+              variant="ghost"
+              className="p-0 h-auto text-sm"
+              onClick={() => setIsSignup(!isSignup)}
+              data-testid="toggle-signup"
+            >
+              {isSignup
+                ? "Already have an account? Sign In"
+                : "Don't have an account? Sign Up"
+              }
+            </Button>
+
+            {/* {!isSignup && (
               <Link href="/forgot-password">
-                <Button variant="ghost" className="p-0 text-sm text-red-600 hover:text-red-700" data-testid="link-forgot-password">
-                  Forgot password?
+                <Button variant="ghost" className="p-0 h-auto text-sm" data-testid="link-forgot-password">
+                  Forgot your password?
                 </Button>
               </Link>
-            </div>
-          </form>
+            )} */}
+          </div>
         </CardContent>
       </Card>
     </div>

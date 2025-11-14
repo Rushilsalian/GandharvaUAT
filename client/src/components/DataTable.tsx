@@ -221,9 +221,7 @@ export function DataTable({
               No data found
             </div>
           )}
-        </div>
-        
-        {totalPages > 1 && (
+           {totalPages > 1 && (
           <div className="flex items-center justify-between mt-4">
             <div className="text-sm text-muted-foreground">
               Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredData.length)} of {filteredData.length} entries
@@ -292,6 +290,9 @@ export function DataTable({
             </Pagination>
           </div>
         )}
+        </div>
+        
+       
       </CardContent>
     </Card>
   );

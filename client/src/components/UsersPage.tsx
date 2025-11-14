@@ -122,12 +122,12 @@ export function UsersPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const userData = {
       ...formData,
       password: password || 'defaultpass123'
     };
-    
+
     if (isEditing && formData.id) {
       updateUserMutation.mutate({ id: formData.id, ...userData });
     } else {
@@ -157,7 +157,7 @@ export function UsersPage() {
             Manage active user accounts across the platform
           </p>
         </div>
-        
+
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogTrigger asChild>
             <Button className="mt-2" onClick={() => { resetForm(); setIsModalOpen(true); }}>
@@ -172,14 +172,14 @@ export function UsersPage() {
                 {isEditing ? 'Edit User' : 'Add New User'}
               </DialogTitle>
             </DialogHeader>
-            
+
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">First Name *</Label>
                 <Input
                   id="firstName"
                   value={formData.firstName || ""}
-                  onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                   required
                 />
               </div>
@@ -189,7 +189,7 @@ export function UsersPage() {
                 <Input
                   id="lastName"
                   value={formData.lastName || ""}
-                  onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                   required
                 />
               </div>
@@ -200,7 +200,7 @@ export function UsersPage() {
                   id="userEmail"
                   type="email"
                   value={formData.email || ""}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
                 />
               </div>
@@ -210,7 +210,7 @@ export function UsersPage() {
                 <Input
                   id="userMobile"
                   value={formData.mobile || ""}
-                  onChange={(e) => setFormData({...formData, mobile: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
                 />
               </div>
 
@@ -228,9 +228,9 @@ export function UsersPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="userRole">Role *</Label>
-                <Select 
-                  value={formData.role || ""} 
-                  onValueChange={(value) => setFormData({...formData, role: value})}
+                <Select
+                  value={formData.role || ""}
+                  onValueChange={(value) => setFormData({ ...formData, role: value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select user role" />
@@ -244,8 +244,8 @@ export function UsersPage() {
               </div>
 
               <div className="md:col-span-2 flex gap-2 pt-4">
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={createUserMutation.isPending || updateUserMutation.isPending}
                 >
                   {(createUserMutation.isPending || updateUserMutation.isPending) ? (
@@ -298,96 +298,110 @@ export function UsersPage() {
               Error loading users: {(error as Error).message}
             </div>
           ) : (
-            <div className="space-y-4 overflow-x-auto w-full">
-              <ScrollArea className="h-[500px] w-full">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Actions</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Mobile</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Created Date</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {currentUsers.map((user: User) => (
-                      <TableRow key={user.id}>
-                        <TableCell>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEdit(user)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                        <TableCell>{user.firstName} {user.lastName}</TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {user.email}
-                        </TableCell>
-                        <TableCell>{user.mobile || "N/A"}</TableCell>
-                        <TableCell>
-                          <Badge variant={user.role === "admin" ? "default" : user.role === "leader" ? "secondary" : "outline"}>
-                            {user.role?.charAt(0).toUpperCase() + user.role?.slice(1)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {user.createdAt ? new Date(user.createdAt).toLocaleDateString("en-IN", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          }) : "N/A"}
-                        </TableCell>
+            <div className="space-y-4 w-full">
+              <div className="overflow-x-auto">
+                {/* <ScrollArea className="h-[550px] w-full"> */}
+                  <Table className="w-full">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[100px]">Actions</TableHead>
+                        <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[150px]">Name</TableHead>
+                        <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[200px]">Email</TableHead>
+                        <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Mobile</TableHead>
+                        <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[100px]">Role</TableHead>
+                        <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[130px]">Created Date</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-
-                {filteredUsers.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    {searchTerm
-                      ? "No users found matching your search."
-                      : "No users found."}
-                  </div>
-                )}
-              </ScrollArea>
-
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-muted-foreground">
-                    Showing {startIndex + 1} to {Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length} entries
-                  </div>
-                  <Pagination>
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious 
-                          onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                          className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                        />
-                      </PaginationItem>
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                        <PaginationItem key={page}>
-                          <PaginationLink
-                            onClick={() => handlePageChange(page)}
-                            isActive={currentPage === page}
-                            className="cursor-pointer"
-                          >
-                            {page}
-                          </PaginationLink>
-                        </PaginationItem>
+                    </TableHeader>
+                    <TableBody>
+                      {currentUsers.map((user: User) => (
+                        <TableRow key={user.id}>
+                          <TableCell>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEdit(user)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                          <TableCell>
+                            <div className="truncate max-w-[140px]">
+                              {user.firstName} {user.lastName}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            <div className="truncate max-w-[180px]">
+                              {user.email}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="truncate max-w-[100px]">
+                              {user.mobile || "N/A"}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={user.role === "admin" ? "default" : user.role === "leader" ? "secondary" : "outline"}>
+                              {user.role?.charAt(0).toUpperCase() + user.role?.slice(1)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {user.createdAt ? new Date(user.createdAt).toLocaleDateString("en-IN", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            }) : "N/A"}
+                          </TableCell>
+                        </TableRow>
                       ))}
-                      <PaginationItem>
-                        <PaginationNext 
-                          onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                          className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
-                </div>
-              )}
+                    </TableBody>
+                  </Table>
+
+                  {filteredUsers.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      {searchTerm
+                        ? "No users found matching your search."
+                        : "No users found."}
+                    </div>
+                  )}
+
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-muted-foreground">
+                        Showing {startIndex + 1} to {Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length} entries
+                      </div>
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious
+                              onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                              className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                            />
+                          </PaginationItem>
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                            <PaginationItem key={page}>
+                              <PaginationLink
+                                onClick={() => handlePageChange(page)}
+                                isActive={currentPage === page}
+                                className="cursor-pointer"
+                              >
+                                {page}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
+                          <PaginationItem>
+                            <PaginationNext
+                              onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                              className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
+                  )}
+                {/* </ScrollArea> */}
+              </div>
+
+
             </div>
           )}
         </CardContent>

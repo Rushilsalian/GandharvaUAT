@@ -195,15 +195,15 @@ export default function InvestmentRequestPage() {
               />
             </div>
             
-            <div className="space-y-4">
+            <div className="sspace-y-4 flex flex-col items-center justify-center mt-1">
               <Button 
                 onClick={handlePayment} 
                 disabled={loading || !formData.amount}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg font-semibold"
+                className=" bg-blue-600 hover:bg-blue-700 text-white font-semibold"
               >
                 {loading ? 'Processing...' : `Pay ₹${formData.amount || '0'} with Razorpay`}
               </Button>
-              <div className="text-center text-sm text-gray-500">
+              <div className="text-center text-sm text-gray-500 mt-1">
                 Secure payment powered by Razorpay
               </div>
             </div>
