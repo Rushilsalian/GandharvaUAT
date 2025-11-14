@@ -1,4 +1,4 @@
-import { BarChart3, Building2, DollarSign, FileText, Home, Settings, TrendingUp, TrendingDown, Users, UserCheck, LogOut, Upload, Send, Banknote, HandCoins, UserPlus, ChevronDown } from "lucide-react";
+import { BarChart3, Building2, DollarSign, FileText, Home, Settings, TrendingUp, TrendingDown, Users, UserCheck, LogOut, Upload, Send, Banknote, HandCoins, UserPlus, ChevronDown, Gift, Edit3 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -52,12 +52,31 @@ const moduleConfig: Record<string, { icon: any; url: string; children?: Record<s
       "Referral Request": { icon: UserPlus, url: "/referral-request" }
     }
   },
-  "Reports": { icon: FileText, url: "/reports" }
+  "Reports": { icon: FileText, url: "/reports" },
+  "Content Management": { icon: Edit3, url: "/content-management" }
 };
 
+// Static menu items that appear for all users
+const staticMenuItems: MenuItem[] = [
+  {
+    title: "View Offers",
+    url: "/offers",
+    icon: Gift
+  }
+];
+
 // Generate menu items based on module access
-const getMenuItems = (moduleAccess: Record<string, any>): MenuItem[] => {
-  const menuItems: MenuItem[] = [];
+const getMenuItems = (moduleAccess: Record<string, any>, userRole: string): MenuItem[] => {
+  const menuItems: MenuItem[] = [...staticMenuItems];
+  
+  // Add Content Management for admin users
+  if (userRole === 'admin') {
+    menuItems.push({
+      title: "Content Management",
+      url: "/content-management",
+      icon: Edit3
+    });
+  }
   
   Object.values(moduleAccess).forEach((module: any) => {
     if (module.accessRead === 1) {
@@ -94,7 +113,8 @@ interface AppSidebarProps {
 export function AppSidebar({ userRole, onLogout }: AppSidebarProps) {
   const { user, session, client } = useAuth();
   const [, setLocation] = useLocation();
-  const menuItems = session?.moduleAccess ? getMenuItems(session.moduleAccess) : [];
+  const menuItems = session?.moduleAccess ? getMenuItems(session.moduleAccess, userRole) : 
+    userRole === 'admin' ? [...staticMenuItems, { title: "Content Management", url: "/content-management", icon: Edit3 }] : staticMenuItems;
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(
     menuItems.reduce((acc, item) => ({ ...acc, [item.title]: false }), {})
   );

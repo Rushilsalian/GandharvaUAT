@@ -71,3 +71,42 @@ export function checkLoggedIn(req: Request, res: Response, next: NextFunction) {
   (req as any).user = decoded;
   next();
 }
+
+// Parse user information from headers (no token required).
+// Expected headers:
+// - x-user-role: role string (e.g. 'admin', 'editor')
+// - x-user-id: optional user id (UUID or string) used for createdBy/updatedBy fields
+export function parseUserFromHeaders(req: Request, _res: Response, next: NextFunction) {
+  const roleHeader = req.headers['x-user-role'];
+  const idHeader = req.headers['x-user-id'];
+
+  const role = Array.isArray(roleHeader) ? roleHeader[0] : roleHeader;
+  const id = Array.isArray(idHeader) ? idHeader[0] : idHeader;
+
+  if (role || id) {
+    (req as any).user = {
+      role: role as string | undefined,
+      id: id as string | undefined,
+    };
+  }
+
+  next();
+}
+
+// Middleware factory to require one of the provided roles.
+export function requireRole(allowedRoles: string[]) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const user = (req as any).user;
+    const role = user && user.role;
+
+    if (!role) {
+      return res.status(403).json({ error: 'Forbidden: role header missing' });
+    }
+
+    if (!allowedRoles.includes(role)) {
+      return res.status(403).json({ error: 'Forbidden: insufficient role' });
+    }
+
+    next();
+  };
+}

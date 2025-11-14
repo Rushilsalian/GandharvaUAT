@@ -35,6 +35,8 @@ import ForgotPassword from "@/components/ForgotPassword";
 import ResetPassword from "@/components/ResetPassword";
 import NotFound from "@/pages/not-found";
 import PaymentCallbackPage from "@/pages/PaymentCallbackPage";
+import OffersPage from "@/pages/OffersPage";
+import ContentManagementPage from "@/pages/ContentManagementPage";
 import { useSessionExpiration } from "@/hooks/useSessionExpiration";
 import { setGlobalSessionHandlers } from "@/lib/api";
 import { apiClient } from "@/lib/apiClient";
@@ -90,6 +92,7 @@ function Router({ userRole, isLoggedIn, onLogin, onSignup }: { userRole: "admin"
           <Route path="/withdrawal-request" component={() => <WithdrawalRequestPage />} />
           <Route path="/investment-request" component={() => <InvestmentRequestPage />} />
           <Route path="/referral-request" component={() => <ReferralRequestPage />} />
+          <Route path="/content-management" component={() => <ContentManagementPage />} />
         </>
       )}
       
@@ -108,6 +111,7 @@ function Router({ userRole, isLoggedIn, onLogin, onSignup }: { userRole: "admin"
       {/* Common Routes */}
       <Route path="/reports" component={() => <ReportsPage />} />
       <Route path="/payment-callback" component={() => <PaymentCallbackPage />} />
+      <Route path="/offers" component={() => <OffersPage />} />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />

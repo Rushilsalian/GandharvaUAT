@@ -440,6 +440,84 @@ export type InsertClientWithdrawalRequest = z.infer<typeof insertClientWithdrawa
 export type ClientReferralRequest = typeof clientReferralRequest.$inferSelect;
 export type InsertClientReferralRequest = z.infer<typeof insertClientReferralRequestSchema>;
 
+// Content Management tables
+export const contentCategories = mysqlTable("content_categories", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  isActive: tinyint("is_active").default(1),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const contentItems = mysqlTable("content_items", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  categoryId: varchar("category_id", { length: 36 }).references(() => contentCategories.id),
+  title: varchar("title", { length: 200 }).notNull(),
+  description: text("description"),
+  content: text("content"),
+  mediaType: varchar("media_type", { length: 20 }).notNull(), // 'image', 'video', 'text'
+  mediaUrl: text("media_url"),
+  thumbnailUrl: text("thumbnail_url"),
+  displayOrder: int("display_order").default(0),
+  isActive: tinyint("is_active").default(1),
+  isPublished: tinyint("is_published").default(0),
+  publishedAt: timestamp("published_at"),
+  createdBy: varchar("created_by", { length: 36 }).references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const offers = mysqlTable("offers", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  title: varchar("title", { length: 200 }).notNull(),
+  description: text("description"),
+  imageUrl: text("image_url"),
+  linkUrl: text("link_url"),
+  validFrom: timestamp("valid_from"),
+  validTo: timestamp("valid_to"),
+  displayOrder: int("display_order").default(0),
+  isActive: tinyint("is_active").default(1),
+  createdBy: varchar("created_by", { length: 36 }).references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Insert schemas for content management
+export const insertContentCategorySchema = createInsertSchema(contentCategories).omit({ id: true, createdAt: true });
+export const insertContentItemSchema = createInsertSchema(contentItems).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertOfferSchema = createInsertSchema(offers).omit({ id: true, createdAt: true, updatedAt: true });
+
+// Relations for content management
+export const contentCategoriesRelations = relations(contentCategories, ({ many }) => ({
+  contentItems: many(contentItems),
+}));
+
+export const contentItemsRelations = relations(contentItems, ({ one }) => ({
+  category: one(contentCategories, {
+    fields: [contentItems.categoryId],
+    references: [contentCategories.id],
+  }),
+  creator: one(users, {
+    fields: [contentItems.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const offersRelations = relations(offers, ({ one }) => ({
+  creator: one(users, {
+    fields: [offers.createdBy],
+    references: [users.id],
+  }),
+}));
+
+// Content management types
+export type ContentCategory = typeof contentCategories.$inferSelect;
+export type InsertContentCategory = z.infer<typeof insertContentCategorySchema>;
+export type ContentItem = typeof contentItems.$inferSelect;
+export type InsertContentItem = z.infer<typeof insertContentItemSchema>;
+export type Offer = typeof offers.$inferSelect;
+export type InsertOffer = z.infer<typeof insertOfferSchema>;
+
 // Legacy types
 export type Branch = typeof branches.$inferSelect;
 export type InsertBranch = z.infer<typeof insertBranchSchema>;

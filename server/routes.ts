@@ -31,7 +31,9 @@ import crypto from "crypto";
 import { registerDashboardRoutes } from "./dashboardRoutes";
 import { registerEnhancedDashboardRoutes } from "./enhancedDashboardRoutes";
 import { registerRoleBasedReportsRoutes } from "./roleBasedReportsRoutes";
+import { contentRoutes } from "./contentRoutes";
 import { checkDatabaseHealth, warmupConnections } from "./db-health";
+import { initContentData } from "./init-content-data";
 
 // Configure multer for file uploads
 const upload = multer({ 
@@ -52,6 +54,13 @@ const upload = multer({
 export async function registerRoutes(app: Express): Promise<Server> {
   // Warm up database connections
   await warmupConnections();
+  
+  // Initialize content management data
+  try {
+    await initContentData();
+  } catch (error) {
+    console.warn('Content data initialization failed, continuing...', error);
+  }
   
   // Health check endpoint
   app.get('/api/health', async (req, res) => {
@@ -3026,6 +3035,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log('Registering role-based reports routes...');
   registerRoleBasedReportsRoutes(app, authenticateToken);
   console.log('Role-based reports routes registered successfully');
+  
+  // Register content management routes
+  console.log('Registering content management routes...');
+  app.use('/api/content', contentRoutes);
+  console.log('Content management routes registered successfully');
   
   const httpServer = createServer(app);
 
