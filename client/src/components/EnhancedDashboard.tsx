@@ -63,7 +63,7 @@ function MonthlyTrends() {
     const fetchData = async () => {
       try {
         const response = await fetch('/api/dashboard/monthly-trends', {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          headers: { 'Authorization': `Bearer ${sessionStorage.getItem('authToken')}` }
         });
         if (response.ok) {
           const data = await response.json();
@@ -129,7 +129,7 @@ function RecentActivity() {
     const fetchData = async () => {
       try {
         const response = await fetch('/api/dashboard/recent-transactions?limit=5', {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          headers: { 'Authorization': `Bearer ${sessionStorage.getItem('authToken')}` }
         });
         if (response.ok) {
           const data = await response.json();
@@ -249,7 +249,7 @@ function ActiveClients({ userRole }: { userRole: "admin" | "leader" | "client" }
     const fetchClients = async () => {
       try {
         const response = await fetch(`/api/dashboard/active-clients?userRole=${userRole}`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          headers: { 'Authorization': `Bearer ${sessionStorage.getItem('authToken')}` }
         });
         if (response.ok) {
           const data = await response.json();
@@ -313,7 +313,7 @@ function AlertsNotifications({ userRole }: AlertsNotificationsProps) {
     const fetchAlerts = async () => {
       try {
         const response = await fetch(`/api/dashboard/alerts?userRole=${userRole}`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          headers: { 'Authorization': `Bearer ${sessionStorage.getItem('authToken')}` }
         });
         if (response.ok) {
           const data = await response.json();
@@ -377,7 +377,7 @@ export function EnhancedDashboard({ userRole }: EnhancedDashboardProps) {
     const fetchStats = async () => {
       try {
         const response = await fetch(`/api/dashboard/stats?userRole=${userRole}`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          headers: { 'Authorization': `Bearer ${sessionStorage.getItem('authToken')}` }
         });
         if (response.ok) {
           const data = await response.json();

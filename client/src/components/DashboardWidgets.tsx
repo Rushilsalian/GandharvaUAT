@@ -32,7 +32,7 @@ function TransactionTimelineWidget() {
     const fetchData = async () => {
       try {
         const response = await fetch('/api/dashboard/recent-transactions?limit=5', {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          headers: { 'Authorization': `Bearer ${sessionStorage.getItem('authToken')}` }
         });
         if (response.ok) {
           const data = await response.json();
@@ -123,7 +123,7 @@ function KYCStatusWidget() {
     const fetchData = async () => {
       try {
         const response = await fetch('/api/dashboard/kyc-status', {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          headers: { 'Authorization': `Bearer ${sessionStorage.getItem('authToken')}` }
         });
         if (response.ok) {
           const data = await response.json();
@@ -198,7 +198,7 @@ function MonthlyRevenueWidget() {
     const fetchData = async () => {
       try {
         const response = await fetch('/api/dashboard/revenue-breakdown', {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          headers: { 'Authorization': `Bearer ${sessionStorage.getItem('authToken')}` }
         });
         if (response.ok) {
           const data = await response.json();
@@ -265,7 +265,7 @@ function RiskAssessmentWidget() {
     const fetchData = async () => {
       try {
         const response = await fetch('/api/dashboard/risk-metrics', {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          headers: { 'Authorization': `Bearer ${sessionStorage.getItem('authToken')}` }
         });
         if (response.ok) {
           const data = await response.json();

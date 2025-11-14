@@ -194,7 +194,7 @@ export function AnalyticsDashboard() {
   const fetchKeyMetrics = async () => {
     try {
       const response = await fetch('/api/dashboard/stats?userRole=admin', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        headers: { 'Authorization': `Bearer ${sessionStorage.getItem('authToken')}` }
       });
       if (response.ok) {
         const data = await response.json();

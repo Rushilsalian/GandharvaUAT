@@ -53,3 +53,21 @@ export function optionalAuth(req: Request, res: Response, next: NextFunction) {
   
   next();
 }
+
+// Simple login check middleware (only checks if user is logged in)
+export function checkLoggedIn(req: Request, res: Response, next: NextFunction) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Please log in to access this resource' });
+  }
+
+  const decoded = verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ error: 'Please log in to access this resource' });
+  }
+
+  (req as any).user = decoded;
+  next();
+}

@@ -1,9 +1,9 @@
 import type { Express } from "express";
 import { storage } from "./storage";
 
-export function registerDashboardRoutes(app: Express, authenticateToken: any) {
+export function registerDashboardRoutes(app: Express, authenticateToken: any, checkLoggedIn: any) {
   // Enhanced Dashboard API endpoints - role-based access with dynamic data
-  app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
+  app.get('/api/dashboard/stats', checkLoggedIn, async (req, res) => {
     try {
       const userSession = (req as any).user;
       const sessionRole = (userSession.roleName || userSession.role || '').toLowerCase();
@@ -124,7 +124,7 @@ export function registerDashboardRoutes(app: Express, authenticateToken: any) {
   });
 
   // Portfolio distribution endpoint - using dynamic investment data
-  app.get('/api/dashboard/portfolio-distribution', authenticateToken, async (req, res) => {
+  app.get('/api/dashboard/portfolio-distribution', checkLoggedIn, async (req, res) => {
     try {
       const userSession = (req as any).user;
       const sessionRole = userSession.roleName || userSession.role;
@@ -163,7 +163,7 @@ export function registerDashboardRoutes(app: Express, authenticateToken: any) {
   });
 
   // Client demographics endpoint - using dynamic data from mst_client
-  app.get('/api/dashboard/client-demographics', authenticateToken, async (req, res) => {
+  app.get('/api/dashboard/client-demographics', checkLoggedIn, async (req, res) => {
     try {
       const userSession = (req as any).user;
       const sessionRole = userSession.roleName || userSession.role;
@@ -208,7 +208,7 @@ export function registerDashboardRoutes(app: Express, authenticateToken: any) {
   });
 
   // Branch performance endpoint - using dynamic data from mst_branch and related tables
-  app.get('/api/dashboard/branch-performance', authenticateToken, async (req, res) => {
+  app.get('/api/dashboard/branch-performance', checkLoggedIn, async (req, res) => {
     try {
       const userSession = (req as any).user;
       const sessionRole = userSession.roleName || userSession.role;
@@ -264,7 +264,7 @@ export function registerDashboardRoutes(app: Express, authenticateToken: any) {
   });
 
   // Recent transactions endpoint - using dynamic data from all request tables
-  app.get('/api/dashboard/recent-transactions', authenticateToken, async (req, res) => {
+  app.get('/api/dashboard/recent-transactions', checkLoggedIn, async (req, res) => {
     try {
       const userSession = (req as any).user;
       const sessionRole = userSession.roleName || userSession.role;
@@ -340,7 +340,7 @@ export function registerDashboardRoutes(app: Express, authenticateToken: any) {
   });
 
   // Monthly trends endpoint - using dynamic data from request tables
-  app.get('/api/dashboard/monthly-trends', authenticateToken, async (req, res) => {
+  app.get('/api/dashboard/monthly-trends', checkLoggedIn, async (req, res) => {
     try {
       const userSession = (req as any).user;
       const sessionRole = userSession.roleName || userSession.role;
@@ -415,7 +415,7 @@ export function registerDashboardRoutes(app: Express, authenticateToken: any) {
   });
 
   // Investment performance endpoint - using dynamic data from investment and transaction tables
-  app.get('/api/dashboard/investment-performance', authenticateToken, async (req, res) => {
+  app.get('/api/dashboard/investment-performance', checkLoggedIn, async (req, res) => {
     try {
       const userSession = (req as any).user;
       const sessionRole = userSession.roleName || userSession.role;
@@ -486,7 +486,7 @@ export function registerDashboardRoutes(app: Express, authenticateToken: any) {
   });
 
   // KYC status endpoint - using dynamic data from mst_client
-  app.get('/api/dashboard/kyc-status', authenticateToken, async (req, res) => {
+  app.get('/api/dashboard/kyc-status', checkLoggedIn, async (req, res) => {
     try {
       const userSession = (req as any).user;
       const sessionRole = userSession.roleName || userSession.role;
@@ -526,7 +526,7 @@ export function registerDashboardRoutes(app: Express, authenticateToken: any) {
   });
 
   // Revenue breakdown endpoint - using dynamic data from transaction table
-  app.get('/api/dashboard/revenue-breakdown', authenticateToken, async (req, res) => {
+  app.get('/api/dashboard/revenue-breakdown', checkLoggedIn, async (req, res) => {
     try {
       const userSession = (req as any).user;
       const sessionRole = userSession.roleName || userSession.role;
@@ -583,7 +583,7 @@ export function registerDashboardRoutes(app: Express, authenticateToken: any) {
   });
 
   // Risk metrics endpoint
-  app.get('/api/dashboard/risk-metrics', authenticateToken, async (req, res) => {
+  app.get('/api/dashboard/risk-metrics', checkLoggedIn, async (req, res) => {
     try {
       const riskMetrics = [
         { metric: "Portfolio Volatility", value: 12.5, status: "low" },

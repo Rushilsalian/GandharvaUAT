@@ -25,7 +25,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { generateSecurePassword, sendWelcomeEmail, sendPasswordResetEmail, sendInvestmentReceipt } from "./emailService";
-import { generateToken, generateResetToken, verifyToken, authenticateToken } from "./jwtUtils";
+import { generateToken, generateResetToken, verifyToken, authenticateToken, checkLoggedIn } from "./jwtUtils";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import { registerDashboardRoutes } from "./dashboardRoutes";
@@ -3014,12 +3014,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register enhanced dashboard routes first (they take precedence)
   console.log('Registering enhanced dashboard routes...');
-  registerEnhancedDashboardRoutes(app, authenticateToken);
+  registerEnhancedDashboardRoutes(app, authenticateToken, checkLoggedIn);
   console.log('Enhanced dashboard routes registered successfully');
   
   // Register dashboard routes (legacy) - these will be fallbacks
   console.log('Registering legacy dashboard routes...');
-  registerDashboardRoutes(app, authenticateToken);
+  registerDashboardRoutes(app, authenticateToken, checkLoggedIn);
   console.log('Legacy dashboard routes registered successfully');
   
   // Register role-based reports routes
