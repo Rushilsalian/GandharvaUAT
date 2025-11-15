@@ -32,10 +32,10 @@ export function RoleBasedDashboard() {
           description: 'Full system access - All clients and data',
           color: 'bg-red-100 text-red-800'
         };
-      case 'leader':
+      case 'manager':
         return {
           icon: Users,
-          label: 'Team Leader',
+          label: 'Manager',
           description: 'Team access - Your clients and referrals',
           color: 'bg-blue-100 text-blue-800'
         };

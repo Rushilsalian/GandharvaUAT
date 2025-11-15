@@ -32,7 +32,6 @@ type MenuItem = {
 const moduleConfig: Record<string, { icon: any; url: string; children?: Record<string, { icon: any; url: string }> }> = {
   "Dashboard": { icon: Home, url: "/dashboard" },
   "Users": { icon: Users, url: "/users" },
-  "Clients": { icon: UserCheck, url: "/clients" },
   "Transactions": { 
     icon: DollarSign, 
     url: "/transactions",
@@ -52,8 +51,7 @@ const moduleConfig: Record<string, { icon: any; url: string; children?: Record<s
       "Referral Request": { icon: UserPlus, url: "/referral-request" }
     }
   },
-  "Reports": { icon: FileText, url: "/reports" },
-  "Content Management": { icon: Edit3, url: "/content-management" }
+  "Reports": { icon: FileText, url: "/reports" }
 };
 
 // Static menu items that appear for all users
@@ -69,17 +67,17 @@ const staticMenuItems: MenuItem[] = [
 const getMenuItems = (moduleAccess: Record<string, any>, userRole: string): MenuItem[] => {
   const menuItems: MenuItem[] = [...staticMenuItems];
   
-  // Add Content Management for admin users
-  if (userRole === 'admin') {
-    menuItems.push({
-      title: "Content Management",
-      url: "/content-management",
-      icon: Edit3
-    });
-  }
+  // Define allowed modules for client and manager roles
+  const clientManagerAllowedModules = ["Dashboard", "Transactions", "Request"];
   
   Object.values(moduleAccess).forEach((module: any) => {
-    if (module.accessRead === 1) {
+    if (module.accessRead === 1 && module.moduleName !== "Content Management" && module.moduleName !== "Clients") {
+      // For client and manager roles, only allow specific modules and exclude individual request modules
+      if ((userRole === 'client' || userRole === 'manager') && (!clientManagerAllowedModules.includes(module.moduleName) || 
+          ["Withdrawal Request", "Investment Request", "Referral Request"].includes(module.moduleName))) {
+        return;
+      }
+      
       const config = moduleConfig[module.moduleName];
       if (config) {
         const menuItem: MenuItem = {
@@ -102,6 +100,22 @@ const getMenuItems = (moduleAccess: Record<string, any>, userRole: string): Menu
     }
   });
   
+  // Add admin-only modules
+  if (userRole === 'admin') {
+    menuItems.push(
+      {
+        title: "Clients",
+        url: "/clients",
+        icon: UserCheck
+      },
+      {
+        title: "Content Management",
+        url: "/content-management",
+        icon: Edit3
+      }
+    );
+  }
+  
   return menuItems;
 };
 
@@ -113,8 +127,13 @@ interface AppSidebarProps {
 export function AppSidebar({ userRole, onLogout }: AppSidebarProps) {
   const { user, session, client } = useAuth();
   const [, setLocation] = useLocation();
-  const menuItems = session?.moduleAccess ? getMenuItems(session.moduleAccess, userRole) : 
-    userRole === 'admin' ? [...staticMenuItems, { title: "Content Management", url: "/content-management", icon: Edit3 }] : staticMenuItems;
+  
+  // Determine actual role - prioritize session roleId over userRole prop
+  const actualRole = session?.roleId === 3 ? 'client' : session?.roleId === 2 ? 'manager' : session?.roleId === 1 ? 'admin' : userRole;
+  
+  const menuItems = session?.moduleAccess ? getMenuItems(session.moduleAccess, actualRole) : 
+    actualRole === 'admin' ? [...staticMenuItems, { title: "Clients", url: "/clients", icon: UserCheck }, { title: "Content Management", url: "/content-management", icon: Edit3 }] : 
+    (actualRole === 'client' || actualRole === 'manager') ? [...staticMenuItems, { title: "Dashboard", url: "/dashboard", icon: Home }, { title: "Transactions", url: "/transactions", icon: DollarSign, children: [{ title: "Investments", url: "/investments", icon: TrendingUp }, { title: "Withdrawals", url: "/withdrawals", icon: TrendingDown }, { title: "Payouts", url: "/payouts", icon: BarChart3 }, { title: "Closures", url: "/closures", icon: FileText }] }, { title: "Request", url: "/requests", icon: Send, children: [{ title: "Withdrawal Request", url: "/withdrawal-request", icon: Banknote }, { title: "Investment Request", url: "/investment-request", icon: HandCoins }, { title: "Referral Request", url: "/referral-request", icon: UserPlus }] }] : staticMenuItems;
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(
     menuItems.reduce((acc, item) => ({ ...acc, [item.title]: false }), {})
   );
@@ -210,7 +229,7 @@ export function AppSidebar({ userRole, onLogout }: AppSidebarProps) {
         <div className="space-y-2">
           <div className="text-sm group-data-[collapsible=icon]:hidden">
             <p className="font-medium">{client?.name || user?.userName}</p>
-            <p className="text-muted-foreground capitalize">{session?.roleName || userRole}</p>
+            <p className="text-muted-foreground capitalize">{session?.roleName || actualRole}</p>
           </div>
           <Button 
             variant="outline" 
