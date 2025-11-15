@@ -9,14 +9,11 @@ import { url } from "inspector";
 
 interface LoginFormProps {
   onLogin?: (email: string, password: string) => void;
-  onSignup?: (email: string, password: string, name: string) => void;
 }
 
-export function LoginForm({ onLogin, onSignup }: LoginFormProps) {
+export function LoginForm({ onLogin }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [isSignup, setIsSignup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -26,19 +23,8 @@ export function LoginForm({ onLogin, onSignup }: LoginFormProps) {
     setIsLoading(true);
 
     try {
-      if (isSignup) {
-        if (!name.trim()) {
-          throw new Error("Name is required");
-        }
-        if (password.length < 6) {
-          throw new Error("Password must be at least 6 characters");
-        }
-        console.log("Signup attempted with:", { name, email, password: "***" });
-        await onSignup?.(email, password, name);
-      } else {
-        console.log("Login attempted with:", { email, password: "***" });
-        await onLogin?.(email, password);
-      }
+      console.log("Login attempted with:", { email, password: "***" });
+      await onLogin?.(email, password);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -61,13 +47,10 @@ export function LoginForm({ onLogin, onSignup }: LoginFormProps) {
             />
           </div>
           <CardTitle className="login text-2xl text-center font-semibold">
-            {isSignup ? "Join Gandharva" : "Welcome to Gandharva"}
+            Welcome to Gandharva
           </CardTitle>
           <CardDescription className="text-center">
-            {isSignup
-              ? "Create your account to start your investment journey"
-              : "Enter your credentials to access your investment portfolio"
-            }
+            Enter your credentials to access your investment portfolio
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -77,20 +60,6 @@ export function LoginForm({ onLogin, onSignup }: LoginFormProps) {
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {isSignup && (
-              <div className="space-y-1">
-                <Label htmlFor="name" data-testid="label-name">Full Name</Label>
-                <Input
-                  id="name"
-                  data-testid="input-name"
-                  type="text"
-                  placeholder="Enter your full name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
-              </div>
-            )}
 
             <div className="space-y-1">
               <Label htmlFor="email" data-testid="label-email">Email or Mobile</Label>
@@ -122,43 +91,22 @@ export function LoginForm({ onLogin, onSignup }: LoginFormProps) {
               type="submit"
               className="w-full"
               disabled={isLoading}
-              data-testid={isSignup ? "button-signup" : "button-login"}
+              data-testid="button-login"
             >
-              {isLoading ? (isSignup ? "Signing Up..." : "Signing In...") : (isSignup ? "Sign Up" : "Sign In")}
+              {isLoading ? "Signing In..." : "Sign In"}
             </Button>
             <div className="text-end mt-0" style={{ marginTop: '0px' }}>
-              {!isSignup && (
-                <Link href="/forgot-password">
-                  <Button variant="ghost" className="p-0 text-sm text-red-600 hover:text-red-700" data-testid="link-forgot-password">
-                    Forgot password?
-                  </Button>
-                </Link>
-              )}</div>
+              <Link href="/forgot-password">
+                <Button variant="ghost" className="p-0 text-sm text-red-600 hover:text-red-700" data-testid="link-forgot-password">
+                  Forgot password?
+                </Button>
+              </Link>
+            </div>
           </form>
 
           <Separator className="my-4" />
 
-          <div className="text-center text-primary space-y-1">
-            <Button
-              variant="ghost"
-              className="p-0 h-auto text-sm"
-              onClick={() => setIsSignup(!isSignup)}
-              data-testid="toggle-signup"
-            >
-              {isSignup
-                ? "Already have an account? Sign In"
-                : "Don't have an account? Sign Up"
-              }
-            </Button>
 
-            {/* {!isSignup && (
-              <Link href="/forgot-password">
-                <Button variant="ghost" className="p-0 h-auto text-sm" data-testid="link-forgot-password">
-                  Forgot your password?
-                </Button>
-              </Link>
-            )} */}
-          </div>
         </CardContent>
       </Card>
     </div>

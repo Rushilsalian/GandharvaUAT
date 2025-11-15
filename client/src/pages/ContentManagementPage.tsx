@@ -533,7 +533,7 @@ export default function ContentManagementPage() {
                       {item.isActive ? "Active" : "Inactive"}
                     </Badge>
                     <Badge variant={item.isPublished ? "default" : "outline"}>
-                      {item.isPublished ? "Published" : "Draft"}
+                      {item.isPublished ? "Published" : "Unpublished"}
                     </Badge>
                     <Button size="sm" variant="outline" onClick={() => openEditDialog(item)}>
                       <Edit className="h-4 w-4" />
