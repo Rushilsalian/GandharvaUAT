@@ -59,7 +59,7 @@ export default function ContentManagementPage() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [categories, setCategories] = useState<ContentCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTab, setSelectedTab] = useState("content");
+  const [selectedTab, setSelectedTab] = useState("guide");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ContentItem | Offer | null>(null);
   const { toast } = useToast();
@@ -513,10 +513,10 @@ export default function ContentManagementPage() {
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab}>
         <TabsList>
+          <TabsTrigger value="guide">How to Use</TabsTrigger>
           <TabsTrigger value="content">Content Items</TabsTrigger>
           <TabsTrigger value="offers">Offers</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
-          <TabsTrigger value="guide">How to Use</TabsTrigger>
         </TabsList>
 
         <TabsContent value="content">
