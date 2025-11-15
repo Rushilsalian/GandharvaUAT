@@ -10,6 +10,8 @@ interface Offer {
   title: string;
   description: string;
   imageUrl: string;
+  mediaType?: 'image' | 'video';
+  mediaUrl?: string;
   linkUrl: string;
   validFrom: string;
   validTo: string;
@@ -149,14 +151,25 @@ export default function OffersPage() {
                     }`}
                   >
                     <div className="flex flex-col md:flex-row h-full">
-                      {/* Image Section */}
+                      {/* Media Section */}
                       <div className="w-full md:w-1/2 relative h-48 md:h-full">
-                        {offer.imageUrl ? (
-                          <img
-                            src={offer.imageUrl}
-                            alt={offer.title}
-                            className="w-full h-full object-cover"
-                          />
+                        {(offer.mediaUrl || offer.imageUrl) ? (
+                          offer.mediaType === 'video' && offer.mediaUrl ? (
+                            <video
+                              src={offer.mediaUrl}
+                              className="w-full h-full object-cover"
+                              controls
+                              muted
+                              autoPlay
+                              loop
+                            />
+                          ) : (
+                            <img
+                              src={offer.mediaUrl || offer.imageUrl}
+                              alt={offer.title}
+                              className="w-full h-full object-cover"
+                            />
+                          )
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
                             <div className="text-6xl text-primary/30">💰</div>

@@ -277,6 +277,8 @@ router.get("/offers", async (req, res) => {
       title: offers.title,
       description: offers.description,
       imageUrl: offers.imageUrl,
+      mediaType: offers.mediaType,
+      mediaUrl: offers.mediaUrl,
       linkUrl: offers.linkUrl,
       validFrom: offers.validFrom,
       validTo: offers.validTo,
@@ -300,7 +302,7 @@ router.get("/offers", async (req, res) => {
 // Create offer
 router.post("/offers", upload.single('image'), async (req, res) => {
   try {
-    const { title, description, linkUrl, validFrom, validTo, displayOrder, isActive } = req.body;
+    const { title, description, mediaType, linkUrl, validFrom, validTo, displayOrder, isActive } = req.body;
     const userId = (req as any).user?.id || null;
     
     // Validation
@@ -308,9 +310,16 @@ router.post("/offers", upload.single('image'), async (req, res) => {
       return res.status(400).json({ error: "Title is required" });
     }
     
+    let mediaUrl = null;
     let imageUrl = null;
     if (req.file) {
-      imageUrl = `/uploads/${req.file.filename}`;
+      const fileUrl = `/uploads/${req.file.filename}`;
+      if (mediaType === 'video') {
+        mediaUrl = fileUrl;
+      } else {
+        imageUrl = fileUrl;
+        mediaUrl = fileUrl;
+      }
     }
 
     // Date validation
@@ -339,6 +348,8 @@ router.post("/offers", upload.single('image'), async (req, res) => {
       title: title.trim(),
       description: description?.trim() || null,
       imageUrl,
+      mediaType: mediaType?.trim() || 'image',
+      mediaUrl,
       linkUrl: linkUrl?.trim() || null,
       validFrom: validFromDate,
       validTo: validToDate,
@@ -358,7 +369,7 @@ router.post("/offers", upload.single('image'), async (req, res) => {
 router.put("/offers/:id", upload.single('image'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, linkUrl, validFrom, validTo, displayOrder, isActive, removeExistingFile } = req.body;
+    const { title, description, mediaType, linkUrl, validFrom, validTo, displayOrder, isActive, removeExistingFile } = req.body;
     
     if (!id?.trim()) {
       return res.status(400).json({ error: "Offer ID is required" });
@@ -392,6 +403,7 @@ router.put("/offers/:id", upload.single('image'), async (req, res) => {
     const updateData: any = {
       title: title.trim(),
       description: description?.trim() || null,
+      mediaType: mediaType?.trim() || 'image',
       linkUrl: linkUrl?.trim() || null,
       validFrom: validFromDate,
       validTo: validToDate,
@@ -401,9 +413,17 @@ router.put("/offers/:id", upload.single('image'), async (req, res) => {
     };
 
     if (req.file) {
-      updateData.imageUrl = `/uploads/${req.file.filename}`;
+      const fileUrl = `/uploads/${req.file.filename}`;
+      if (mediaType === 'video') {
+        updateData.mediaUrl = fileUrl;
+        updateData.imageUrl = null;
+      } else {
+        updateData.imageUrl = fileUrl;
+        updateData.mediaUrl = fileUrl;
+      }
     } else if (removeExistingFile === 'true') {
       updateData.imageUrl = null;
+      updateData.mediaUrl = null;
     }
 
     const result = await db.update(offers).set(updateData).where(eq(offers.id, id));
@@ -455,7 +475,20 @@ router.get("/public/content", async (req, res) => {
 router.get("/public/offers", async (req, res) => {
   try {
     const now = new Date();
-    const activeOffers = await db.select()
+    const activeOffers = await db.select({
+      id: offers.id,
+      title: offers.title,
+      description: offers.description,
+      imageUrl: offers.imageUrl,
+      mediaType: offers.mediaType,
+      mediaUrl: offers.mediaUrl,
+      linkUrl: offers.linkUrl,
+      validFrom: offers.validFrom,
+      validTo: offers.validTo,
+      displayOrder: offers.displayOrder,
+      isActive: offers.isActive,
+      createdAt: offers.createdAt,
+    })
       .from(offers)
       .where(eq(offers.isActive, 1))
       .orderBy(offers.displayOrder, desc(offers.createdAt));

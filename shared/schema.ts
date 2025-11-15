@@ -472,6 +472,8 @@ export const offers = mysqlTable("offers", {
   title: varchar("title", { length: 200 }).notNull(),
   description: text("description"),
   imageUrl: text("image_url"),
+  mediaType: varchar("media_type", { length: 20 }).default('image'),
+  mediaUrl: text("media_url"),
   linkUrl: text("link_url"),
   validFrom: timestamp("valid_from"),
   validTo: timestamp("valid_to"),

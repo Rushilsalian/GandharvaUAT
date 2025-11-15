@@ -35,6 +35,8 @@ interface Offer {
   title: string;
   description: string;
   imageUrl: string;
+  mediaType?: 'image' | 'video';
+  mediaUrl?: string;
   linkUrl: string;
   validFrom: string;
   validTo: string;
@@ -221,7 +223,7 @@ export default function ContentManagementPage() {
 
   const openEditDialog = (item: ContentItem | Offer) => {
     setEditingItem(item);
-    if ('mediaType' in item) {
+    if ('content' in item) {
       // Content item
       setFormData({
         title: item.title,
@@ -242,7 +244,7 @@ export default function ContentManagementPage() {
         title: item.title,
         description: item.description,
         content: "",
-        mediaType: "image",
+        mediaType: (item.mediaType as 'image' | 'video' | 'text') || "image",
         categoryId: "",
         displayOrder: item.displayOrder,
         isActive: item.isActive,
@@ -354,6 +356,19 @@ export default function ContentManagementPage() {
               {selectedTab === 'offers' && (
                 <>
                   <div>
+                    <Label htmlFor="mediaType">Media Type</Label>
+                    <Select value={formData.mediaType} onValueChange={(value: 'image' | 'video' | 'text') => setFormData({ ...formData, mediaType: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="image">Image</SelectItem>
+                        <SelectItem value="video">Video</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
                     <Label htmlFor="linkUrl">Link URL</Label>
                     <Input
                       id="linkUrl"
@@ -413,8 +428,18 @@ export default function ContentManagementPage() {
                         )}
                       </div>
                     )}
-                    {selectedTab === 'offers' && 'imageUrl' in editingItem && editingItem.imageUrl && (
-                      <img src={editingItem.imageUrl} alt={editingItem.title} className="h-20 w-20 object-cover rounded" />
+                    {selectedTab === 'offers' && (
+                      ('mediaUrl' in editingItem && editingItem.mediaUrl) ? (
+                        editingItem.mediaType === 'video' ? (
+                          <video src={editingItem.mediaUrl} className="h-20 w-32 object-cover rounded" controls />
+                        ) : (
+                          <img src={editingItem.mediaUrl} alt={editingItem.title} className="h-20 w-20 object-cover rounded" />
+                        )
+                      ) : (
+                        'imageUrl' in editingItem && editingItem.imageUrl && (
+                          <img src={editingItem.imageUrl} alt={editingItem.title} className="h-20 w-20 object-cover rounded" />
+                        )
+                      )
                     )}
                   </div>
                 )}
@@ -422,7 +447,7 @@ export default function ContentManagementPage() {
                   <Input
                     id="media"
                     type="file"
-                    accept={selectedTab === 'content' && formData.mediaType === 'video' ? 'video/*' : 'image/*'}
+                    accept={formData.mediaType === 'video' ? 'video/*' : 'image/*'}
                     onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
                   />
                 )}
@@ -560,9 +585,19 @@ export default function ContentManagementPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground mb-2">{offer.description}</p>
-                  {offer.imageUrl && (
-                    <img src={offer.imageUrl} alt={offer.title} className="h-20 w-20 object-cover rounded mb-2" />
-                  )}
+                  <div className="mb-2">
+                    {offer.mediaUrl ? (
+                      offer.mediaType === 'video' ? (
+                        <video src={offer.mediaUrl} className="h-20 w-32 object-cover rounded" controls />
+                      ) : (
+                        <img src={offer.mediaUrl} alt={offer.title} className="h-20 w-20 object-cover rounded" />
+                      )
+                    ) : offer.imageUrl ? (
+                      <img src={offer.imageUrl} alt={offer.title} className="h-20 w-20 object-cover rounded" />
+                    ) : (
+                      <div className="text-xs text-muted-foreground">No media</div>
+                    )}
+                  </div>
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>Valid: {offer.validFrom ? new Date(offer.validFrom).toLocaleDateString() : 'N/A'} - {offer.validTo ? new Date(offer.validTo).toLocaleDateString() : 'N/A'}</span>
                     <span>Order: {offer.displayOrder}</span>
