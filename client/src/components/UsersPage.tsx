@@ -326,7 +326,7 @@ export function UsersPage() {
                           </TableCell>
                           <TableCell>
                             <div className="truncate max-w-[140px]">
-                              {user.firstName} {user.lastName}
+                              {user.firstName?.charAt(0).toUpperCase() + user.firstName?.slice(1)}{user.lastName && user.lastName.trim() ? ` ${user.lastName.charAt(0).toUpperCase() + user.lastName.slice(1)}` : ''}
                             </div>
                           </TableCell>
                           <TableCell className="text-muted-foreground">

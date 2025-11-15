@@ -706,7 +706,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           success: true,
           paymentId: razorpay_payment_id,
           orderId: razorpay_order_id,
-          amount: payment.amount / 100, // Convert from paise to rupees
+          amount: Number(payment.amount) / 100, // Convert from paise to rupees
           status: payment.status
         });
       } else {
@@ -1254,19 +1254,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/users', async (req, res) => {
     try {
       const users = await storage.getAllMstUsers();
+      const clients = await storage.getAllMstClients();
       
       if (!users || users.length === 0) {
         return res.json([]);
       }
       
       const usersWithoutPasswords = users.map(({ password, ...user }) => {
-
+        let firstName = 'Unknown';
+        let lastName = '';
+        
+        // If user has clientId, get name from mst_client table
+        if (user.clientId) {
+          const client = clients.find(c => c.clientId === user.clientId);
+          if (client && client.name) {
+            const nameParts = client.name.split(' ');
+            firstName = nameParts[0] || 'Unknown';
+            lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+          }
+        } else {
+          // Fallback to userName if no client
+          const nameParts = user.userName?.split(' ') || ['Unknown'];
+          firstName = nameParts[0] || 'Unknown';
+          lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+        }
+        
         return {
           id: user.userId?.toString() || 'unknown',
           email: user.email || null,
           mobile: user.mobile || null,
-          firstName: user.userName?.split(' ')[0] || 'Unknown',
-          lastName: user.userName?.split(' ').slice(1).join(' ') || '',
+          firstName: firstName,
+          lastName: lastName,
           role: user.roleId === 1 ? 'admin' : user.roleId === 2 ? 'leader' : 'client',
           branchId: user.clientId?.toString() || null,
           isActive: Boolean(user.isActive),
@@ -2502,7 +2520,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (!existingUser) {
               const password = generateSecurePassword();
               const userData = {
-                userName: clientData.email,
+                userName: clientData.name || clientData.email,
                 password,
                 email: clientData.email,
                 mobile: clientData.mobile || null,
@@ -2644,7 +2662,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (!existingUser) {
               const password = generateSecurePassword();
               const userData = {
-                userName: clientData.email,
+                userName: clientData.name || clientData.email,
                 password,
                 email: clientData.email,
                 mobile: clientData.mobile || null,
