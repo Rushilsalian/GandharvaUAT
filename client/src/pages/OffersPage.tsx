@@ -65,12 +65,19 @@ export default function OffersPage() {
 
       if (offersRes.ok) {
         const offersData = await offersRes.json();
+        console.log('Offers data received:', offersData);
         setOffers(offersData);
+      } else {
+        console.error('Offers fetch failed:', offersRes.status, offersRes.statusText);
       }
 
       if (contentRes.ok) {
         const contentData = await contentRes.json();
-        setContentItems(contentData.filter((item: ContentItem) => item.mediaType === 'image'));
+        console.log('Content data received:', contentData);
+        console.log('Setting all content items:', contentData);
+        setContentItems(contentData);
+      } else {
+        console.error('Content fetch failed:', contentRes.status, contentRes.statusText);
       }
     } catch (error) {
       toast({
@@ -117,6 +124,8 @@ export default function OffersPage() {
       </div>
     );
   }
+
+  console.log('Rendering - offers:', offers.length, 'contentItems:', contentItems.length);
 
   return (
     <div className="container mx-auto p-3 sm:p-6 space-y-6 sm:space-y-8">
@@ -238,18 +247,27 @@ export default function OffersPage() {
       {/* Additional Content Gallery */}
       {contentItems.length > 0 && (
         <div>
-          <h2 className="text-2xl font-bold mb-6">Market Insights & Updates</h2>
+          <h2 className="text-2xl font-bold mb-6">Market Insights & Updates ({contentItems.length} items)</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {contentItems.map((item) => (
               <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                 <CardContent className="p-0">
                   {item.mediaUrl && (
                     <div className="aspect-video relative">
-                      <img
-                        src={item.mediaUrl}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                      />
+                      {item.mediaType === 'video' ? (
+                        <video
+                          src={item.mediaUrl}
+                          className="w-full h-full object-cover"
+                          controls
+                          preload="metadata"
+                        />
+                      ) : (
+                        <img
+                          src={item.mediaUrl}
+                          alt={item.title}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
                     </div>
                   )}
                   <div className="p-4">

@@ -64,11 +64,10 @@ const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi|webm/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
+    const allowedExts = /\.(jpeg|jpg|png|gif|mp4|mov|avi|webm)$/i;
+    const allowedMimes = /^(image|video)\//;
     
-    if (mimetype && extname) {
+    if (allowedExts.test(file.originalname) && allowedMimes.test(file.mimetype)) {
       return cb(null, true);
     } else {
       cb(new Error('Only images and videos are allowed'));
@@ -155,6 +154,9 @@ router.post("/", upload.single('media'), async (req, res) => {
     const { title, description, content, categoryId, mediaType, displayOrder, isActive, isPublished } = req.body;
     const userId = (req as any).user?.id || null;
     
+    console.log('Content creation - isPublished received:', isPublished, 'type:', typeof isPublished);
+    console.log('Content creation - isActive received:', isActive, 'type:', typeof isActive);
+    
     // Validation
     if (!title?.trim()) {
       return res.status(400).json({ error: "Title is required" });
@@ -168,7 +170,10 @@ router.post("/", upload.single('media'), async (req, res) => {
       mediaUrl = `/uploads/${req.file.filename}`;
     }
 
-    const isPublishedValue = parseInt(isPublished) === 1;
+    const isPublishedValue = isPublished === 'true' || isPublished === '1' || parseInt(isPublished) === 1;
+    const isActiveValue = isActive === 'true' || isActive === '1' || parseInt(isActive) === 1 ? 1 : 0;
+    console.log('Content creation - Final values: isPublished =', isPublishedValue ? 1 : 0, 'isActive =', isActiveValue);
+    
     const [contentItem] = await db.insert(contentItems).values({
       title: title.trim(),
       description: description?.trim() || null,
@@ -177,7 +182,7 @@ router.post("/", upload.single('media'), async (req, res) => {
       mediaType: mediaType.trim(),
       mediaUrl,
       displayOrder: parseInt(displayOrder) || 0,
-      isActive: parseInt(isActive) === 1 ? 1 : 0,
+      isActive: isActiveValue,
       isPublished: isPublishedValue ? 1 : 0,
       publishedAt: isPublishedValue ? new Date() : null,
       createdBy: userId,
@@ -195,7 +200,10 @@ router.post("/", upload.single('media'), async (req, res) => {
 router.put("/:id", upload.single('media'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, content, categoryId, mediaType, displayOrder, isActive, isPublished } = req.body;
+    const { title, description, content, categoryId, mediaType, displayOrder, isActive, isPublished, removeExistingFile } = req.body;
+    
+    console.log('Content update - isPublished received:', isPublished, 'type:', typeof isPublished);
+    console.log('Content update - isActive received:', isActive, 'type:', typeof isActive);
     
     if (!id?.trim()) {
       return res.status(400).json({ error: "Content ID is required" });
@@ -207,7 +215,10 @@ router.put("/:id", upload.single('media'), async (req, res) => {
       return res.status(400).json({ error: "Media type is required" });
     }
     
-    const isPublishedValue = parseInt(isPublished) === 1;
+    const isPublishedValue = isPublished === 'true' || isPublished === '1' || parseInt(isPublished) === 1;
+    const isActiveValue = isActive === 'true' || isActive === '1' || parseInt(isActive) === 1 ? 1 : 0;
+    console.log('Content update - Final values: isPublished =', isPublishedValue ? 1 : 0, 'isActive =', isActiveValue);
+    
     const updateData: any = {
       title: title.trim(),
       description: description?.trim() || null,
@@ -215,18 +226,20 @@ router.put("/:id", upload.single('media'), async (req, res) => {
       categoryId: categoryId?.trim() || null,
       mediaType: mediaType.trim(),
       displayOrder: parseInt(displayOrder) || 0,
-      isActive: parseInt(isActive) === 1 ? 1 : 0,
+      isActive: isActiveValue,
       isPublished: isPublishedValue ? 1 : 0,
       updatedAt: new Date(),
     };
 
     if (req.file) {
       updateData.mediaUrl = `/uploads/${req.file.filename}`;
+    } else if (removeExistingFile === 'true') {
+      updateData.mediaUrl = null;
     }
 
-    if (isPublishedValue && !updateData.publishedAt) {
+    if (isPublishedValue) {
       updateData.publishedAt = new Date();
-    } else if (!isPublishedValue) {
+    } else {
       updateData.publishedAt = null;
     }
 
@@ -330,7 +343,7 @@ router.post("/offers", upload.single('image'), async (req, res) => {
       validFrom: validFromDate,
       validTo: validToDate,
       displayOrder: parseInt(displayOrder) || 0,
-      isActive: parseInt(isActive) === 1 ? 1 : 0,
+      isActive: isActive === 'true' || isActive === '1' || parseInt(isActive) === 1 ? 1 : 0,
       createdBy: userId,
     });
 
@@ -345,7 +358,7 @@ router.post("/offers", upload.single('image'), async (req, res) => {
 router.put("/offers/:id", upload.single('image'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, linkUrl, validFrom, validTo, displayOrder, isActive } = req.body;
+    const { title, description, linkUrl, validFrom, validTo, displayOrder, isActive, removeExistingFile } = req.body;
     
     if (!id?.trim()) {
       return res.status(400).json({ error: "Offer ID is required" });
@@ -383,12 +396,14 @@ router.put("/offers/:id", upload.single('image'), async (req, res) => {
       validFrom: validFromDate,
       validTo: validToDate,
       displayOrder: parseInt(displayOrder) || 0,
-      isActive: parseInt(isActive) === 1 ? 1 : 0,
+      isActive: isActive === 'true' || isActive === '1' || parseInt(isActive) === 1 ? 1 : 0,
       updatedAt: new Date(),
     };
 
     if (req.file) {
       updateData.imageUrl = `/uploads/${req.file.filename}`;
+    } else if (removeExistingFile === 'true') {
+      updateData.imageUrl = null;
     }
 
     const result = await db.update(offers).set(updateData).where(eq(offers.id, id));
@@ -428,8 +443,10 @@ router.get("/public/content", async (req, res) => {
       )
       .orderBy(contentItems.displayOrder, desc(contentItems.publishedAt));
     
+    console.log('Public content query result:', content);
     res.json(content);
   } catch (error) {
+    console.error('Public content fetch error:', error);
     res.status(500).json({ error: "Failed to fetch public content" });
   }
 });
@@ -443,8 +460,10 @@ router.get("/public/offers", async (req, res) => {
       .where(eq(offers.isActive, 1))
       .orderBy(offers.displayOrder, desc(offers.createdAt));
     
+    console.log('Public offers query result:', activeOffers);
     res.json(activeOffers);
   } catch (error) {
+    console.error('Public offers fetch error:', error);
     res.status(500).json({ error: "Failed to fetch active offers" });
   }
 });

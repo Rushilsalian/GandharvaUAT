@@ -77,6 +77,7 @@ export default function ContentManagementPage() {
     validTo: ""
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [removeExistingFile, setRemoveExistingFile] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -119,12 +120,15 @@ export default function ContentManagementPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('Frontend - Form data before submission:', formData);
+    
     try {
       const formDataToSend = new FormData();
       
       // Add form fields
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
+          console.log(`Frontend - Adding ${key}:`, value, 'as string:', value.toString());
           formDataToSend.append(key, value.toString());
         }
       });
@@ -133,6 +137,11 @@ export default function ContentManagementPage() {
       if (selectedFile) {
         const fieldName = selectedTab === 'content' ? 'media' : 'image';
         formDataToSend.append(fieldName, selectedFile);
+      }
+      
+      // Add flag to remove existing file
+      if (removeExistingFile) {
+        formDataToSend.append('removeExistingFile', 'true');
       }
 
   const endpoint = selectedTab === 'content' ? '/api/content' : '/api/content/offers';
@@ -206,6 +215,7 @@ export default function ContentManagementPage() {
       validTo: ""
     });
     setSelectedFile(null);
+    setRemoveExistingFile(false);
     setEditingItem(null);
   };
 
@@ -242,6 +252,8 @@ export default function ContentManagementPage() {
         validTo: item.validTo ? new Date(item.validTo).toISOString().split('T')[0] : ""
       });
     }
+    setSelectedFile(null);
+    setRemoveExistingFile(false);
     setIsDialogOpen(true);
   };
 
@@ -261,13 +273,14 @@ export default function ContentManagementPage() {
     <div className="container mx-auto p-3 sm:p-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h1 className="text-2xl sm:text-3xl font-bold">Content Management</h1>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add {selectedTab === 'content' ? 'Content' : 'Offer'}
-            </Button>
-          </DialogTrigger>
+        {selectedTab !== 'categories' && selectedTab !== 'guide' && (
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={resetForm}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add {selectedTab === 'content' ? 'Content' : 'Offer'}
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -374,13 +387,57 @@ export default function ContentManagementPage() {
               )}
 
               <div>
-                <Label htmlFor="media">Upload Media</Label>
-                <Input
-                  id="media"
-                  type="file"
-                  accept={selectedTab === 'content' && formData.mediaType === 'video' ? 'video/*' : 'image/*'}
-                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                />
+                <Label htmlFor="media">Media</Label>
+                {editingItem && !removeExistingFile && (
+                  <div className="mb-3 p-3 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium">Current File:</span>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setRemoveExistingFile(true)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Remove
+                      </Button>
+                    </div>
+                    {selectedTab === 'content' && 'mediaUrl' in editingItem && editingItem.mediaUrl && (
+                      <div className="mb-2">
+                        {editingItem.mediaType === 'image' ? (
+                          <img src={editingItem.mediaUrl} alt={editingItem.title} className="h-20 w-20 object-cover rounded" />
+                        ) : editingItem.mediaType === 'video' ? (
+                          <video src={editingItem.mediaUrl} className="h-20 w-32 object-cover rounded" controls />
+                        ) : (
+                          <div className="text-sm text-muted-foreground">Text content</div>
+                        )}
+                      </div>
+                    )}
+                    {selectedTab === 'offers' && 'imageUrl' in editingItem && editingItem.imageUrl && (
+                      <img src={editingItem.imageUrl} alt={editingItem.title} className="h-20 w-20 object-cover rounded" />
+                    )}
+                  </div>
+                )}
+                {(!editingItem || removeExistingFile) && (
+                  <Input
+                    id="media"
+                    type="file"
+                    accept={selectedTab === 'content' && formData.mediaType === 'video' ? 'video/*' : 'image/*'}
+                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                  />
+                )}
+                {removeExistingFile && (
+                  <div className="mt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setRemoveExistingFile(false)}
+                    >
+                      Keep Current File
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -425,7 +482,8 @@ export default function ContentManagementPage() {
               </div>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        )}
       </div>
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab}>
