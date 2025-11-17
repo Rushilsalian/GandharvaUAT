@@ -137,6 +137,7 @@ export default function WithdrawalRequestPage() {
               <div>
                 <Label htmlFor="amount">Amount *</Label>
                 <Input
+                  className="amount-imput"
                   id="amount"
                   type="number"
                   step="0.01"

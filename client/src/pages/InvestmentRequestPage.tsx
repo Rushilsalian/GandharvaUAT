@@ -176,6 +176,7 @@ export default function InvestmentRequestPage() {
             <div>
               <Label htmlFor="amount">Investment Amount (₹)</Label>
               <Input
+                className="amount-imput"
                 id="amount"
                 type="number"
                 placeholder="Enter investment amount"
@@ -195,7 +196,7 @@ export default function InvestmentRequestPage() {
               />
             </div>
             
-            <div className="sspace-y-4 flex flex-col items-center justify-center mt-1">
+            <div className="sspace-y-4 items-center justify-center mt-1">
               <Button 
                 onClick={handlePayment} 
                 disabled={loading || !formData.amount}

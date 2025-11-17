@@ -271,31 +271,31 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
         <CardContent>
           <div className="space-y-3 text-sm">
             <div className="flex items-start gap-2">
-              <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold mt-0.5">
+              <div className="min-w-6 w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold mt-0.5 flex-shrink-0 aspect-square">
                 1
               </div>
               <p>Download the template file and fill in client information</p>
             </div>
             <div className="flex items-start gap-2">
-              <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold mt-0.5">
+              <div className="min-w-6 w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold mt-0.5 flex-shrink-0 aspect-square">
                 2
               </div>
               <p>Ensure all mandatory fields (client_code, name, mobile, email) are completed</p>
             </div>
             <div className="flex items-start gap-2">
-              <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold mt-0.5">
+              <div className="min-w-6 w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold mt-0.5 flex-shrink-0 aspect-square">
                 3
               </div>
               <p>Upload the file - system will validate and create client records</p>
             </div>
             <div className="flex items-start gap-2">
-              <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold mt-0.5">
+              <div className="min-w-6 w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold mt-0.5 flex-shrink-0 aspect-square">
                 4
               </div>
               <p>User accounts will be created automatically for clients with email addresses</p>
             </div>
             <div className="flex items-start gap-2">
-              <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold mt-0.5">
+              <div className="min-w-6 w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold mt-0.5 flex-shrink-0 aspect-square">
                 5
               </div>
               <p>Welcome emails with login credentials will be sent to new clients</p>

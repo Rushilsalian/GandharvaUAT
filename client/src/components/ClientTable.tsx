@@ -163,6 +163,7 @@ export function ClientTable() {
                       <TableRow key={client.clientId}>
                         <TableCell>
                           <Button
+                          className="icon-border"
                             variant="outline"
                             size="sm"
                             onClick={() => {

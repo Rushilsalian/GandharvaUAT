@@ -61,7 +61,7 @@ export function ClientDetailsModal({ client, isOpen, onClose }: ClientDetailsMod
   }>({});
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
+
   // Reset editing state when modal closes or client changes
   React.useEffect(() => {
     if (!isOpen) {
@@ -91,7 +91,7 @@ export function ClientDetailsModal({ client, isOpen, onClose }: ClientDetailsMod
       });
     }
   });
-  
+
   if (!client) return null;
 
   // Initialize edit data when client changes or edit mode starts
@@ -162,25 +162,25 @@ export function ClientDetailsModal({ client, isOpen, onClose }: ClientDetailsMod
                 <p className="text-sm font-medium text-muted-foreground">Name</p>
                 <p className="text-sm" data-testid="text-name">{client.name}</p>
               </div>
-              
+
               <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
+                {/* <Mail className="h-4 w-4 text-muted-foreground" /> */}
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Email</p>
                   <p className="text-sm" data-testid="text-email">{client.email || 'N/A'}</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
+                {/* <Phone className="h-4 w-4 text-muted-foreground" /> */}
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Mobile</p>
                   <p className="text-sm" data-testid="text-mobile">{client.mobile || 'N/A'}</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
+                {/* <Calendar className="h-4 w-4 text-muted-foreground" /> */}
                 <div className="flex-1">
                   <Label className="text-sm font-medium text-muted-foreground">Date of Birth</Label>
                   {isEditing ? (
@@ -196,9 +196,9 @@ export function ClientDetailsModal({ client, isOpen, onClose }: ClientDetailsMod
                   )}
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
+                {/* <MapPin className="h-4 w-4 text-muted-foreground" /> */}
                 <div className="flex-1">
                   <Label className="text-sm font-medium text-muted-foreground">Address</Label>
                   {isEditing ? (
@@ -214,21 +214,22 @@ export function ClientDetailsModal({ client, isOpen, onClose }: ClientDetailsMod
                   )}
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
+                {/* <MapPin className="h-4 w-4 text-muted-foreground" /> */}
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">City</p>
                   <p className="text-sm" data-testid="text-city">{client.city || 'N/A'}</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
+
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Pincode</p>
                   <p className="text-sm" data-testid="text-pincode">{client.pincode || 'N/A'}</p>
                 </div>
+
               </div>
             </CardContent>
           </Card>
@@ -256,7 +257,7 @@ export function ClientDetailsModal({ client, isOpen, onClose }: ClientDetailsMod
                   <p className="text-sm font-mono" data-testid="text-pan">{client.panNo || 'N/A'}</p>
                 )}
               </div>
-              
+
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Aadhaar Number</Label>
                 {isEditing ? (
@@ -271,19 +272,24 @@ export function ClientDetailsModal({ client, isOpen, onClose }: ClientDetailsMod
                   <p className="text-sm font-mono" data-testid="text-aadhar">{client.aadhaarNo || 'N/A'}</p>
                 )}
               </div>
-              
+
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Status</p>
-                <Badge className={typeof client.isActive === 'object' && client.isActive.data[0] === 1 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} data-testid="badge-status">
+                <Badge className={`${typeof client.isActive === 'object' && client.isActive.data[0] === 1
+                  ? 'text-green-800'
+                  : 'text-red-800'
+                  } bg-transparent border-none shadow-none badge-status text-start`}
+                  data-testid="badge-status"
+                >
                   {typeof client.isActive === 'object' && client.isActive.data[0] === 1 ? 'Active' : 'Inactive'}
                 </Badge>
               </div>
-              
+
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Created By</p>
                 <p className="text-sm" data-testid="text-created-by">{client.createdByUser || 'N/A'}</p>
               </div>
-              
+
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Created Date</p>
                 <p className="text-sm" data-testid="text-created-date">{formatDate(client.createdDate)}</p>
@@ -304,12 +310,12 @@ export function ClientDetailsModal({ client, isOpen, onClose }: ClientDetailsMod
                 <p className="text-sm font-medium text-muted-foreground">Branch</p>
                 <p className="text-sm" data-testid="text-branch">{client.branch || 'N/A'}</p>
               </div>
-              
+
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Reference ID</p>
                 <p className="text-sm" data-testid="text-reference-id">{client.referenceId || 'N/A'}</p>
               </div>
-              
+
               {client.modifiedDate && (
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Last Modified</p>

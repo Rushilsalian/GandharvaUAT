@@ -145,7 +145,7 @@ export function DataTable({
         </div>
         
         {(searchable || filterable) && (
-          <div className="flex gap-2 mt-4">
+          <div className="flex gap-2 items-center flex-nowrap">
             {searchable && (
               <div className="relative flex-1">
                 <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

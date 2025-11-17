@@ -84,7 +84,7 @@ export default function ReferralRequestPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Referral Request</h1>
+        <h1 className="text-2xl md:text-3xl font-bold">Referral Request</h1>
         <p className="text-muted-foreground">Refer someone to our platform</p>
       </div>
 

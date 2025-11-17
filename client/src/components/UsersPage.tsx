@@ -317,6 +317,7 @@ export function UsersPage() {
                         <TableRow key={user.id}>
                           <TableCell>
                             <Button
+                              className="icon-border"
                               variant="outline"
                               size="sm"
                               onClick={() => handleEdit(user)}

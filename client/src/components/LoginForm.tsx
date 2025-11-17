@@ -46,9 +46,9 @@ export function LoginForm({ onLogin }: LoginFormProps) {
               style={{ width: "60%" }}
             />
           </div>
-          <CardTitle className="login text-2xl text-center font-semibold">
+          {/* <CardTitle className="login text-2xl text-center font-semibold">
             Welcome to Gandharva
-          </CardTitle>
+          </CardTitle> */}
           <CardDescription className="text-center">
             Enter your credentials to access your investment portfolio
           </CardDescription>
@@ -104,7 +104,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
             </div>
           </form>
 
-          <Separator className="my-4" />
+          {/* <Separator className="my-4" /> */}
 
 
         </CardContent>

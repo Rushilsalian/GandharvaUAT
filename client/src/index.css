@@ -305,3 +305,9 @@
 .login {
   color:  #030372;
 }
+.icon-border{
+  border: none !important;
+}
+.amount-imput{
+   width: auto !important;
+}
