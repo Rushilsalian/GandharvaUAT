@@ -106,26 +106,28 @@ export default function ReferralRequestPage() {
           )}
           
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="refereeName">Referee Name *</Label>
-              <Input
-                id="refereeName"
-                placeholder="Enter referee's full name"
-                value={formData.refereeName}
-                onChange={(e) => setFormData({ ...formData, refereeName: e.target.value })}
-                required
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="refereePhone">Referee Phone *</Label>
-              <Input
-                id="refereePhone"
-                placeholder="Enter referee's phone number"
-                value={formData.refereePhone}
-                onChange={(e) => setFormData({ ...formData, refereePhone: e.target.value })}
-                required
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="refereeName">Referee Name *</Label>
+                <Input
+                  id="refereeName"
+                  placeholder="Enter referee's full name"
+                  value={formData.refereeName}
+                  onChange={(e) => setFormData({ ...formData, refereeName: e.target.value })}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="refereePhone">Referee Phone *</Label>
+                <Input
+                  id="refereePhone"
+                  placeholder="Enter referee's phone number"
+                  value={formData.refereePhone}
+                  onChange={(e) => setFormData({ ...formData, refereePhone: e.target.value })}
+                  required
+                />
+              </div>
             </div>
             
             <Button type="submit" disabled={loading}>

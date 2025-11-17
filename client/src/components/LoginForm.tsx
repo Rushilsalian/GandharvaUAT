@@ -45,7 +45,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
               className="object-contain"
               style={{ width: "60%" }}
             />
-          </div>
+          </div><br></br>
           {/* <CardTitle className="login text-2xl text-center font-semibold">
             Welcome to Gandharva
           </CardTitle> */}
