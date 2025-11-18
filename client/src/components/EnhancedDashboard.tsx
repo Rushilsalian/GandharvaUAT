@@ -129,6 +129,17 @@ interface Activity {
   time: string;
 }
 
+function formatDateTime(dateString: string): string {
+  const date = new Date(dateString);
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear();
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const seconds = date.getSeconds().toString().padStart(2, '0');
+  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+}
+
 function RecentActivity() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -136,7 +147,7 @@ function RecentActivity() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('/api/dashboard/recent-transactions?limit=5', {
+        const response = await fetch('/api/dashboard/recent-transactions?limit=5&includeDateTime=true', {
           headers: { 'Authorization': `Bearer ${sessionStorage.getItem('authToken')}` }
         });
         if (response.ok) {
@@ -145,7 +156,7 @@ function RecentActivity() {
             type: txn.type.toLowerCase(),
             user: txn.client,
             amount: txn.amount,
-            time: txn.time
+            time: txn.dateTime ? formatDateTime(txn.dateTime) : txn.time
           })));
         }
       } catch (error) {

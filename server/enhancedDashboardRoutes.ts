@@ -164,6 +164,7 @@ export function registerEnhancedDashboardRoutes(app: Express, authenticateToken:
       const sessionRole = (userSession.roleName || userSession.role || '').toLowerCase();
       const sessionClientId = userSession.clientId;
       const limit = parseInt(req.query.limit as string) || 10;
+      const includeDateTime = req.query.includeDateTime === 'true';
       
       console.log('Enhanced Dashboard Recent Transactions API called:', { sessionRole, sessionClientId, limit, timestamp: new Date().toISOString() });
       
@@ -180,7 +181,7 @@ export function registerEnhancedDashboardRoutes(app: Express, authenticateToken:
           allRequests = [
             ...investmentRequests.map(req => ({ ...req, type: 'Investment', date: req.createdDate, amount: req.investmentAmount })),
             ...withdrawalRequests.map(req => ({ ...req, type: 'Withdrawal', date: req.createdDate, amount: req.withdrawalAmount })),
-            ...transactions.map(txn => ({ ...txn, type: 'Payout', date: txn.transactionDate, clientId: txn.clientId }))
+            ...transactions.map(txn => ({ ...txn, type: 'Payout', date: txn.createdDate, clientId: txn.clientId }))
           ];
         } else if (sessionRole === 'leader') {
           const allClients = await storage.getAllMstClients();
@@ -194,7 +195,7 @@ export function registerEnhancedDashboardRoutes(app: Express, authenticateToken:
           allRequests = [
             ...investmentRequests.filter(req => leaderClientIds.includes(req.clientId)).map(req => ({ ...req, type: 'Investment', date: req.createdDate, amount: req.investmentAmount })),
             ...withdrawalRequests.filter(req => leaderClientIds.includes(req.clientId)).map(req => ({ ...req, type: 'Withdrawal', date: req.createdDate, amount: req.withdrawalAmount })),
-            ...transactions.filter(txn => leaderClientIds.includes(txn.clientId)).map(txn => ({ ...txn, type: 'Payout', date: txn.transactionDate, clientId: txn.clientId }))
+            ...transactions.filter(txn => leaderClientIds.includes(txn.clientId)).map(txn => ({ ...txn, type: 'Payout', date: txn.createdDate, clientId: txn.clientId }))
           ];
         } else if (sessionClientId) {
           const investmentRequests = await storage.getInvestmentRequestsByClient(sessionClientId);
@@ -204,7 +205,7 @@ export function registerEnhancedDashboardRoutes(app: Express, authenticateToken:
           allRequests = [
             ...investmentRequests.map(req => ({ ...req, type: 'Investment', date: req.createdDate, amount: req.investmentAmount })),
             ...withdrawalRequests.map(req => ({ ...req, type: 'Withdrawal', date: req.createdDate, amount: req.withdrawalAmount })),
-            ...transactions.map(txn => ({ ...txn, type: 'Payout', date: txn.transactionDate, clientId: txn.clientId }))
+            ...transactions.map(txn => ({ ...txn, type: 'Payout', date: txn.createdDate, clientId: txn.clientId }))
           ];
         }
         
@@ -212,12 +213,13 @@ export function registerEnhancedDashboardRoutes(app: Express, authenticateToken:
         
         // If no real data, provide mock data
         if (allRequests.length === 0) {
+          const now = new Date();
           const mockTransactions = [
-            { id: 1, type: 'investment', client: 'Rajesh Kumar', amount: 150000, time: '10:30 AM' },
-            { id: 2, type: 'withdrawal', client: 'Priya Sharma', amount: 75000, time: '11:45 AM' },
-            { id: 3, type: 'payout', client: 'Amit Patel', amount: 25000, time: '2:15 PM' },
-            { id: 4, type: 'investment', client: 'Sunita Gupta', amount: 200000, time: '3:20 PM' },
-            { id: 5, type: 'payout', client: 'Vikram Singh', amount: 18000, time: '4:10 PM' }
+            { id: 1, type: 'investment', client: 'Rajesh Kumar', amount: 150000, time: includeDateTime ? new Date(now.getTime() - 3600000).toLocaleString() : '10:30 AM', dateTime: includeDateTime ? new Date(now.getTime() - 3600000).toISOString() : undefined },
+            { id: 2, type: 'withdrawal', client: 'Priya Sharma', amount: 75000, time: includeDateTime ? new Date(now.getTime() - 7200000).toLocaleString() : '11:45 AM', dateTime: includeDateTime ? new Date(now.getTime() - 7200000).toISOString() : undefined },
+            { id: 3, type: 'payout', client: 'Amit Patel', amount: 25000, time: includeDateTime ? new Date(now.getTime() - 10800000).toLocaleString() : '2:15 PM', dateTime: includeDateTime ? new Date(now.getTime() - 10800000).toISOString() : undefined },
+            { id: 4, type: 'investment', client: 'Sunita Gupta', amount: 200000, time: includeDateTime ? new Date(now.getTime() - 14400000).toLocaleString() : '3:20 PM', dateTime: includeDateTime ? new Date(now.getTime() - 14400000).toISOString() : undefined },
+            { id: 5, type: 'payout', client: 'Vikram Singh', amount: 18000, time: includeDateTime ? new Date(now.getTime() - 18000000).toLocaleString() : '4:10 PM', dateTime: includeDateTime ? new Date(now.getTime() - 18000000).toISOString() : undefined }
           ];
           return res.json(mockTransactions.slice(0, limit));
         }
@@ -230,12 +232,14 @@ export function registerEnhancedDashboardRoutes(app: Express, authenticateToken:
           allRequests.map(async (request) => {
             const client = await storage.getMstClient(request.clientId);
             
+            const dateTime = new Date(request.date || new Date());
             return {
               id: request.id || request.transactionId || Math.random(),
               type: request.type.toLowerCase(),
               client: client?.name || 'Unknown Client',
               amount: parseFloat(request.amount || '0'),
-              time: new Date(request.date || new Date()).toLocaleTimeString(),
+              time: includeDateTime ? dateTime.toLocaleString() : dateTime.toLocaleTimeString(),
+              dateTime: includeDateTime ? dateTime.toISOString() : undefined,
               status: request.status || 'completed'
             };
           })
@@ -247,10 +251,11 @@ export function registerEnhancedDashboardRoutes(app: Express, authenticateToken:
       } catch (dataError) {
         console.error('Error fetching transaction data:', dataError);
         // Provide fallback mock data
+        const now = new Date();
         const mockTransactions = [
-          { id: 1, type: 'investment', client: 'Sample Client 1', amount: 100000, time: '10:00 AM' },
-          { id: 2, type: 'payout', client: 'Sample Client 2', amount: 15000, time: '11:30 AM' },
-          { id: 3, type: 'investment', client: 'Sample Client 3', amount: 250000, time: '2:45 PM' }
+          { id: 1, type: 'investment', client: 'Sample Client 1', amount: 100000, time: includeDateTime ? new Date(now.getTime() - 3600000).toLocaleString() : '10:00 AM', dateTime: includeDateTime ? new Date(now.getTime() - 3600000).toISOString() : undefined },
+          { id: 2, type: 'payout', client: 'Sample Client 2', amount: 15000, time: includeDateTime ? new Date(now.getTime() - 7200000).toLocaleString() : '11:30 AM', dateTime: includeDateTime ? new Date(now.getTime() - 7200000).toISOString() : undefined },
+          { id: 3, type: 'investment', client: 'Sample Client 3', amount: 250000, time: includeDateTime ? new Date(now.getTime() - 10800000).toLocaleString() : '2:45 PM', dateTime: includeDateTime ? new Date(now.getTime() - 10800000).toISOString() : undefined }
         ];
         res.json(mockTransactions.slice(0, limit));
       }
