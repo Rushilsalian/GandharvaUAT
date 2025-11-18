@@ -472,10 +472,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Role-based filtering with fallback
       const roleName = userSession.roleName || userSession.role || 'client';
       console.log('Withdrawal requests - User session:', { userId: userSession.userId, roleName, clientId: userSession.clientId });
+      console.log('Role comparison debug:', {
+        roleName,
+        isManager: roleName === 'manager' || roleName === 'Manager',
+        roleType: typeof roleName,
+        roleLength: roleName?.length
+      });
       
       if (roleName === 'admin' || roleName === 'Admin') {
         // Admin can see all withdrawal requests - no filtering needed
         console.log('Admin access - showing all requests:', requests.length);
+      } else if (roleName === 'manager' || roleName === 'Manager') {
+        // Manager can see his and his clients' withdrawal requests
+        const allClients = await storage.getAllMstClients();
+        const managerClientId = userSession.clientId;
+        
+        // Get clients where referenceId matches manager's clientId
+        const teamClients = allClients.filter(c => c.referenceId === managerClientId);
+        const managerClientIds = [managerClientId, ...teamClients.map(c => c.clientId)];
+        
+        console.log('Manager debug - managerClientId:', managerClientId);
+        console.log('Manager debug - teamClients found:', teamClients.map(c => ({ clientId: c.clientId, name: c.name, referenceId: c.referenceId })));
+        console.log('Manager debug - managerClientIds:', managerClientIds);
+        console.log('Manager debug - all requests clientIds:', requests.map(r => r.clientId));
+        
+        requests = requests.filter(r => managerClientIds.includes(r.clientId));
+        console.log('Manager access - filtered requests:', requests.length);
       } else if (roleName === 'leader' || roleName === 'Leader') {
         // Leader can see all requests (can be refined based on business logic)
         console.log('Leader access - showing all requests:', requests.length);
@@ -562,6 +584,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
             adminClient = await storage.createMstClient(adminClientData);
           }
           clientId = adminClient.clientId;
+        } else if (roleName === 'manager' || roleName === 'Manager') {
+          // For manager, create a default manager client if not exists
+          let managerClient = await storage.getMstClientByCode(`MGR_${userSession.userId}`);
+          if (!managerClient) {
+            const managerClientData = {
+              code: `MGR_${userSession.userId}`,
+              name: userSession.userName || 'Manager User',
+              mobile: null,
+              email: userSession.email,
+              dob: null,
+              panNo: null,
+              aadhaarNo: null,
+              branch: null,
+              branchId: null,
+              address: null,
+              city: null,
+              pincode: null,
+              referenceId: null,
+              isActive: 1,
+              createdById: userSession.userId,
+              createdByUser: userSession.userName || userSession.email || 'manager',
+              createdDate: new Date(),
+              modifiedById: null,
+              modifiedByUser: null,
+              modifiedDate: null,
+              deletedById: null,
+              deletedByUser: null,
+              deletedDate: null
+            };
+            managerClient = await storage.createMstClient(managerClientData);
+          }
+          clientId = managerClient.clientId;
         } else {
           return res.status(400).json({ error: 'No client associated with this user' });
         }

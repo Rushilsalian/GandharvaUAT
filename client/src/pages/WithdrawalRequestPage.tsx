@@ -103,7 +103,7 @@ export default function WithdrawalRequestPage() {
   // Role-based form visibility
   const canSubmitRequest = () => {
     const roleName = session?.roleName || session?.role;
-    return roleName === 'client' || roleName === 'Client' || roleName === 'admin' || roleName === 'Admin';
+    return roleName === 'client' || roleName === 'Client' || roleName === 'admin' || roleName === 'Admin' || roleName === 'manager' || roleName === 'Manager';
   };
 
   return (
