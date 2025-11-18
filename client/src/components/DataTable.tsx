@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { ClientDetailsModal } from "./ClientDetailsModal";
 import { format } from "date-fns";
+import * as XLSX from 'xlsx';
 
 interface Column {
   key: string;
@@ -28,17 +29,18 @@ interface DataTableProps {
   onViewDetails?: (row: any) => void;
 }
 
-// Export function for CSV download
-const exportToCSV = (title: string, columns: Column[], data: any[]) => {
+// Export function for XLSX download
+const exportToXLSX = (title: string, columns: Column[], data: any[]) => {
   // Filter out non-exportable columns (like actions)
   const exportableColumns = columns.filter(col => col.exportable !== false && col.key !== 'actions');
   
   const headers = exportableColumns.map(col => col.label);
-  const csvData = data.map(row => 
-    exportableColumns.map(col => {
+  const xlsxData = data.map(row => 
+    exportableColumns.reduce((acc, col) => {
       // Use custom export value if provided
       if (col.exportValue) {
-        return col.exportValue(row);
+        acc[col.label] = col.exportValue(row);
+        return acc;
       }
       
       // Get the raw value
@@ -46,37 +48,25 @@ const exportToCSV = (title: string, columns: Column[], data: any[]) => {
       
       // Handle different value types
       if (value === null || value === undefined) {
-        return '';
+        acc[col.label] = '';
+      } else if (value instanceof Date) {
+        acc[col.label] = format(value, 'yyyy-MM-dd');
+      } else if (typeof value === 'number') {
+        acc[col.label] = value;
+      } else {
+        acc[col.label] = String(value);
       }
       
-      // Handle dates
-      if (value instanceof Date) {
-        return format(value, 'yyyy-MM-dd');
-      }
-      
-      // Handle numbers (preserve formatting)
-      if (typeof value === 'number') {
-        return value;
-      }
-      
-      // Convert everything else to string
-      return String(value);
-    })
+      return acc;
+    }, {} as any)
   );
 
-  const csvContent = [headers, ...csvData].map(row => 
-    row.map((field: any) => `"${String(field).replace(/"/g, '""')}"`).join(',')
-  ).join('\n');
-
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${title.toLowerCase().replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  window.URL.revokeObjectURL(url);
+  const worksheet = XLSX.utils.json_to_sheet(xlsxData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
+  
+  const fileName = `${title.toLowerCase().replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+  XLSX.writeFile(workbook, fileName);
 };
 
 export function DataTable({ 
@@ -134,11 +124,11 @@ export function DataTable({
                 variant="outline" 
                 size="sm" 
                 data-testid="button-export"
-                onClick={() => exportToCSV(title, columns, filteredData)}
+                onClick={() => exportToXLSX(title, columns, filteredData)}
                 disabled={filteredData.length === 0}
               >
                 <Download className="h-4 w-4 mr-2" />
-                Export CSV
+                Export XLSX
               </Button>
             )}
           </div>
