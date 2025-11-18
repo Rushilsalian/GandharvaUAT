@@ -318,7 +318,7 @@ export default function PayoutPage() {
                   {(paginatedPayouts as Transaction[]).map((payout) => (
                     <tr key={payout.id} className="border-b hover:bg-muted/50">
                       <td className="p-2 text-sm">
-                        {format(new Date(payout.processedAt || payout.createdAt), 'MMM dd')}
+                        {format(new Date(payout.processedAt || payout.createdAt), 'MMM dd yyyy')}
                       </td>
                       <td className="p-2 text-sm">
                         <div className="truncate">

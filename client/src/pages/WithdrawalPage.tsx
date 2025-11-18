@@ -304,7 +304,7 @@ export default function WithdrawalPage() {
                   {(paginatedWithdrawals as Transaction[]).map((withdrawal) => (
                     <tr key={withdrawal.id} className="border-b hover:bg-muted/50">
                       <td className="p-2 text-sm">
-                        {format(new Date(withdrawal.processedAt || withdrawal.createdAt), 'MMM dd')}
+                        {format(new Date(withdrawal.processedAt || withdrawal.createdAt), 'MMM dd yyyy')}
                       </td>
                       <td className="p-2 text-sm">
                         <div className="truncate">

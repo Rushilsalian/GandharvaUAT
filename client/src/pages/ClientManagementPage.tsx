@@ -65,12 +65,12 @@ export function ClientManagementPage() {
         <div className="flex gap-2 mt-2">
           <Button onClick={() => downloadTemplate('excel')} variant="outline" className="flex items-center gap-2">
             <Download className="h-4 w-4" />
-            Excel Template
+            Sample Template
           </Button>
-          <Button onClick={() => downloadTemplate('json')} variant="outline" className="flex items-center gap-2">
+          {/* <Button onClick={() => downloadTemplate('json')} variant="outline" className="flex items-center gap-2">
             <Download className="h-4 w-4" />
             JSON Template
-          </Button>
+          </Button> */}
         </div>
       </div>
       

@@ -304,7 +304,7 @@ export default function ClosurePage() {
                   {(paginatedClosures as Transaction[]).map((closure) => (
                     <tr key={closure.id} className="border-b hover:bg-muted/50">
                       <td className="p-2 text-sm">
-                        {format(new Date(closure.processedAt || closure.createdAt), 'MMM dd')}
+                        {format(new Date(closure.processedAt || closure.createdAt), 'MMM dd yyyy')}
                       </td>
                       <td className="p-2 text-sm">
                           <div className="truncate">

@@ -408,12 +408,12 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
           </TabsContent>
 
           <TabsContent value="json" className="space-y-4">
-            <div className="flex justify-end">
+            {/* <div className="flex justify-end">
               <Button variant="outline" onClick={downloadSample} className="flex items-center gap-2">
                 <Download className="h-4 w-4" />
                 Download JSON Sample
               </Button>
-            </div>
+            </div> */}
 
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
               <input
