@@ -62,15 +62,27 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  limits: { 
+    fileSize: 50 * 1024 * 1024, // 50MB limit
+    fieldSize: 10 * 1024 * 1024,
+    fields: 20,
+    files: 10
+  },
   fileFilter: (req, file, cb) => {
-    const allowedExts = /\.(jpeg|jpg|png|gif|mp4|mov|avi|webm)$/i;
-    const allowedMimes = /^(image|video)\//;
+    console.log('Content file upload attempt:', {
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      fieldname: file.fieldname
+    });
     
-    if (allowedExts.test(file.originalname) && allowedMimes.test(file.mimetype)) {
+    const allowedExts = /\.(jpeg|jpg|png|gif|webp|mp4|mov|avi|webm|pdf|doc|docx)$/i;
+    const allowedMimes = /^(image|video|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)\//;
+    
+    if (allowedExts.test(file.originalname) && (allowedMimes.test(file.mimetype) || file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/'))) {
       return cb(null, true);
     } else {
-      cb(new Error('Only images and videos are allowed'));
+      console.error('File type rejected:', { originalname: file.originalname, mimetype: file.mimetype });
+      cb(new Error(`File type not allowed. Allowed types: images, videos, PDF, Word documents. Received: ${file.mimetype}`));
     }
   }
 });
@@ -299,8 +311,28 @@ router.get("/offers", async (req, res) => {
   }
 });
 
-// Create offer
-router.post("/offers", upload.single('image'), async (req, res) => {
+// Create offer with enhanced error handling
+router.post("/offers", (req, res, next) => {
+  console.log('Offer creation request received:', {
+    headers: Object.keys(req.headers),
+    contentType: req.headers['content-type'],
+    contentLength: req.headers['content-length']
+  });
+  
+  upload.single('image')(req, res, (err) => {
+    if (err) {
+      console.error('Multer error in offer creation:', err);
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ error: 'File too large. Maximum size is 50MB.' });
+      }
+      if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+        return res.status(400).json({ error: 'Unexpected file field.' });
+      }
+      return res.status(400).json({ error: err.message });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     const { title, description, mediaType, linkUrl, validFrom, validTo, displayOrder, isActive } = req.body;
     const userId = (req as any).user?.id || null;
@@ -365,8 +397,29 @@ router.post("/offers", upload.single('image'), async (req, res) => {
   }
 });
 
-// Update offer
-router.put("/offers/:id", upload.single('image'), async (req, res) => {
+// Update offer with enhanced error handling
+router.put("/offers/:id", (req, res, next) => {
+  console.log('Offer update request received:', {
+    id: req.params.id,
+    headers: Object.keys(req.headers),
+    contentType: req.headers['content-type'],
+    contentLength: req.headers['content-length']
+  });
+  
+  upload.single('image')(req, res, (err) => {
+    if (err) {
+      console.error('Multer error in offer update:', err);
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ error: 'File too large. Maximum size is 50MB.' });
+      }
+      if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+        return res.status(400).json({ error: 'Unexpected file field.' });
+      }
+      return res.status(400).json({ error: err.message });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, mediaType, linkUrl, validFrom, validTo, displayOrder, isActive, removeExistingFile } = req.body;

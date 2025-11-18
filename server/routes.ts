@@ -35,18 +35,40 @@ import { contentRoutes } from "./contentRoutes";
 import { checkDatabaseHealth, warmupConnections } from "./db-health";
 import { initContentData } from "./init-content-data";
 
-// Configure multer for file uploads
+// Configure multer for file uploads with enhanced error handling
 const upload = multer({ 
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  limits: { 
+    fileSize: 50 * 1024 * 1024, // Increased to 50MB
+    fieldSize: 10 * 1024 * 1024, // 10MB field size
+    fields: 10,
+    files: 5
+  },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/vnd.ms-excel' || 
-        file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-        file.originalname.endsWith('.xls') || 
-        file.originalname.endsWith('.xlsx')) {
+    console.log('File upload attempt:', {
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size
+    });
+    
+    const allowedMimeTypes = [
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'text/csv',
+      'application/csv',
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp'
+    ];
+    
+    const allowedExtensions = ['.xls', '.xlsx', '.csv', '.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    
+    if (allowedMimeTypes.includes(file.mimetype) || 
+        allowedExtensions.some(ext => file.originalname.toLowerCase().endsWith(ext))) {
       cb(null, true);
     } else {
-      cb(new Error('Only Excel files are allowed'));
+      cb(new Error(`File type not allowed. Allowed types: ${allowedExtensions.join(', ')}`));
     }
   }
 });
@@ -2347,8 +2369,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // File upload endpoint for bulk transaction import
-  app.post('/api/transactions/upload', upload.single('file'), async (req, res) => {
+  // File upload endpoint for bulk transaction import with enhanced error handling
+  app.post('/api/transactions/upload', (req, res, next) => {
+    upload.single('file')(req, res, (err) => {
+      if (err) {
+        console.error('Multer upload error:', err);
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(413).json({ error: 'File too large. Maximum size is 50MB.' });
+        }
+        if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+          return res.status(400).json({ error: 'Unexpected file field.' });
+        }
+        return res.status(400).json({ error: err.message });
+      }
+      next();
+    });
+  }, async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: 'No file uploaded' });
@@ -2470,8 +2506,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Bulk client upload endpoint (Excel/CSV)
-  app.post('/api/clients/bulk-upload', upload.single('file'), async (req, res) => {
+  // Bulk client upload endpoint (Excel/CSV) with enhanced error handling
+  app.post('/api/clients/bulk-upload', (req, res, next) => {
+    upload.single('file')(req, res, (err) => {
+      if (err) {
+        console.error('Multer upload error:', err);
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(413).json({ error: 'File too large. Maximum size is 50MB.' });
+        }
+        if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+          return res.status(400).json({ error: 'Unexpected file field.' });
+        }
+        return res.status(400).json({ error: err.message });
+      }
+      next();
+    });
+  }, async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: 'No file uploaded' });
