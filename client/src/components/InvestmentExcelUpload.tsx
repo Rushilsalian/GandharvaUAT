@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
-import { Upload, FileSpreadsheet, CheckCircle, XCircle, AlertCircle, Download } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Upload, FileSpreadsheet, FileText, CheckCircle, XCircle, AlertCircle, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface TransactionRow {
@@ -34,6 +35,7 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<UploadResult | null>(null);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+  const [activeTab, setActiveTab] = useState('excel');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateRow = (row: any, rowIndex: number): ValidationError[] => {
@@ -124,20 +126,54 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
     });
   };
 
+  const parseJsonFile = (file: File): Promise<TransactionRow[]> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const jsonData = JSON.parse(e.target?.result as string);
+          
+          if (!Array.isArray(jsonData)) {
+            reject(new Error('JSON file must contain an array of transactions'));
+            return;
+          }
+
+          if (jsonData.length === 0) {
+            reject(new Error('No data found in the JSON file'));
+            return;
+          }
+
+          resolve(jsonData as TransactionRow[]);
+        } catch (error) {
+          reject(new Error('Failed to parse JSON file. Please ensure it contains valid JSON.'));
+        }
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsText(file);
+    });
+  };
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
-      // Validate file type
-      const validTypes = [
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      ];
-      
-      if (!validTypes.includes(selectedFile.type) && 
-          !selectedFile.name.endsWith('.xls') && 
-          !selectedFile.name.endsWith('.xlsx')) {
-        alert('Please select a valid Excel file (.xls or .xlsx)');
-        return;
+      // Validate file type based on active tab
+      if (activeTab === 'excel') {
+        const validTypes = [
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        ];
+        
+        if (!validTypes.includes(selectedFile.type) && 
+            !selectedFile.name.endsWith('.xls') && 
+            !selectedFile.name.endsWith('.xlsx')) {
+          alert('Please select a valid Excel file (.xls or .xlsx)');
+          return;
+        }
+      } else if (activeTab === 'json') {
+        if (!selectedFile.name.endsWith('.json')) {
+          alert('Please select a valid JSON file (.json)');
+          return;
+        }
       }
 
       setFile(selectedFile);
@@ -154,9 +190,15 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
     setValidationErrors([]);
 
     try {
-      // Parse Excel file
+      // Parse file based on type
       setProgress(20);
-      const data = await parseExcelFile(file);
+      let data: TransactionRow[];
+      
+      if (activeTab === 'excel') {
+        data = await parseExcelFile(file);
+      } else {
+        data = await parseJsonFile(file);
+      }
       
       // Validate data
       setProgress(40);
@@ -279,71 +321,143 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
       { client_code: 'CL001', date: '17-01-2024', amount: 100000, remark: '' }
     ];
     
-    const ws = XLSX.utils.json_to_sheet(sampleData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Investment Sample');
-    XLSX.writeFile(wb, 'investment_sample.xlsx');
+    if (activeTab === 'excel') {
+      const ws = XLSX.utils.json_to_sheet(sampleData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Investment Sample');
+      XLSX.writeFile(wb, 'investment_sample.xlsx');
+    } else {
+      const jsonString = JSON.stringify(sampleData, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'investment_sample.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
   };
 
   return (
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FileSpreadsheet className="h-5 w-5" />
-          Investment Excel Upload
+          <Upload className="h-5 w-5" />
+          Investment File Upload
         </CardTitle>
         <CardDescription>
-          Upload investment transactions from Excel file. Download sample format below.
+          Upload investment transactions from Excel or JSON files. Download sample format below.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Download Sample Button */}
-        <div className="flex justify-end">
-          <Button variant="outline" onClick={downloadSample} className="flex items-center gap-2">
-            <Download className="h-4 w-4" />
-            Download Sample
-          </Button>
-        </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="excel" className="flex items-center gap-2">
+              <FileSpreadsheet className="h-4 w-4" />
+              Excel Upload
+            </TabsTrigger>
+            <TabsTrigger value="json" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              JSON Upload
+            </TabsTrigger>
+          </TabsList>
 
-        {/* File Upload */}
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-          {!file ? (
-            <div className="space-y-2">
-              <Upload className="h-12 w-12 mx-auto text-gray-400" />
-              <div>
-                <Button onClick={() => fileInputRef.current?.click()}>
-                  Select Excel File
-                </Button>
-              </div>
-              <p className="text-sm text-gray-500">
-                Supported formats: .xlsx, .xls
-              </p>
+          <TabsContent value="excel" className="space-y-4">
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={downloadSample} className="flex items-center gap-2">
+                <Download className="h-4 w-4" />
+                Download Excel Sample
+              </Button>
             </div>
-          ) : (
-            <div className="space-y-2">
-              <FileSpreadsheet className="h-12 w-12 mx-auto text-green-500" />
-              <p className="font-medium">{file.name}</p>
-              <p className="text-sm text-gray-500">
-                {(file.size / 1024 / 1024).toFixed(2)} MB
-              </p>
-              <div className="flex gap-2 justify-center">
-                <Button onClick={handleUpload} disabled={uploading}>
-                  {uploading ? 'Uploading...' : 'Upload'}
-                </Button>
-                <Button variant="outline" onClick={resetUpload}>
-                  Remove
-                </Button>
-              </div>
+
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              {!file ? (
+                <div className="space-y-2">
+                  <FileSpreadsheet className="h-12 w-12 mx-auto text-gray-400" />
+                  <div>
+                    <Button onClick={() => fileInputRef.current?.click()}>
+                      Select Excel File
+                    </Button>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    Supported formats: .xlsx, .xls
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <FileSpreadsheet className="h-12 w-12 mx-auto text-green-500" />
+                  <p className="font-medium">{file.name}</p>
+                  <p className="text-sm text-gray-500">
+                    {(file.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                  <div className="flex gap-2 justify-center">
+                    <Button onClick={handleUpload} disabled={uploading}>
+                      {uploading ? 'Uploading...' : 'Upload'}
+                    </Button>
+                    <Button variant="outline" onClick={resetUpload}>
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </TabsContent>
+
+          <TabsContent value="json" className="space-y-4">
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={downloadSample} className="flex items-center gap-2">
+                <Download className="h-4 w-4" />
+                Download JSON Sample
+              </Button>
+            </div>
+
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              {!file ? (
+                <div className="space-y-2">
+                  <FileText className="h-12 w-12 mx-auto text-gray-400" />
+                  <div>
+                    <Button onClick={() => fileInputRef.current?.click()}>
+                      Select JSON File
+                    </Button>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    Supported format: .json
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <FileText className="h-12 w-12 mx-auto text-green-500" />
+                  <p className="font-medium">{file.name}</p>
+                  <p className="text-sm text-gray-500">
+                    {(file.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                  <div className="flex gap-2 justify-center">
+                    <Button onClick={handleUpload} disabled={uploading}>
+                      {uploading ? 'Uploading...' : 'Upload'}
+                    </Button>
+                    <Button variant="outline" onClick={resetUpload}>
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
 
         {/* Progress Bar */}
         {uploading && (

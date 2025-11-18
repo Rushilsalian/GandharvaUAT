@@ -160,8 +160,10 @@ export default function InvestmentPage() {
     setShowUpload(false);
   };
 
-  const handleExport = () => {
-    const csvData = filteredInvestments.map((investment: Transaction) => ({
+  const handleExport = async () => {
+    const { utils, writeFile } = await import('xlsx');
+    
+    const excelData = filteredInvestments.map((investment: Transaction) => ({
       Date: format(new Date(investment.processedAt || investment.createdAt), 'yyyy-MM-dd'),
       Client: investment.client?.user
         ? `${investment.client.user.firstName} ${investment.client.user.lastName}`
@@ -170,18 +172,11 @@ export default function InvestmentPage() {
       Description: investment.description || 'N/A'
     }));
 
-    const csv = [
-      Object.keys(csvData[0] || {}).join(','),
-      ...csvData.map((row: any) => Object.values(row).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `investments_${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const worksheet = utils.json_to_sheet(excelData);
+    const workbook = utils.book_new();
+    utils.book_append_sheet(workbook, worksheet, 'Investments');
+    
+    writeFile(workbook, `investments_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
   };
 
   // Get role-based page title and description
@@ -243,7 +238,7 @@ export default function InvestmentPage() {
             (session?.roleName === 'admin' || session?.roleName === 'Admin' || session?.roleName === 'leader' || session?.roleName === 'Leader') ? (
               <Button onClick={() => setShowUpload(!showUpload)} variant="outline" size="sm">
                 <Upload className="h-4 w-4 mr-2" />
-                Excel Upload
+                File Upload
               </Button>
             ) : undefined
           }
@@ -301,7 +296,7 @@ export default function InvestmentPage() {
           </div>
           <Button onClick={handleExport} disabled={filteredInvestments.length === 0} className="w-full sm:w-auto">
             <Download className="h-4 w-4 mr-2" />
-            Export CSV
+            Export Excel
           </Button>
         </CardHeader>
         <CardContent>

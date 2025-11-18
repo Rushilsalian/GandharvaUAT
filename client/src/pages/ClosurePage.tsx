@@ -149,8 +149,10 @@ export default function ClosurePage() {
     setShowUpload(false);
   };
 
-  const handleExport = () => {
-    const csvData = filteredClosures.map((closure: Transaction) => ({
+  const handleExport = async () => {
+    const { utils, writeFile } = await import('xlsx');
+    
+    const excelData = filteredClosures.map((closure: Transaction) => ({
       Date: format(new Date(closure.processedAt || closure.createdAt), 'yyyy-MM-dd'),
       Client: closure.client?.user
         ? `${closure.client.user.firstName} ${closure.client.user.lastName}`
@@ -159,18 +161,11 @@ export default function ClosurePage() {
       Description: closure.description || 'N/A'
     }));
 
-    const csv = [
-      Object.keys(csvData[0] || {}).join(','),
-      ...csvData.map((row: any) => Object.values(row).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `closures_${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const worksheet = utils.json_to_sheet(excelData);
+    const workbook = utils.book_new();
+    utils.book_append_sheet(workbook, worksheet, 'Closures');
+    
+    writeFile(workbook, `closures_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
   };
 
   const getPageInfo = () => {
@@ -230,7 +225,7 @@ export default function ClosurePage() {
             (session?.roleName === 'admin' || session?.roleName === 'Admin' || session?.roleName === 'leader' || session?.roleName === 'Leader') ? (
               <Button onClick={() => setShowUpload(!showUpload)} variant="outline" size="sm">
                 <Upload className="h-4 w-4 mr-2" />
-                Excel Upload
+                File Upload
               </Button>
             ) : undefined
           }
@@ -286,7 +281,7 @@ export default function ClosurePage() {
           </div>
           <Button onClick={handleExport} disabled={filteredClosures.length === 0} className="w-full sm:w-auto">
             <Download className="h-4 w-4 mr-2" />
-            Export CSV
+            Export Excel
           </Button>
         </CardHeader>
         <CardContent>
