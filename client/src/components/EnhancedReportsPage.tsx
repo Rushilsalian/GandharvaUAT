@@ -443,10 +443,13 @@ export default function EnhancedReportsPage() {
                       </td>
                     )}
                     <td className="p-2">
-                      <Badge variant={
-                        transaction.type === 'Investment' ? 'default' : 
-                        transaction.type === 'Payout' ? 'secondary' : 'outline'
-                      }>
+                      <Badge 
+                        variant={
+                          transaction.type === 'Investment' ? 'default' : 
+                          transaction.type === 'Payout' ? 'secondary' : 'outline'
+                        }
+                        className="md:w-fit md:min-w-0 md:px-1.5 md:py-0.5"
+                      >
                         {transaction.type}
                       </Badge>
                     </td>
