@@ -31,9 +31,10 @@ interface TransactionFiltersProps {
   onFiltersChange: (filters: FilterState) => void;
   onReset: () => void;
   hideClientFilter?: boolean; // Hide client filter for client users
+  excelUploadButton?: React.ReactNode; // Excel upload button to show before Show Filters
 }
 
-export function TransactionFilters({ clients = [], filters, onFiltersChange, onReset, hideClientFilter = false }: TransactionFiltersProps) {
+export function TransactionFilters({ clients = [], filters, onFiltersChange, onReset, hideClientFilter = false, excelUploadButton }: TransactionFiltersProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleDateRangeChange = (dateRange: DateRange | undefined) => {
@@ -72,6 +73,7 @@ export function TransactionFilters({ clients = [], filters, onFiltersChange, onR
             )}
           </CardTitle>
           <div className="flex items-center gap-1">
+            {excelUploadButton}
             {getActiveFiltersCount() > 0 && (
               <Button variant="outline" size="sm" onClick={onReset} data-testid="button-reset-filters" className="px-1 gap-0">
                 <X className="h-4 w-4 mr-1" />

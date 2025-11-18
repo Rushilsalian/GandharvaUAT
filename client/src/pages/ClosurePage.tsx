@@ -220,21 +220,21 @@ export default function ClosurePage() {
         </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 w-full">
-        <div className="flex-1 min-w-0">
-          <TransactionFilters
-            clients={clients}
-            filters={filters}
-            onFiltersChange={handleFiltersChange}
-            onReset={handleResetFilters}
-          />
-        </div>
-        {(session?.roleName === 'admin' || session?.roleName === 'Admin' || session?.roleName === 'leader' || session?.roleName === 'Leader') && (
-          <Button onClick={() => setShowUpload(!showUpload)} variant="outline" className="w-full sm:w-auto">
-            <Upload className="h-4 w-4 mr-2" />
-            Excel Upload
-          </Button>
-        )}
+      <div className="w-full">
+        <TransactionFilters
+          clients={clients}
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          onReset={handleResetFilters}
+          excelUploadButton={
+            (session?.roleName === 'admin' || session?.roleName === 'Admin' || session?.roleName === 'leader' || session?.roleName === 'Leader') ? (
+              <Button onClick={() => setShowUpload(!showUpload)} variant="outline" size="sm">
+                <Upload className="h-4 w-4 mr-2" />
+                Excel Upload
+              </Button>
+            ) : undefined
+          }
+        />
       </div>
 
       {showUpload && (session?.roleName === 'admin' || session?.roleName === 'Admin' || session?.roleName === 'leader' || session?.roleName === 'Leader') && (
