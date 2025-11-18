@@ -19,6 +19,7 @@ import {
   Filter
 } from "lucide-react";
 import { format } from "date-fns";
+import * as XLSX from 'xlsx';
 import { 
   ResponsiveContainer, 
   LineChart, 
@@ -101,24 +102,15 @@ export default function EnhancedReportsPage() {
     staleTime: 30000
   });
 
-  const exportToCSV = (data: any[], filename: string) => {
+  const exportToXLSX = (data: any[], filename: string) => {
     if (!data || data.length === 0) return;
     
-    const headers = Object.keys(data[0]);
-    const csvData = data.map(row => 
-      headers.map(header => `"${row[header] || ''}"`).join(',')
-    );
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
     
-    const csvContent = [headers.join(','), ...csvData].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${filename}_${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+    const fileName = `${filename}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
   };
 
   const renderAdminOverview = () => (
@@ -408,11 +400,11 @@ export default function EnhancedReportsPage() {
             </div>
             <Button
               variant="outline"
-              onClick={() => exportToCSV(transactions, 'transactions')}
+              onClick={() => exportToXLSX(transactions, 'transactions')}
               disabled={!transactions.length}
             >
               <Download className="h-4 w-4 mr-2" />
-              Export CSV
+              Export XLSX
             </Button>
           </div>
         </CardHeader>
@@ -565,11 +557,11 @@ export default function EnhancedReportsPage() {
             </div>
             <Button
               variant="outline"
-              onClick={() => exportToCSV(clients, 'clients')}
+              onClick={() => exportToXLSX(clients, 'clients')}
               disabled={!clients.length}
             >
               <Download className="h-4 w-4 mr-2" />
-              Export CSV
+              Export XLSX
             </Button>
           </div>
         </CardHeader>
