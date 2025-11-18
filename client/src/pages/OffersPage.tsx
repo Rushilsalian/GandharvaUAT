@@ -215,27 +215,7 @@ export default function OffersPage() {
                   </div>
                 ))}
 
-                {/* Navigation Arrows */}
-                {offers.length > 1 && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white"
-                      onClick={prevSlide}
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white"
-                      onClick={nextSlide}
-                    >
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </>
-                )}
+
 
                 {/* Slide Indicators */}
                 {offers.length > 1 && (
@@ -254,6 +234,22 @@ export default function OffersPage() {
               </div>
             </CardContent>
           </Card>
+          {offers.length > 1 && (
+            <>
+              <button
+                className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 z-30"
+                onClick={prevSlide}
+              >
+                <ArrowLeft className="h-5 w-5 text-gray-700" />
+              </button>
+              <button
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 z-30"
+                onClick={nextSlide}
+              >
+                <ArrowRight className="h-5 w-5 text-gray-700" />
+              </button>
+            </>
+          )}
         </div>
       )}
 
