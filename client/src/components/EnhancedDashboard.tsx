@@ -84,10 +84,18 @@ function MonthlyTrends() {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={monthlyData}>
+          <AreaChart data={monthlyData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
-            <YAxis />
+            <YAxis 
+              tickFormatter={(value) => {
+                if (value >= 10000000) return `₹${(value / 10000000).toFixed(1)}Cr`;
+                if (value >= 100000) return `₹${(value / 100000).toFixed(1)}L`;
+                if (value >= 1000) return `₹${(value / 1000).toFixed(1)}K`;
+                return `₹${value}`;
+              }}
+              width={60}
+            />
             <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
             <Legend />
             <Area 
