@@ -39,13 +39,13 @@ export function LoginForm({ onLogin }: LoginFormProps) {
 
       <Card className="w-full max-w-md bg-white/80 backdrop-blur-md shadow-xl">
         <CardHeader className="space-y-1">
-          <div className="flex justify-center">
+          <div className="flex justify-center mb-3">
             <img
               src="/icons/Gandharva.png"
               className="object-contain"
               style={{ width: "60%" }}
             />
-          </div><br></br>
+          </div>
           {/* <CardTitle className="login text-2xl text-center font-semibold">
             Welcome to Gandharva
           </CardTitle> */}

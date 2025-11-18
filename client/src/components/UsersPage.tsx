@@ -341,7 +341,7 @@ export function UsersPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={user.role === "admin" ? "default" : user.role === "leader" ? "secondary" : "outline"}>
+                            <Badge variant={user.role === "admin" ? "default" : user.role === "leader" ? "secondary" : "outline"}  className="md:w-fit md:min-w-0 md:px-1.5 md:py-0.5" >
                               {user.role?.charAt(0).toUpperCase() + user.role?.slice(1)}
                             </Badge>
                           </TableCell>

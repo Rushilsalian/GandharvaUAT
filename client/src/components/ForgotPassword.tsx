@@ -39,12 +39,14 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4"
+    style={{ background: "linear-gradient(135deg, #170372ff, #1533a6 50%, #f15a24)" }}
+    >
       <Card className="w-full max-w-md">
         <CardHeader className="text-primary items-center">
           <CardTitle>Forgot Your Password</CardTitle>
-          <span className="text-gray-800 items-center text-xs">
-            Please enter the email address you'd like your password reset information sent to
+          <span className="text-sm text-muted-foreground text-center">
+            Enter the email address to receive the password reset link.
           </span>
         </CardHeader>
         <CardContent>
@@ -70,6 +72,7 @@ export default function ForgotPassword() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
+              className="focus:border-[#f15a24] focus:border-[1px] focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
             <Button type="submit" disabled={isLoading} className="w-full">
               {isLoading ? "Sending..." : "Request reset link"}

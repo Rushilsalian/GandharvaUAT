@@ -72,7 +72,7 @@ export function TransactionFilters({ clients = [], filters, onFiltersChange, onR
               <Badge variant="secondary" className="mr-2">{getActiveFiltersCount()}</Badge>
             )}
           </CardTitle>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-4">
             {excelUploadButton}
             {getActiveFiltersCount() > 0 && (
               <Button variant="outline" size="sm" onClick={onReset} data-testid="button-reset-filters" className="px-1 gap-0">
