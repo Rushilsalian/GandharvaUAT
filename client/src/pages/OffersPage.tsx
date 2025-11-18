@@ -68,6 +68,7 @@ export default function OffersPage() {
       if (offersRes.ok) {
         const offersData = await offersRes.json();
         console.log('Offers data received:', offersData);
+        console.log('LinkUrls in offers:', offersData.map((o: Offer) => ({ id: o.id, title: o.title, linkUrl: o.linkUrl })));
         setOffers(offersData);
       } else {
         console.error('Offers fetch failed:', offersRes.status, offersRes.statusText);
@@ -203,7 +204,11 @@ export default function OffersPage() {
                             <Button 
                               size="lg" 
                               className="w-fit"
-                              onClick={() => window.open(offer.linkUrl, '_blank')}
+                              onClick={() => {
+                                const currentOffer = offers[currentSlide];
+                                console.log('Clicking offer:', currentOffer.id, 'linkUrl:', currentOffer.linkUrl);
+                                window.open(currentOffer.linkUrl, '_blank', 'noopener,noreferrer');
+                              }}
                             >
                               Learn More
                               <ExternalLink className="h-4 w-4 ml-2" />
