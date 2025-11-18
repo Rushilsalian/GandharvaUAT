@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import type { Request, Response, NextFunction } from 'express';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
-const JWT_EXPIRES_IN = '15m';
+const JWT_EXPIRES_IN = '1h';
 const JWT_RESET_EXPIRES_IN = '15m';
 
 export function generateToken(payload: object, expiresIn: string = JWT_EXPIRES_IN) {
