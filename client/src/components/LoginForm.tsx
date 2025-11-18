@@ -71,6 +71,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="focus:border-[#f15a24] focus:border-[1px] focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0"
               />
             </div>
 
@@ -84,6 +85,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                className="focus:border-[#f15a24] focus:border-[1px] focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0"
               />
             </div>
 
