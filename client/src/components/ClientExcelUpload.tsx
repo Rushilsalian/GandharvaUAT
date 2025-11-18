@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
-import { Upload, FileSpreadsheet, AlertCircle, CheckCircle, X } from 'lucide-react';
+import { Upload, FileSpreadsheet, AlertCircle, CheckCircle, X, FileText } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 
 interface ClientExcelUploadProps {
@@ -24,12 +24,19 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
       formData.append('file', file);
 
       // Parse file to get total record count for progress calculation
-      const XLSX = await import('xlsx');
-      const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: 'array' });
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const data = XLSX.utils.sheet_to_json(worksheet);
-      const totalRecords = data.length;
+      let totalRecords = 0;
+      if (file.name.toLowerCase().endsWith('.json')) {
+        const text = await file.text();
+        const jsonData = JSON.parse(text);
+        totalRecords = Array.isArray(jsonData) ? jsonData.length : 0;
+      } else {
+        const XLSX = await import('xlsx');
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: 'array' });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(worksheet);
+        totalRecords = data.length;
+      }
 
       const response = await fetch('/api/clients/bulk-upload', {
         method: 'POST',
@@ -93,15 +100,16 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
     const validTypes = [
       'application/vnd.ms-excel',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'text/csv'
+      'text/csv',
+      'application/json'
     ];
-    const validExtensions = ['.xls', '.xlsx', '.csv'];
+    const validExtensions = ['.xls', '.xlsx', '.csv', '.json'];
     
     const isValidType = validTypes.includes(file.type) || 
       validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
     
     if (!isValidType) {
-      alert('Please select a valid Excel (.xls, .xlsx) or CSV file');
+      alert('Please select a valid Excel (.xls, .xlsx), CSV, or JSON file');
       return false;
     }
     
@@ -164,7 +172,7 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
             <FileSpreadsheet className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <div className="space-y-2">
               <p className="text-lg font-medium">
-                Drop your Excel file here, or{' '}
+                Drop your file here, or{' '}
                 <Button
                   variant="ghost"
                   className="p-0 h-auto font-medium text-primary underline hover:no-underline"
@@ -174,13 +182,13 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
                 </Button>
               </p>
               <p className="text-sm text-gray-500">
-                Supports .xls and .xlsx files up to 10MB
+                Supports .xls, .xlsx, .csv, and .json files up to 10MB
               </p>
             </div>
             <Input
               ref={fileInputRef}
               type="file"
-              accept=".xls,.xlsx,.csv"
+              accept=".xls,.xlsx,.csv,.json"
               onChange={handleFileSelect}
               className="hidden"
             />
@@ -190,7 +198,11 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
           {selectedFile && (
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-3">
-                <FileSpreadsheet className="h-8 w-8 text-green-600" />
+                {selectedFile.name.toLowerCase().endsWith('.json') ? (
+                  <FileText className="h-8 w-8 text-blue-600" />
+                ) : (
+                  <FileSpreadsheet className="h-8 w-8 text-green-600" />
+                )}
                 <div>
                   <p className="font-medium">{selectedFile.name}</p>
                   <p className="text-sm text-gray-500">

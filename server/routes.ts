@@ -56,13 +56,14 @@ const upload = multer({
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'text/csv',
       'application/csv',
+      'application/json',
       'image/jpeg',
       'image/png',
       'image/gif',
       'image/webp'
     ];
     
-    const allowedExtensions = ['.xls', '.xlsx', '.csv', '.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    const allowedExtensions = ['.xls', '.xlsx', '.csv', '.json', '.jpg', '.jpeg', '.png', '.gif', '.webp'];
     
     if (allowedMimeTypes.includes(file.mimetype) || 
         allowedExtensions.some(ext => file.originalname.toLowerCase().endsWith(ext))) {
@@ -2527,11 +2528,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'No file uploaded' });
       }
 
-      // Parse Excel/CSV file
-      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const data = XLSX.utils.sheet_to_json(worksheet);
+      let data;
+      
+      // Check file type and parse accordingly
+      if (req.file.originalname.toLowerCase().endsWith('.json')) {
+        // Parse JSON file
+        const jsonContent = req.file.buffer.toString('utf8');
+        data = JSON.parse(jsonContent);
+        
+        // Ensure data is an array
+        if (!Array.isArray(data)) {
+          return res.status(400).json({ error: 'JSON file must contain an array of client records' });
+        }
+      } else {
+        // Parse Excel/CSV file
+        const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        data = XLSX.utils.sheet_to_json(worksheet);
+      }
 
       if (!data || data.length === 0) {
         return res.status(400).json({ error: 'No data found in the uploaded file' });
