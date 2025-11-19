@@ -49,10 +49,18 @@ function flexibleRequireRole(allowedRoles: string[]) {
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(process.cwd(), 'uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    try {
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true, mode: 0o755 });
+        console.log('Created uploads directory:', uploadDir);
+      }
+      // Check if directory is writable
+      fs.accessSync(uploadDir, fs.constants.W_OK);
+      cb(null, uploadDir);
+    } catch (error) {
+      console.error('Upload directory error:', error);
+      cb(new Error(`Upload directory not accessible: ${error.message}`));
     }
-    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -63,7 +71,7 @@ const storage = multer.diskStorage({
 const upload = multer({ 
   storage,
   limits: { 
-    fileSize: 50 * 1024 * 1024, // 50MB limit
+    fileSize: 100 * 1024 * 1024, // 100MB limit for videos
     fieldSize: 10 * 1024 * 1024,
     fields: 20,
     files: 10
@@ -72,16 +80,34 @@ const upload = multer({
     console.log('Content file upload attempt:', {
       originalname: file.originalname,
       mimetype: file.mimetype,
-      fieldname: file.fieldname
+      fieldname: file.fieldname,
+      size: file.size || 'unknown'
     });
     
-    const allowedExts = /\.(jpeg|jpg|png|gif|webp|mp4|mov|avi|webm|pdf|doc|docx)$/i;
+    const allowedExts = /\.(jpeg|jpg|png|gif|webp|mp4|mov|avi|webm|mkv|flv|pdf|doc|docx)$/i;
     const allowedMimes = /^(image|video|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)\//;
     
-    if (allowedExts.test(file.originalname) && (allowedMimes.test(file.mimetype) || file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/'))) {
+    // Enhanced video MIME type checking
+    const videoMimes = [
+      'video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo',
+      'video/webm', 'video/x-flv', 'video/x-matroska', 'application/octet-stream'
+    ];
+    
+    const isValidFile = allowedExts.test(file.originalname) && 
+      (allowedMimes.test(file.mimetype) || 
+       file.mimetype.startsWith('image/') || 
+       file.mimetype.startsWith('video/') ||
+       videoMimes.includes(file.mimetype));
+    
+    if (isValidFile) {
       return cb(null, true);
     } else {
-      console.error('File type rejected:', { originalname: file.originalname, mimetype: file.mimetype });
+      console.error('File type rejected:', { 
+        originalname: file.originalname, 
+        mimetype: file.mimetype,
+        allowedExts: allowedExts.toString(),
+        allowedMimes: allowedMimes.toString()
+      });
       cb(new Error(`File type not allowed. Allowed types: images, videos, PDF, Word documents. Received: ${file.mimetype}`));
     }
   }
@@ -159,9 +185,33 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Create content item
+// Create content item with enhanced error handling
 // Mounted at `/api/content` so this responds to POST /api/content
-router.post("/", upload.single('media'), async (req, res) => {
+router.post("/", (req, res, next) => {
+  console.log('Content creation request received:', {
+    headers: Object.keys(req.headers),
+    contentType: req.headers['content-type'],
+    contentLength: req.headers['content-length'],
+    userAgent: req.headers['user-agent']
+  });
+  
+  upload.single('media')(req, res, (err) => {
+    if (err) {
+      console.error('Multer error in content creation:', err);
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ error: 'File too large. Maximum size is 100MB.' });
+      }
+      if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+        return res.status(400).json({ error: 'Unexpected file field.' });
+      }
+      if (err.message.includes('Upload directory not accessible')) {
+        return res.status(500).json({ error: 'Server upload directory not accessible. Please contact administrator.' });
+      }
+      return res.status(400).json({ error: err.message });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     const { title, description, content, categoryId, mediaType, displayOrder, isActive, isPublished } = req.body;
     const userId = (req as any).user?.id || null;
@@ -207,9 +257,33 @@ router.post("/", upload.single('media'), async (req, res) => {
   }
 });
 
-// Update content item
+// Update content item with enhanced error handling
 // Mounted at `/api/content` so this responds to PUT /api/content/:id
-router.put("/:id", upload.single('media'), async (req, res) => {
+router.put("/:id", (req, res, next) => {
+  console.log('Content update request received:', {
+    id: req.params.id,
+    headers: Object.keys(req.headers),
+    contentType: req.headers['content-type'],
+    contentLength: req.headers['content-length']
+  });
+  
+  upload.single('media')(req, res, (err) => {
+    if (err) {
+      console.error('Multer error in content update:', err);
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ error: 'File too large. Maximum size is 100MB.' });
+      }
+      if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+        return res.status(400).json({ error: 'Unexpected file field.' });
+      }
+      if (err.message.includes('Upload directory not accessible')) {
+        return res.status(500).json({ error: 'Server upload directory not accessible. Please contact administrator.' });
+      }
+      return res.status(400).json({ error: err.message });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, content, categoryId, mediaType, displayOrder, isActive, isPublished, removeExistingFile } = req.body;
