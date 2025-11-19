@@ -568,10 +568,10 @@ export default function ContentManagementPage() {
         <TabsContent value="offers">
           <div className="grid gap-4">
             {offers.map((offer) => (
-              <Card key={offer.id}>
+              <Card key={offer.id} className="overflow-hidden">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-lg">{offer.title}</CardTitle>
-                  <div className="flex items-center gap-2">
+                  <CardTitle className="text-lg truncate pr-2">{offer.title}</CardTitle>
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <Badge variant={offer.isActive ? "default" : "secondary"}>
                       {offer.isActive ? "Active" : "Inactive"}
                     </Badge>
@@ -583,24 +583,24 @@ export default function ContentManagementPage() {
                     </Button>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="overflow-hidden">
                   <p className="text-sm text-muted-foreground mb-2">{offer.description}</p>
-                  <div className="mb-2">
-                    {offer.mediaUrl ? (
-                      offer.mediaType === 'video' ? (
-                        <video src={offer.mediaUrl} className="h-20 w-32 object-cover rounded" controls />
-                      ) : (
-                        <img src={offer.mediaUrl} alt={offer.title} className="h-20 w-20 object-cover rounded" />
-                      )
-                    ) : offer.imageUrl ? (
-                      <img src={offer.imageUrl} alt={offer.title} className="h-20 w-20 object-cover rounded" />
-                    ) : (
-                      <div className="text-xs text-muted-foreground">No media</div>
-                    )}
-                  </div>
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Valid: {offer.validFrom ? new Date(offer.validFrom).toLocaleDateString() : 'N/A'} - {offer.validTo ? new Date(offer.validTo).toLocaleDateString() : 'N/A'}</span>
-                    <span>Order: {offer.displayOrder}</span>
+                  {(offer.mediaUrl || offer.imageUrl) && (
+                    <div className="mb-2">
+                      {offer.mediaUrl ? (
+                        offer.mediaType === 'video' ? (
+                          <video src={offer.mediaUrl} className="h-20 w-32 object-cover rounded" controls />
+                        ) : (
+                          <img src={offer.mediaUrl} alt={offer.title} className="h-20 w-20 object-cover rounded" />
+                        )
+                      ) : offer.imageUrl ? (
+                        <img src={offer.imageUrl} alt={offer.title} className="h-20 w-20 object-cover rounded" />
+                      ) : null}
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs text-muted-foreground">
+                    <span className="truncate">Valid: {offer.validFrom ? new Date(offer.validFrom).toLocaleDateString() : 'N/A'} - {offer.validTo ? new Date(offer.validTo).toLocaleDateString() : 'N/A'}</span>
+                    <span className="text-right sm:text-left">Order: {offer.displayOrder}</span>
                   </div>
                 </CardContent>
               </Card>
