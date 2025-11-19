@@ -9,6 +9,15 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// Prevent crashes during uploads
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection:', reason);
+});
+
 // Enhanced middleware configuration for file uploads
 app.use(express.json({ limit: '200mb' }));
 app.use(express.urlencoded({ extended: true, limit: '200mb' }));
