@@ -170,7 +170,15 @@ export default function EnhancedReportsPage() {
               <LineChart data={analyticsData.monthlyTrends}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
-                <YAxis />
+                <YAxis 
+              tickFormatter={(value) => {
+                if (value >= 10000000) return `₹${(value / 10000000).toFixed(1)}Cr`;
+                if (value >= 100000) return `₹${(value / 100000).toFixed(1)}L`;
+                if (value >= 1000) return `₹${(value / 1000).toFixed(1)}K`;
+                return `₹${value}`;
+              }}
+              width={60}
+            />
                 <Tooltip formatter={(value: any) => [`₹${value.toLocaleString()}`, '']} />
                 <Legend />
                 <Line type="monotone" dataKey="investments" stroke="#8884d8" name="Investments" />
