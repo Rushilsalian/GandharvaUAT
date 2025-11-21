@@ -388,7 +388,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getAllTransactions(): Promise<Transaction[]> {
-    return db.select().from(transaction);
+    return db.select().from(transaction).orderBy(desc(transaction.transactionId));
   }
 
   // Legacy transaction methods for compatibility
@@ -437,7 +437,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllClientInvestmentRequests(): Promise<ClientInvestmentRequest[]> {
-    return db.select().from(clientInvestmentRequest);
+    return db.select().from(clientInvestmentRequest).orderBy(desc(clientInvestmentRequest.clientInvestmentRequestId));
   }
 
   async getInvestmentRequestsByClient(clientId: number): Promise<ClientInvestmentRequest[]> {
@@ -465,7 +465,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllClientWithdrawalRequests(): Promise<ClientWithdrawalRequest[]> {
-    return db.select().from(clientWithdrawalRequest);
+    return db.select().from(clientWithdrawalRequest).orderBy(desc(clientWithdrawalRequest.clientWithdrawalRequestId));
   }
 
   async getWithdrawalRequestsByClient(clientId: number): Promise<ClientWithdrawalRequest[]> {
@@ -493,7 +493,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllClientReferralRequests(): Promise<ClientReferralRequest[]> {
-    return db.select().from(clientReferralRequest);
+    return db.select().from(clientReferralRequest).orderBy(desc(clientReferralRequest.clientReferralRequestId));
   }
 
   async getAllReferralRequests(): Promise<ClientReferralRequest[]> {
