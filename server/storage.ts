@@ -113,7 +113,7 @@ export interface IStorage {
   getTransactionsByClient(clientId: number): Promise<Transaction[]>;
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   updateTransaction(id: number, transaction: Partial<InsertTransaction>): Promise<Transaction | undefined>;
-  getAllTransactions(): Promise<Transaction[]>;
+getAllTransactions(): Promise<Transaction[]>;
 
   // Client Investment Requests
   getClientInvestmentRequest(id: number): Promise<ClientInvestmentRequest | undefined>;
@@ -243,7 +243,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllMstUsers(): Promise<MstUser[]> {
-    return db.select().from(mstUser);
+    return db.select().from(mstUser).orderBy(desc(mstUser.createdDate));
   }
 
   // Branches (new)
@@ -292,7 +292,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllMstClients(): Promise<MstClient[]> {
-    return db.select().from(mstClient);
+    return db.select().from(mstClient).orderBy(desc(mstClient.createdDate));
   }
 
   // Modules
@@ -386,7 +386,7 @@ export class DatabaseStorage implements IStorage {
     const [txn] = await db.select().from(transaction).where(eq(transaction.transactionId, id));
     return txn || undefined;
   }
-
+  
   async getAllTransactions(): Promise<Transaction[]> {
     return db.select().from(transaction);
   }
