@@ -245,7 +245,7 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
 
         const transaction = {
           clientCode: row.client_code,
-          indicatorName: transactionType,
+          transactionType: transactionType,
           amount: parseFloat(row.amount).toString(),
           remark: row.remark || '',
           transactionDate: transactionDate.toISOString()
@@ -257,16 +257,32 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
 
       // Upload to API
       setProgress(80);
-      console.log('Sending transactions to API:', JSON.stringify({ transactions }, null, 2));
       
-      const response = await fetch('/api/sync/transactions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer sync-api-token-2024'
-        },
-        body: JSON.stringify({ transactions })
-      });
+      let response: Response;
+      
+      if (activeTab === 'excel') {
+        // Use Excel upload endpoint for Excel files
+        console.log('Uploading Excel file to API');
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        response = await fetch('/api/transactions/excel-upload', {
+          method: 'POST',
+          body: formData
+        });
+      } else {
+        // Use JSON sync endpoint for JSON files
+        console.log('Sending transactions to API:', JSON.stringify({ transactions }, null, 2));
+        
+        response = await fetch('/api/sync/transactions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer sync-api-token-2024'
+          },
+          body: JSON.stringify({ transactions })
+        });
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -313,9 +329,9 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
 
   const downloadSample = () => {
     const sampleData = [
-      { client_code: 'CL001', date: '15-01-2024', amount: 50000, remark: `Initial ${transactionType.toLowerCase()}` },
-      { client_code: 'CL001', date: '16-01-2024', amount: 75000, remark: `Additional ${transactionType.toLowerCase()}` },
-      { client_code: 'CL001', date: '17-01-2024', amount: 100000, remark: '' }
+      { 'Client Code': 'CL001', 'Transaction Type': transactionType, 'Amount': 50000, 'Transaction Date': '15-01-2024', 'Remark': `Initial ${transactionType.toLowerCase()}` },
+      { 'Client Code': 'CL002', 'Transaction Type': transactionType, 'Amount': 75000, 'Transaction Date': '16-01-2024', 'Remark': `Additional ${transactionType.toLowerCase()}` },
+      { 'Client Code': 'CL003', 'Transaction Type': transactionType, 'Amount': 100000, 'Transaction Date': '17-01-2024', 'Remark': '' }
     ];
     
     if (activeTab === 'excel') {
@@ -343,7 +359,7 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
           {transactionType} File Upload
         </CardTitle>
         <CardDescription>
-          Upload {transactionType.toLowerCase()} transactions from Excel or JSON files. Download sample format below.
+          Upload {transactionType.toLowerCase()} transactions from Excel or JSON files. Excel format: Client Code, Transaction Type, Amount, Transaction Date, Remark.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

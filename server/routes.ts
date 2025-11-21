@@ -2869,8 +2869,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Third-party transaction sync API endpoint
-  app.post('/api/sync/transactions', async (req, res) => {
+  // Third-party transaction sync API endpoint with Excel upload support
+  app.post('/api/sync/transactions', (req, res, next) => {
+    // Check if this is a file upload request
+    if (req.headers['content-type']?.includes('multipart/form-data')) {
+      upload.single('file')(req, res, (err) => {
+        if (err) {
+          console.error('Multer upload error:', err);
+          if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(413).json({ error: 'File too large. Maximum size is 50MB.' });
+          }
+          return res.status(400).json({ error: err.message });
+        }
+        next();
+      });
+    } else {
+      next();
+    }
+  }, async (req, res) => {
     try {
       const authHeader = req.headers.authorization;
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -2882,17 +2898,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Invalid token' });
       }
 
-      const { transactions } = req.body;
-      if (!transactions || !Array.isArray(transactions)) {
-        return res.status(400).json({ error: 'Transactions array is required' });
-      }
-
       // Indicator mapping: 1=Investment, 2=Payout, 3=Withdrawal, 4=Closure
       const indicatorMap: Record<string, number> = {
         'Investment': 1,
+        'investment': 1,
         'Payout': 2,
+        'payout': 2,
         'Withdrawal': 3,
-        'Closure': 4
+        'withdrawal': 3,
+        'Closure': 4,
+        'closure': 4
       };
 
       const results = {
@@ -2900,6 +2915,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         skipped: 0,
         errors: [] as Array<{ transaction: any; error: string }>
       };
+
+      let transactions: any[] = [];
+
+      // Handle Excel file upload
+      if (req.file) {
+        try {
+          // Parse Excel file
+          const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const data = XLSX.utils.sheet_to_json(worksheet);
+
+          if (!data || data.length === 0) {
+            return res.status(400).json({ error: 'No data found in the uploaded file' });
+          }
+
+          // Transform Excel data to transaction format
+          // Expected columns: Client Code, Transaction Type, Amount, Transaction Date, Remark
+          transactions = data.map((row: any) => ({
+            clientCode: row['Client Code'] || row['client_code'] || row['clientCode'],
+            transactionType: row['Transaction Type'] || row['transaction_type'] || row['transactionType'],
+            amount: row['Amount'] || row['amount'],
+            transactionDate: row['Transaction Date'] || row['transaction_date'] || row['transactionDate'],
+            remark: row['Remark'] || row['remark'] || row['description'] || ''
+          }));
+
+        } catch (error) {
+          return res.status(400).json({ error: 'Failed to parse Excel file: ' + (error instanceof Error ? error.message : String(error)) });
+        }
+      } else {
+        // Handle JSON request body
+        const { transactions: bodyTransactions } = req.body;
+        if (!bodyTransactions || !Array.isArray(bodyTransactions)) {
+          return res.status(400).json({ error: 'Transactions array is required or upload an Excel file' });
+        }
+        transactions = bodyTransactions;
+      }
 
       for (const txnData of transactions) {
         try {
@@ -2909,8 +2961,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
             continue;
           }
 
-          if (!txnData.indicatorName) {
-            results.errors.push({ transaction: txnData, error: 'Indicator name is required' });
+          // Validate transaction type and determine indicator ID
+          let indicatorId: number;
+          if (txnData.transactionType) {
+            indicatorId = indicatorMap[txnData.transactionType];
+            if (!indicatorId) {
+              results.errors.push({ 
+                transaction: txnData, 
+                error: `Invalid transaction type '${txnData.transactionType}'. Must be one of: Investment, Payout, Withdrawal, Closure` 
+              });
+              continue;
+            }
+          } else if (txnData.indicatorName) {
+            // Backward compatibility with old field name
+            indicatorId = indicatorMap[txnData.indicatorName];
+            if (!indicatorId) {
+              results.errors.push({ 
+                transaction: txnData, 
+                error: `Invalid indicator name '${txnData.indicatorName}'. Must be one of: Investment, Payout, Withdrawal, Closure` 
+              });
+              continue;
+            }
+          } else {
+            results.errors.push({ transaction: txnData, error: 'Transaction type is required' });
             continue;
           }
 
@@ -2926,20 +2999,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             continue;
           }
 
-          // Map indicator name to ID
-          const indicatorId = indicatorMap[txnData.indicatorName];
-          if (!indicatorId) {
-            results.errors.push({ 
-              transaction: txnData, 
-              error: `Invalid indicator name. Must be one of: ${Object.keys(indicatorMap).join(', ')}` 
-            });
-            continue;
-          }
-
           // Parse transaction date
           let transactionDate = new Date();
           if (txnData.transactionDate) {
-            const parsedDate = new Date(txnData.transactionDate);
+            let parsedDate: Date;
+            
+            if (typeof txnData.transactionDate === 'number') {
+              // Excel serial date number
+              parsedDate = new Date((txnData.transactionDate - 25569) * 86400 * 1000);
+            } else {
+              parsedDate = new Date(txnData.transactionDate);
+            }
+            
             if (!isNaN(parsedDate.getTime())) {
               transactionDate = parsedDate;
             }
@@ -2971,7 +3042,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({
-        message: 'Transaction sync completed',
+        message: req.file ? 'Excel transaction upload completed' : 'Transaction sync completed',
         results,
         timestamp: new Date().toISOString()
       });
@@ -2979,6 +3050,156 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Transaction sync error:', error);
       res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // Excel upload endpoint for transactions
+  app.post('/api/transactions/excel-upload', (req, res, next) => {
+    upload.single('file')(req, res, (err) => {
+      if (err) {
+        console.error('Multer upload error:', err);
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(413).json({ error: 'File too large. Maximum size is 50MB.' });
+        }
+        return res.status(400).json({ error: err.message });
+      }
+      next();
+    });
+  }, async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      // Parse Excel file
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json(worksheet);
+
+      if (!data || data.length === 0) {
+        return res.status(400).json({ error: 'No data found in the uploaded file' });
+      }
+
+      // Indicator mapping: 1=Investment, 2=Payout, 3=Withdrawal, 4=Closure
+      const indicatorMap: Record<string, number> = {
+        'Investment': 1,
+        'investment': 1,
+        'Payout': 2,
+        'payout': 2,
+        'Withdrawal': 3,
+        'withdrawal': 3,
+        'Closure': 4,
+        'closure': 4
+      };
+
+      const results = {
+        success: 0,
+        skipped: 0,
+        errors: [] as Array<{ row: number; message: string }>
+      };
+
+      // Process each row
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i] as any;
+        const rowIndex = i + 2; // Excel rows start from 1, plus header row
+
+        try {
+          // Validate required fields
+          const clientCode = row['Client Code'] || row['client_code'] || row['clientCode'];
+          const transactionType = row['Transaction Type'] || row['transaction_type'] || row['transactionType'];
+          const amount = row['Amount'] || row['amount'];
+          const transactionDate = row['Transaction Date'] || row['transaction_date'] || row['transactionDate'];
+          const remark = row['Remark'] || row['remark'] || row['description'] || '';
+
+          if (!clientCode) {
+            results.errors.push({ row: rowIndex, message: 'Client Code is required' });
+            continue;
+          }
+
+          if (!transactionType) {
+            results.errors.push({ row: rowIndex, message: 'Transaction Type is required' });
+            continue;
+          }
+
+          if (!amount || isNaN(parseFloat(amount))) {
+            results.errors.push({ row: rowIndex, message: 'Valid amount is required' });
+            continue;
+          }
+
+          // Find client by code
+          const clients = await storage.getAllMstClients();
+          const client = clients.find(c => c.code === clientCode);
+          if (!client) {
+            results.errors.push({ row: rowIndex, message: `Client with code ${clientCode} not found` });
+            continue;
+          }
+
+          // Map transaction type to indicator ID
+          const indicatorId = indicatorMap[transactionType];
+          if (!indicatorId) {
+            results.errors.push({ 
+              row: rowIndex, 
+              message: `Invalid transaction type '${transactionType}'. Must be one of: Investment, Payout, Withdrawal, Closure` 
+            });
+            continue;
+          }
+
+          // Parse date properly - Excel dates can be serial numbers
+          let processedDate: Date;
+          
+          if (typeof transactionDate === 'number') {
+            // Excel serial date number
+            processedDate = new Date((transactionDate - 25569) * 86400 * 1000);
+          } else if (typeof transactionDate === 'string') {
+            // String date - try to parse normally
+            processedDate = new Date(transactionDate);
+          } else {
+            // Fallback to current date if no valid date found
+            processedDate = new Date();
+          }
+          
+          // Validate the parsed date
+          if (isNaN(processedDate.getTime())) {
+            processedDate = new Date(); // Fallback to current date
+          }
+
+          // Create transaction in the new transaction table
+          const newTransaction = {
+            transactionDate: processedDate,
+            clientId: client.clientId,
+            indicatorId,
+            amount: parseFloat(amount).toString(),
+            remark: remark || null,
+            createdById: 1,
+            createdByUser: 'excel-upload',
+            createdDate: new Date()
+          };
+
+          const createdTransaction = await storage.createTransaction(newTransaction);
+          results.success++;
+
+        } catch (error) {
+          results.errors.push({ row: rowIndex, message: `Processing error: ${error instanceof Error ? error.message : String(error)}` });
+        }
+      }
+
+      // Return results
+      const success = results.errors.length === 0;
+      const message = success 
+        ? `Successfully processed ${results.success} transactions` 
+        : `Processed ${results.success} transactions with ${results.errors.length} errors`;
+
+      res.json({
+        success,
+        message,
+        results,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('Excel upload error:', error);
+      res.status(500).json({ error: 'Failed to process Excel upload' });
     }
   });
 
