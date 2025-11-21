@@ -2618,7 +2618,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             address: clientData.address || null,
             city: clientData.city || null,
             pincode: clientData.pincode && !isNaN(parseInt(clientData.pincode)) ? parseInt(clientData.pincode) : null,
-            referenceId: clientData.reference_code ? (await storage.getMstClientByCode(clientData.reference_code))?.clientId || null : null,
+            referenceId: clientData.reference_code && !isNaN(parseInt(clientData.reference_code)) ? parseInt(clientData.reference_code) : null,
             isActive: 1,
             createdById: 1,
             createdByUser: 'bulk-upload',

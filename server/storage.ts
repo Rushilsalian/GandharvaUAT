@@ -437,7 +437,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllClientInvestmentRequests(): Promise<ClientInvestmentRequest[]> {
-    return db.select().from(clientInvestmentRequest).orderBy(desc(clientInvestmentRequest.clientInvestmentRequestId));
+    return db.select().from(clientInvestmentRequest);
   }
 
   async getInvestmentRequestsByClient(clientId: number): Promise<ClientInvestmentRequest[]> {
@@ -465,7 +465,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllClientWithdrawalRequests(): Promise<ClientWithdrawalRequest[]> {
-    return db.select().from(clientWithdrawalRequest).orderBy(desc(clientWithdrawalRequest.clientWithdrawalRequestId));
+    return db.select().from(clientWithdrawalRequest);
   }
 
   async getWithdrawalRequestsByClient(clientId: number): Promise<ClientWithdrawalRequest[]> {
@@ -493,7 +493,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllClientReferralRequests(): Promise<ClientReferralRequest[]> {
-    return db.select().from(clientReferralRequest).orderBy(desc(clientReferralRequest.clientReferralRequestId));
+    return db.select().from(clientReferralRequest);
   }
 
   async getAllReferralRequests(): Promise<ClientReferralRequest[]> {
