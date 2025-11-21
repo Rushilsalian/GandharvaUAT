@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Edit, Trash2, Eye, Upload, Image, Video, FileText, HelpCircle } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, Upload, Image, Video, FileText, HelpCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ContentManagementGuide } from "@/components/ContentManagementGuide";
 
@@ -59,6 +59,7 @@ export default function ContentManagementPage() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [categories, setCategories] = useState<ContentCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [selectedTab, setSelectedTab] = useState("guide");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ContentItem | Offer | null>(null);
@@ -123,6 +124,7 @@ export default function ContentManagementPage() {
     e.preventDefault();
     
     console.log('Frontend - Form data before submission:', formData);
+    setSaving(true);
     
     try {
       const formDataToSend = new FormData();
@@ -172,6 +174,8 @@ export default function ContentManagementPage() {
         description: "Failed to save item",
         variant: "destructive"
       });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -501,11 +505,20 @@ export default function ContentManagementPage() {
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="w-full sm:w-auto">
                   Cancel
                 </Button>
-                <Button type="submit" className="w-full sm:w-auto">
+                <Button type="submit" disabled={saving} className="w-full sm:w-auto">
+                  {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   {editingItem ? 'Update' : 'Create'}
                 </Button>
               </div>
             </form>
+            {saving && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="bg-white p-6 rounded-lg flex items-center gap-3">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                  <span>Saving...</span>
+                </div>
+              </div>
+            )}
           </DialogContent>
           </Dialog>
         )}
