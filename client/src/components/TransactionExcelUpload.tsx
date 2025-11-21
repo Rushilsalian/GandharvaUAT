@@ -12,6 +12,7 @@ interface TransactionRow {
   date: string;
   amount: number;
   remark: string;
+  guiid?: string;
 }
 
 interface ValidationError {
@@ -96,6 +97,11 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
     // Validate remark (Length = 500, Alpha Numeric, Optional)
     if (row.remark && typeof row.remark === 'string' && row.remark.length > 500) {
       errors.push({ row: rowIndex, field: 'remark', message: 'Remark must be 500 characters or less' });
+    }
+
+    // Validate guiid (Length = 200, Optional)
+    if (row.guiid && typeof row.guiid === 'string' && row.guiid.length > 200) {
+      errors.push({ row: rowIndex, field: 'guiid', message: 'Transaction GUID must be 200 characters or less' });
     }
 
     return errors;
@@ -248,6 +254,7 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
           transactionType: transactionType,
           amount: parseFloat(row.amount).toString(),
           remark: row.remark || '',
+          guiid: row.guiid || '',
           transactionDate: transactionDate.toISOString()
         };
         
@@ -329,9 +336,9 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
 
   const downloadSample = () => {
     const sampleData = [
-      { 'Client Code': 'CL001', 'Transaction Type': transactionType, 'Amount': 50000, 'Transaction Date': '15-01-2024', 'Remark': `Initial ${transactionType.toLowerCase()}` },
-      { 'Client Code': 'CL002', 'Transaction Type': transactionType, 'Amount': 75000, 'Transaction Date': '16-01-2024', 'Remark': `Additional ${transactionType.toLowerCase()}` },
-      { 'Client Code': 'CL003', 'Transaction Type': transactionType, 'Amount': 100000, 'Transaction Date': '17-01-2024', 'Remark': '' }
+      { 'Client Code': 'CL001', 'Transaction Type': transactionType, 'Amount': 50000, 'Transaction Date': '15-01-2024', 'Remark': `Initial ${transactionType.toLowerCase()}`, 'Transaction GUID': 'TXN-001-2024' },
+      { 'Client Code': 'CL002', 'Transaction Type': transactionType, 'Amount': 75000, 'Transaction Date': '16-01-2024', 'Remark': `Additional ${transactionType.toLowerCase()}`, 'Transaction GUID': 'TXN-002-2024' },
+      { 'Client Code': 'CL003', 'Transaction Type': transactionType, 'Amount': 100000, 'Transaction Date': '17-01-2024', 'Remark': '', 'Transaction GUID': 'TXN-003-2024' }
     ];
     
     if (activeTab === 'excel') {
@@ -359,7 +366,7 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
           {transactionType} File Upload
         </CardTitle>
         <CardDescription>
-          Upload {transactionType.toLowerCase()} transactions from Excel or JSON files. Excel format: Client Code, Transaction Type, Amount, Transaction Date, Remark.
+          Upload {transactionType.toLowerCase()} transactions from Excel or JSON files. Excel format: Client Code, Transaction Type, Amount, Transaction Date, Remark, Transaction GUID (optional - for updates).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

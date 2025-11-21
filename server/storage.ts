@@ -110,10 +110,12 @@ export interface IStorage {
 
   // Transactions (new)
   getTransaction(id: number): Promise<Transaction | undefined>;
+  getTransactionByGuid(guiid: string): Promise<Transaction | undefined>;
   getTransactionsByClient(clientId: number): Promise<Transaction[]>;
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   updateTransaction(id: number, transaction: Partial<InsertTransaction>): Promise<Transaction | undefined>;
-getAllTransactions(): Promise<Transaction[]>;
+  createOrUpdateTransactionByGuid(transaction: InsertTransaction): Promise<Transaction>;
+  getAllTransactions(): Promise<Transaction[]>;
 
   // Client Investment Requests
   getClientInvestmentRequest(id: number): Promise<ClientInvestmentRequest | undefined>;
@@ -371,6 +373,11 @@ export class DatabaseStorage implements IStorage {
     return txn || undefined;
   }
 
+  async getTransactionByGuid(guiid: string): Promise<Transaction | undefined> {
+    const [txn] = await db.select().from(transaction).where(eq(transaction.guiid, guiid));
+    return txn || undefined;
+  }
+
   async getTransactionsByClient(clientId: number): Promise<Transaction[]> {
     return db.select().from(transaction).where(eq(transaction.clientId, clientId));
   }
@@ -385,6 +392,22 @@ export class DatabaseStorage implements IStorage {
     await db.update(transaction).set(transactionData).where(eq(transaction.transactionId, id));
     const [txn] = await db.select().from(transaction).where(eq(transaction.transactionId, id));
     return txn || undefined;
+  }
+
+  async createOrUpdateTransactionByGuid(transactionData: InsertTransaction): Promise<Transaction> {
+    if (transactionData.guiid) {
+      // Check if transaction with this GUID exists
+      const existingTransaction = await this.getTransactionByGuid(transactionData.guiid);
+      
+      if (existingTransaction) {
+        // Update existing transaction
+        const updatedTransaction = await this.updateTransaction(existingTransaction.transactionId, transactionData);
+        return updatedTransaction!;
+      }
+    }
+    
+    // Create new transaction
+    return await this.createTransaction(transactionData);
   }
   
   async getAllTransactions(): Promise<Transaction[]> {
@@ -857,6 +880,12 @@ export class MemStorage implements IStorage {
     return this.newTransactions.get(id);
   }
 
+  async getTransactionByGuid(guiid: string): Promise<Transaction | undefined> {
+    return Array.from(this.newTransactions.values()).find(
+      (txn) => txn.guiid === guiid,
+    );
+  }
+
   async getTransactionsByClient(clientId: number): Promise<Transaction[]> {
     return Array.from(this.newTransactions.values()).filter(
       (txn) => txn.clientId === clientId,
@@ -871,6 +900,7 @@ export class MemStorage implements IStorage {
       ...insertTransaction,
       transactionId: id,
       remark: insertTransaction.remark || null,
+      guiid: insertTransaction.guiid || null,
     };
     this.newTransactions.set(id, transaction);
     return transaction;
@@ -885,6 +915,22 @@ export class MemStorage implements IStorage {
     const updated = { ...transaction, ...updateTransaction };
     this.newTransactions.set(id, updated);
     return updated;
+  }
+
+  async createOrUpdateTransactionByGuid(transactionData: InsertTransaction): Promise<Transaction> {
+    if (transactionData.guiid) {
+      // Check if transaction with this GUID exists
+      const existingTransaction = await this.getTransactionByGuid(transactionData.guiid);
+      
+      if (existingTransaction) {
+        // Update existing transaction
+        const updatedTransaction = await this.updateTransaction(existingTransaction.transactionId, transactionData);
+        return updatedTransaction!;
+      }
+    }
+    
+    // Create new transaction
+    return await this.createTransaction(transactionData);
   }
 
   async getAllTransactions(): Promise<Transaction[]> {

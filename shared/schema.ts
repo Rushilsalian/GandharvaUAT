@@ -145,6 +145,7 @@ export const transaction = mysqlTable("transaction", {
   indicatorId: int("indicator_id").notNull(),
   amount: decimal("amount", { precision: 18, scale: 2 }).notNull(),
   remark: varchar("remark", { length: 50 }),
+  guiid: varchar("guiid", { length: 200 }),
   createdById: int("created_by_id").notNull(),
   createdByUser: varchar("created_by_user", { length: 50 }).notNull(),
   createdDate: timestamp("created_date").notNull(),

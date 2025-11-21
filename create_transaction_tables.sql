@@ -54,6 +54,7 @@ CREATE TABLE transaction (
     indicator_id INT NOT NULL,
     amount DECIMAL(18,2) NOT NULL,
     remark VARCHAR(50) NULL,
+    guiid VARCHAR(200) NULL,
     created_by_id INT NOT NULL,
     created_by_user VARCHAR(50) NOT NULL,
     created_date DATETIME NOT NULL

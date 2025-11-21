@@ -2932,13 +2932,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           // Transform Excel data to transaction format
-          // Expected columns: Client Code, Transaction Type, Amount, Transaction Date, Remark
+          // Expected columns: Client Code, Transaction Type, Amount, Transaction Date, Remark, Transaction GUID
           transactions = data.map((row: any) => ({
             clientCode: row['Client Code'] || row['client_code'] || row['clientCode'],
             transactionType: row['Transaction Type'] || row['transaction_type'] || row['transactionType'],
             amount: row['Amount'] || row['amount'],
             transactionDate: row['Transaction Date'] || row['transaction_date'] || row['transactionDate'],
-            remark: row['Remark'] || row['remark'] || row['description'] || ''
+            remark: row['Remark'] || row['remark'] || row['description'] || '',
+            guiid: row['Transaction GUID'] || row['transaction_guid'] || row['guiid'] || ''
           }));
 
         } catch (error) {
@@ -3016,21 +3017,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
-          // Create transaction
+          // Create or update transaction based on GUID
           const newTransaction = {
             transactionDate: transactionDate,
             clientId: client.clientId,
             indicatorId,
             amount: parseFloat(txnData.amount).toString(),
             remark: txnData.remark || null,
+            guiid: txnData.guiid || null,
             createdById: 1,
             createdByUser: 'sync-api',
             createdDate: new Date()
           };
 
-          console.log('Creating transaction:', newTransaction);
-          const createdTransaction = await storage.createTransaction(newTransaction);
-          console.log('Transaction created:', createdTransaction);
+          console.log('Creating/updating transaction:', newTransaction);
+          const createdTransaction = await storage.createOrUpdateTransactionByGuid(newTransaction);
+          console.log('Transaction created/updated:', createdTransaction);
           results.success++;
 
         } catch (error) {
@@ -3111,6 +3113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const amount = row['Amount'] || row['amount'];
           const transactionDate = row['Transaction Date'] || row['transaction_date'] || row['transactionDate'];
           const remark = row['Remark'] || row['remark'] || row['description'] || '';
+          const guiid = row['Transaction GUID'] || row['transaction_guid'] || row['guiid'] || '';
 
           if (!clientCode) {
             results.errors.push({ row: rowIndex, message: 'Client Code is required' });
@@ -3164,19 +3167,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             processedDate = new Date(); // Fallback to current date
           }
 
-          // Create transaction in the new transaction table
+          // Create or update transaction in the new transaction table based on GUID
           const newTransaction = {
             transactionDate: processedDate,
             clientId: client.clientId,
             indicatorId,
             amount: parseFloat(amount).toString(),
             remark: remark || null,
+            guiid: guiid || null,
             createdById: 1,
             createdByUser: 'excel-upload',
             createdDate: new Date()
           };
 
-          const createdTransaction = await storage.createTransaction(newTransaction);
+          const createdTransaction = await storage.createOrUpdateTransactionByGuid(newTransaction);
           results.success++;
 
         } catch (error) {
