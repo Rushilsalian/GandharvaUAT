@@ -278,7 +278,7 @@ export default function ContentManagementPage() {
 
   return (
     <div className="container mx-auto p-3 sm:p-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-4">
         <h1 className="text-2xl sm:text-3xl font-bold">Content Management</h1>
         {selectedTab !== 'categories' && selectedTab !== 'guide' && (
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
