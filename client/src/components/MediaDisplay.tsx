@@ -16,7 +16,11 @@ export function MediaDisplay({ src, alt, mediaType, className = '', controls = f
   const getMediaUrl = (url: string) => {
     if (!url) return '';
     if (url.startsWith('http')) return url;
-    return `${process.env.NODE_ENV === 'production' ? 'https://gandharvafin.com' : ''}${url}`;
+    // Always use full URL for production domain
+    if (window.location.hostname === 'gandharvafin.com' || window.location.hostname.includes('gandharvafin')) {
+      return `https://gandharvafin.com${url.startsWith('/') ? url : '/' + url}`;
+    }
+    return url;
   };
 
   const handleError = () => {
@@ -55,7 +59,6 @@ export function MediaDisplay({ src, alt, mediaType, className = '', controls = f
           className={className}
           onError={handleError}
           onLoad={handleLoad}
-          crossOrigin="anonymous"
           style={{ display: loading ? 'none' : 'block' }}
         />
       </div>
@@ -76,7 +79,6 @@ export function MediaDisplay({ src, alt, mediaType, className = '', controls = f
           controls={controls}
           onError={handleError}
           onLoadedData={handleLoad}
-          crossOrigin="anonymous"
           style={{ display: loading ? 'none' : 'block' }}
         />
       </div>

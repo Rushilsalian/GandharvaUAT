@@ -276,7 +276,10 @@ export default function ContentManagementPage() {
   const getMediaUrl = (url: string) => {
     if (!url) return '';
     if (url.startsWith('http')) return url;
-    return `${process.env.NODE_ENV === 'production' ? 'https://gandharvafin.com' : ''}${url}`;
+    if (window.location.hostname === 'gandharvafin.com' || window.location.hostname.includes('gandharvafin')) {
+      return `https://gandharvafin.com${url.startsWith('/') ? url : '/' + url}`;
+    }
+    return url;
   };
 
   if (loading) {
