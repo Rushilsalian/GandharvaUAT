@@ -1615,6 +1615,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const leaderClients = clients.filter(c => c.referenceId === userSession.clientId || c.clientId === userSession.clientId);
           clients = leaderClients;
         }
+      } else if (roleName === 'manager' || roleName === 'Manager') {
+        // Manager can see his clients and himself
+        if (userSession.clientId) {
+          const managerClients = clients.filter(c => c.referenceId === userSession.clientId || c.clientId === userSession.clientId);
+          clients = managerClients;
+        }
       } else if (roleName === 'client' || roleName === 'Client') {
         // Client can only see themselves
         if (userSession.clientId) {
@@ -1957,6 +1963,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // If leader has no clientId, show all (fallback for admin-like leaders)
             console.log('Leader access - no clientId, showing all transactions:', transactions.length);
           }
+        } else if (roleName === 'manager' || roleName === 'Manager') {
+          // Manager can see his and his clients' transactions
+          if (userSession.clientId) {
+            const allClients = await storage.getAllMstClients();
+            const managerClients = allClients.filter(c => c.referenceId === userSession.clientId);
+            const managerClientIds = [userSession.clientId, ...managerClients.map(c => c.clientId)];
+            transactions = transactions.filter(t => managerClientIds.includes(t.clientId));
+            console.log('Manager access - filtered by manager and team clients:', transactions.length);
+          } else {
+            console.log('Manager access - no clientId, showing all transactions:', transactions.length);
+          }
         } else if (roleName === 'client' || roleName === 'Client') {
           // Client can only see their own transactions
           if (userSession.clientId) {
@@ -2022,15 +2039,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Handle withdrawal type by fetching from new transaction table with indicator_id = 3
       if (type === 'withdrawal') {
         let transactions = await storage.getAllTransactions();
+        console.log('Total transactions in database:', transactions.length);
         
         // Filter by indicator_id = 3 for withdrawals
         transactions = transactions.filter(t => t.indicatorId === 3);
+        console.log('Withdrawal transactions (indicatorId=3):', transactions.length);
         
         // Apply role-based filtering
         const roleName = userSession.roleName || userSession.role || 'client';
+        console.log('User role for filtering:', roleName);
+        
         if (roleName === 'admin' || roleName === 'Admin') {
           // Admin can see all withdrawal transactions
           console.log('Admin access - showing all withdrawal transactions:', transactions.length);
+        } else if (roleName === 'manager' || roleName === 'Manager') {
+          // Manager can see his and his clients' transactions
+          if (userSession.clientId) {
+            const allClients = await storage.getAllMstClients();
+            console.log('All clients in database:', allClients.length);
+            const managerClients = allClients.filter(c => c.referenceId === userSession.clientId);
+            console.log('Manager clients (referenceId=' + userSession.clientId + '):', managerClients.length);
+            const managerClientIds = [userSession.clientId, ...managerClients.map(c => c.clientId)];
+            console.log('Manager accessible client IDs:', managerClientIds);
+            transactions = transactions.filter(t => managerClientIds.includes(t.clientId));
+            console.log('Manager access - filtered transactions:', transactions.length);
+          } else {
+            console.log('Manager has no clientId, showing all transactions');
+          }
         } else if (roleName === 'leader' || roleName === 'Leader') {
           // Leader can see his and his clients' transactions
           if (userSession.clientId) {
@@ -2050,6 +2085,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         } else {
           transactions = [];
+          console.log('Unknown role, returning empty array');
         }
         
         if (clientId) {
@@ -2112,6 +2148,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const leaderClients = allClients.filter(c => c.referenceId === userSession.clientId);
             const leaderClientIds = [userSession.clientId, ...leaderClients.map(c => c.clientId)];
             transactions = transactions.filter(t => leaderClientIds.includes(t.clientId));
+          }
+        } else if (roleName === 'manager' || roleName === 'Manager') {
+          // Manager can see his and his clients' transactions
+          if (userSession.clientId) {
+            const allClients = await storage.getAllMstClients();
+            const managerClients = allClients.filter(c => c.referenceId === userSession.clientId);
+            const managerClientIds = [userSession.clientId, ...managerClients.map(c => c.clientId)];
+            transactions = transactions.filter(t => managerClientIds.includes(t.clientId));
           }
         } else if (roleName === 'client' || roleName === 'Client') {
           if (userSession.clientId) {
@@ -2181,6 +2225,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const leaderClientIds = [userSession.clientId, ...leaderClients.map(c => c.clientId)];
             transactions = transactions.filter(t => leaderClientIds.includes(t.clientId));
           }
+        } else if (roleName === 'manager' || roleName === 'Manager') {
+          // Manager can see his and his clients' transactions
+          if (userSession.clientId) {
+            const allClients = await storage.getAllMstClients();
+            const managerClients = allClients.filter(c => c.referenceId === userSession.clientId);
+            const managerClientIds = [userSession.clientId, ...managerClients.map(c => c.clientId)];
+            transactions = transactions.filter(t => managerClientIds.includes(t.clientId));
+          }
         } else if (roleName === 'client' || roleName === 'Client') {
           if (userSession.clientId) {
             transactions = transactions.filter(t => t.clientId === userSession.clientId);
@@ -2248,6 +2300,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const leaderClientIds = [userSession.clientId, ...leaderClients.map(c => c.clientId)];
           transactions = transactions.filter(t => leaderClientIds.includes(t.clientId));
         }
+      } else if (roleName === 'manager' || roleName === 'Manager') {
+        // Manager can see his and his clients' transactions
+        if (userSession.clientId) {
+          const allClients = await storage.getAllMstClients();
+          const managerClients = allClients.filter(c => c.referenceId === userSession.clientId);
+          const managerClientIds = [userSession.clientId, ...managerClients.map(c => c.clientId)];
+          transactions = transactions.filter(t => managerClientIds.includes(t.clientId));
+        }
       } else if (roleName === 'client' || roleName === 'Client') {
         if (userSession.clientId) {
           transactions = transactions.filter(t => t.clientId === userSession.clientId);
@@ -2255,6 +2315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           transactions = [];
         }
       } else {
+        console.log('Unknown role - returning empty array for security');
         transactions = [];
       }
       

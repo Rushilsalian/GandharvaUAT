@@ -229,7 +229,7 @@ export function AppSidebar({ userRole, onLogout }: AppSidebarProps) {
         <div className="space-y-2">
           <div className="text-sm group-data-[collapsible=icon]:hidden">
             <p className="font-medium">{client?.name || user?.userName}</p>
-            <p className="text-muted-foreground capitalize">{session?.roleName || actualRole}</p>
+            <p className="text-muted-foreground capitalize">{session?.roleName === 'manager' || actualRole === 'manager' ? 'Leader' : (session?.roleName || actualRole)}</p>
           </div>
           <Button 
             variant="outline" 
