@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
-import { Upload, FileSpreadsheet, AlertCircle, CheckCircle, X, FileText } from 'lucide-react';
+import { Upload, FileSpreadsheet, AlertCircle, CheckCircle, X, FileText, Download } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 
 interface ClientExcelUploadProps {
@@ -147,14 +147,52 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
     }
   };
 
+  const downloadTemplate = () => {
+    // Create Excel template with required columns
+    const headers = [
+      'client_code',
+      'name', 
+      'mobile',
+      'email',
+      'dob',
+      'pan_no',
+      'aadhaar_no',
+      'branch',
+      'address',
+      'city',
+      'pincode',
+      'reference_code'
+    ];
+    
+    const csvContent = headers.join(',') + '\n' +
+      'CLI001,John Doe,9876543210,john@example.com,01-01-1990,ABCDE1234F,123456789012,Main Branch,123 Main St,Mumbai,400001,REF001\n' +
+      'CLI002,Jane Smith,9876543211,jane@example.com,15-05-1985,FGHIJ5678K,123456789013,Branch A,456 Oak Ave,Delhi,110001,REF002';
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'client_upload_template.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Bulk Client Upload
-          </CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5" />
+              Bulk Client Upload
+            </CardTitle>
+            <Button onClick={downloadTemplate} variant="outline" size="sm" className="flex items-center gap-2">
+              <Download className="h-4 w-4" />
+              Download Template
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* File Upload Area */}
@@ -182,7 +220,7 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
                 </Button>
               </p>
               <p className="text-sm text-gray-500">
-                Supports .xls, .xlsx, .csv, and .json files up to 10MB
+                Supports .xls, .xlsx and .json files up to 10MB
               </p>
             </div>
             <Input

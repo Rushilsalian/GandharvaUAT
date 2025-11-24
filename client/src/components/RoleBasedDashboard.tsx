@@ -35,7 +35,7 @@ export function RoleBasedDashboard() {
       case 'manager':
         return {
           icon: Users,
-          label: 'Manager',
+          label: 'Leader',
           description: 'Team access - Your clients and referrals',
           color: 'bg-blue-100 text-blue-800'
         };
