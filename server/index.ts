@@ -46,8 +46,25 @@ app.use((req, res, next) => {
   }
 });
 
-// Serve static files from uploads directory
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Serve static files from uploads directory with proper CORS headers
+app.use('/uploads', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Range');
+  res.header('Access-Control-Expose-Headers', 'Accept-Ranges, Content-Encoding, Content-Length, Content-Range');
+  res.header('Accept-Ranges', 'bytes');
+  
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+}, express.static(path.join(__dirname, '../uploads'), {
+  setHeaders: (res, path) => {
+    res.header('Cache-Control', 'public, max-age=31536000');
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+}));
 
 // Logging middleware for APIs
 app.use((req, res, next) => {
