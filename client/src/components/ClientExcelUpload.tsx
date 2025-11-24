@@ -103,13 +103,13 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
       'text/csv',
       'application/json'
     ];
-    const validExtensions = ['.xls', '.xlsx', '.csv', '.json'];
+    const validExtensions = ['.xls', '.xlsx', '.json'];
     
     const isValidType = validTypes.includes(file.type) || 
       validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
     
     if (!isValidType) {
-      alert('Please select a valid Excel (.xls, .xlsx), CSV, or JSON file');
+      alert('Please select a valid Excel (.xls, .xlsx),or JSON file');
       return false;
     }
     
@@ -147,7 +147,9 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
     }
   };
 
-  const downloadTemplate = () => {
+  const downloadTemplate = async () => {
+    const XLSX = await import('xlsx');
+    
     // Create Excel template with required columns
     const headers = [
       'client_code',
@@ -164,19 +166,17 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
       'reference_code'
     ];
     
-    const csvContent = headers.join(',') + '\n' +
-      'CLI001,John Doe,9876543210,john@example.com,01-01-1990,ABCDE1234F,123456789012,Main Branch,123 Main St,Mumbai,400001,REF001\n' +
-      'CLI002,Jane Smith,9876543211,jane@example.com,15-05-1985,FGHIJ5678K,123456789013,Branch A,456 Oak Ave,Delhi,110001,REF002';
+    const sampleData = [
+      headers,
+      ['CLI001', 'John Doe', '9876543210', 'john@example.com', '01-01-1990', 'ABCDE1234F', '123456789012', 'Main Branch', '123 Main St', 'Mumbai', '400001', 'REF001'],
+      ['CLI002', 'Jane Smith', '9876543211', 'jane@example.com', '15-05-1985', 'FGHIJ5678K', '123456789013', 'Branch A', '456 Oak Ave', 'Delhi', '110001', 'REF002']
+    ];
     
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'client_upload_template.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+    const worksheet = XLSX.utils.aoa_to_sheet(sampleData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Client Template');
+    
+    XLSX.writeFile(workbook, 'client_upload_template.xlsx');
   };
 
   return (
