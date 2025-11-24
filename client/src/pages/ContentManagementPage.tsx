@@ -80,6 +80,7 @@ export default function ContentManagementPage() {
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [removeExistingFile, setRemoveExistingFile] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -124,6 +125,7 @@ export default function ContentManagementPage() {
     
     console.log('Frontend - Form data before submission:', formData);
     
+    setSubmitting(true);
     try {
       const formDataToSend = new FormData();
       
@@ -167,6 +169,7 @@ export default function ContentManagementPage() {
         throw new Error('Failed to save');
       }
     } catch (error) {
+      setSubmitting(false);
       toast({
         title: "Error",
         description: "Failed to save item",
@@ -219,18 +222,20 @@ export default function ContentManagementPage() {
     setSelectedFile(null);
     setRemoveExistingFile(false);
     setEditingItem(null);
+    setSubmitting(false);
   };
 
   const openEditDialog = (item: ContentItem | Offer) => {
     setEditingItem(item);
     if ('content' in item) {
       // Content item
+      const category = categories.find(cat => cat.name === item.categoryName);
       setFormData({
         title: item.title,
         description: item.description,
         content: item.content,
         mediaType: item.mediaType,
-        categoryId: "",
+        categoryId: category?.id || "",
         displayOrder: item.displayOrder,
         isActive: item.isActive,
         isPublished: item.isPublished,
@@ -501,8 +506,8 @@ export default function ContentManagementPage() {
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="w-full sm:w-auto">
                   Cancel
                 </Button>
-                <Button type="submit" className="w-full sm:w-auto">
-                  {editingItem ? 'Update' : 'Create'}
+                <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
+                  {submitting ? 'Saving...' : (editingItem ? 'Update' : 'Create')}
                 </Button>
               </div>
             </form>
