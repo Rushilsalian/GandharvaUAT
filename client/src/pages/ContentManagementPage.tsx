@@ -517,12 +517,14 @@ export default function ContentManagementPage() {
       </div>
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-        <TabsList>
-          <TabsTrigger value="guide">How to Use</TabsTrigger>
-          <TabsTrigger value="content">Content Items</TabsTrigger>
-          <TabsTrigger value="offers">Offers</TabsTrigger>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-        </TabsList>
+        <div className="w-full overflow-x-auto sm:overflow-x-visible">
+          <TabsList className="w-full sm:w-auto flex sm:inline-flex justify-start sm:justify-center min-w-max sm:min-w-0">
+            <TabsTrigger value="guide" className="flex-shrink-0 text-xs sm:text-sm whitespace-nowrap px-3 sm:px-4">How to Use</TabsTrigger>
+            <TabsTrigger value="content" className="flex-shrink-0 text-xs sm:text-sm whitespace-nowrap px-3 sm:px-4">Content Items</TabsTrigger>
+            <TabsTrigger value="offers" className="flex-shrink-0 text-xs sm:text-sm whitespace-nowrap px-3 sm:px-4">Offers</TabsTrigger>
+            <TabsTrigger value="categories" className="flex-shrink-0 text-xs sm:text-sm whitespace-nowrap px-3 sm:px-4">Categories</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="content">
           <div className="grid gap-4">
