@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Plus, Edit, Trash2, Eye, Upload, Image, Video, FileText, HelpCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ContentManagementGuide } from "@/components/ContentManagementGuide";
+import { MediaDisplay } from "@/components/MediaDisplay";
 
 interface ContentItem {
   id: string;
@@ -272,6 +273,15 @@ export default function ContentManagementPage() {
     }
   };
 
+  const getMediaUrl = (url: string) => {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    if (window.location.hostname === 'gandharvafin.com' || window.location.hostname.includes('gandharvafin')) {
+      return `https://gandharvafin.com${url.startsWith('/') ? url : '/' + url}`;
+    }
+    return url;
+  };
+
   if (loading) {
     return <div className="flex justify-center items-center h-64">Loading...</div>;
   }
@@ -424,25 +434,32 @@ export default function ContentManagementPage() {
                     </div>
                     {selectedTab === 'content' && 'mediaUrl' in editingItem && editingItem.mediaUrl && (
                       <div className="mb-2">
-                        {editingItem.mediaType === 'image' ? (
-                          <img src={editingItem.mediaUrl} alt={editingItem.title} className="h-20 w-20 object-cover rounded" />
-                        ) : editingItem.mediaType === 'video' ? (
-                          <video src={editingItem.mediaUrl} className="h-20 w-32 object-cover rounded" controls />
-                        ) : (
-                          <div className="text-sm text-muted-foreground">Text content</div>
-                        )}
+                        <MediaDisplay
+                          src={editingItem.mediaUrl}
+                          alt={editingItem.title}
+                          mediaType={editingItem.mediaType}
+                          className={editingItem.mediaType === 'video' ? "h-20 w-32 object-cover rounded" : "h-20 w-20 object-cover rounded"}
+                          controls={editingItem.mediaType === 'video'}
+                        />
                       </div>
                     )}
                     {selectedTab === 'offers' && (
                       ('mediaUrl' in editingItem && editingItem.mediaUrl) ? (
-                        editingItem.mediaType === 'video' ? (
-                          <video src={editingItem.mediaUrl} className="h-20 w-32 object-cover rounded" controls />
-                        ) : (
-                          <img src={editingItem.mediaUrl} alt={editingItem.title} className="h-20 w-20 object-cover rounded" />
-                        )
+                        <MediaDisplay
+                          src={editingItem.mediaUrl}
+                          alt={editingItem.title}
+                          mediaType={(editingItem.mediaType as 'image' | 'video' | 'text') || 'image'}
+                          className={editingItem.mediaType === 'video' ? "h-20 w-32 object-cover rounded" : "h-20 w-20 object-cover rounded"}
+                          controls={editingItem.mediaType === 'video'}
+                        />
                       ) : (
                         'imageUrl' in editingItem && editingItem.imageUrl && (
-                          <img src={editingItem.imageUrl} alt={editingItem.title} className="h-20 w-20 object-cover rounded" />
+                          <MediaDisplay
+                            src={editingItem.imageUrl}
+                            alt={editingItem.title}
+                            mediaType="image"
+                            className="h-20 w-20 object-cover rounded"
+                          />
                         )
                       )
                     )}
@@ -554,11 +571,13 @@ export default function ContentManagementPage() {
                   <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
                   {item.mediaUrl && (
                     <div className="mb-2">
-                      {item.mediaType === 'image' ? (
-                        <img src={item.mediaUrl} alt={item.title} className="h-20 w-20 object-cover rounded" />
-                      ) : item.mediaType === 'video' ? (
-                        <video src={item.mediaUrl} className="h-20 w-32 object-cover rounded" controls />
-                      ) : null}
+                      <MediaDisplay
+                        src={item.mediaUrl}
+                        alt={item.title}
+                        mediaType={item.mediaType}
+                        className={item.mediaType === 'video' ? "h-20 w-32 object-cover rounded" : "h-20 w-20 object-cover rounded"}
+                        controls={item.mediaType === 'video'}
+                      />
                     </div>
                   )}
                   <div className="flex justify-between text-xs text-muted-foreground">
@@ -594,15 +613,13 @@ export default function ContentManagementPage() {
                   <p className="text-sm text-muted-foreground mb-2">{offer.description}</p>
                   {(offer.mediaUrl || offer.imageUrl) && (
                     <div className="mb-2">
-                      {offer.mediaUrl ? (
-                        offer.mediaType === 'video' ? (
-                          <video src={offer.mediaUrl} className="h-20 w-32 object-cover rounded" controls />
-                        ) : (
-                          <img src={offer.mediaUrl} alt={offer.title} className="h-20 w-20 object-cover rounded" />
-                        )
-                      ) : offer.imageUrl ? (
-                        <img src={offer.imageUrl} alt={offer.title} className="h-20 w-20 object-cover rounded" />
-                      ) : null}
+                      <MediaDisplay
+                        src={offer.mediaUrl || offer.imageUrl}
+                        alt={offer.title}
+                        mediaType={offer.mediaType || 'image'}
+                        className={offer.mediaType === 'video' ? "h-20 w-32 object-cover rounded" : "h-20 w-20 object-cover rounded"}
+                        controls={offer.mediaType === 'video'}
+                      />
                     </div>
                   )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs text-muted-foreground">
