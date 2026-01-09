@@ -3034,6 +3034,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else if (Array.isArray(bodyData)) {
           // Direct array format
           transactions = bodyData.map((item: any) => {
+            console.log('Processing direct array item:', item);
+            console.log('Available keys in item:', Object.keys(item));
             // Handle both old and new field names
             return {
               clientCode: item['Client Code'] || item.clientCode,
@@ -3051,27 +3053,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       for (const txnData of transactions) {
         try {
-          console.log('Processing transaction:', txnData);
+          console.log('=== Processing transaction ===');
+          console.log('Raw transaction data:', JSON.stringify(txnData, null, 2));
+          console.log('Available keys in txnData:', Object.keys(txnData));
           
           // Apply field name normalization to ensure we have the right field names
           const normalizedTxn = {
-            clientCode: txnData['Client Code'] || txnData.clientCode || txnData.client_code,
-            transactionType: txnData['Transaction Type'] || txnData.transactionType || txnData.transaction_type || txnData.indicatorName,
-            amount: txnData['Transaction Amount'] || txnData.amount || txnData.transaction_amount,
-            transactionDate: txnData['Transaction Date'] || txnData.transactionDate || txnData.transaction_date,
+            clientCode: txnData['Client Code'] || txnData.clientCode || txnData.client_code || txnData['ClientCode'],
+            transactionType: txnData['Transaction Type'] || txnData.transactionType || txnData.transaction_type || txnData.indicatorName || txnData['TransactionType'],
+            amount: txnData['Transaction Amount'] || txnData.amount || txnData.transaction_amount || txnData['TransactionAmount'],
+            transactionDate: txnData['Transaction Date'] || txnData.transactionDate || txnData.transaction_date || txnData['TransactionDate'],
             remark: txnData['Narration'] || txnData.remark || txnData.narration || txnData.description || '',
-            guiid: txnData['Transaction GUID'] || txnData.guiid || txnData.transaction_guid || ''
+            guiid: txnData['Transaction GUID'] || txnData.guiid || txnData.transaction_guid || txnData['TransactionGUID'] || ''
           };
           
-          console.log('Normalized transaction:', normalizedTxn);
+          console.log('Normalized transaction:', JSON.stringify(normalizedTxn, null, 2));
           console.log('Client code extracted:', normalizedTxn.clientCode, 'Type:', typeof normalizedTxn.clientCode);
           
           // Validate required fields using normalized data
-          if (!normalizedTxn.clientCode || normalizedTxn.clientCode.trim() === '') {
+          if (!normalizedTxn.clientCode || normalizedTxn.clientCode.toString().trim() === '') {
             console.log('Client code validation failed for:', normalizedTxn);
+            console.log('Available fields in original transaction:', Object.keys(txnData));
             results.errors.push({ transaction: txnData, error: 'Client code is required' });
             continue;
           }
+          
+          console.log('Client code validation passed:', normalizedTxn.clientCode);
 
           // Validate transaction type and determine indicator ID
           let indicatorId: number;
