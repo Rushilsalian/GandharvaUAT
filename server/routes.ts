@@ -2959,16 +2959,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Invalid token' });
       }
 
-      // Indicator mapping: 1=Investment, 2=Payout, 3=Withdrawal, 4=Closure
+      // Enhanced indicator mapping: 1=Investment, 2=Payout, 3=Withdrawal, 4=Closure
       const indicatorMap: Record<string, number> = {
-        'Investment': 1,
-        'investment': 1,
-        'Payout': 2,
-        'payout': 2,
-        'Withdrawal': 3,
-        'withdrawal': 3,
-        'Closure': 4,
-        'closure': 4
+        'Investment': 1, 'investment': 1, 'Investment Data': 1, 'INVESTMENT': 1,
+        'Payout': 2, 'payout': 2, 'Payout Data': 2, 'PAYOUT': 2,
+        'Withdrawal': 3, 'withdrawal': 3, 'Withdrawal Data': 3, 'WITHDRAWAL': 3,
+        'Closure': 4, 'closure': 4, 'Closure Data': 4, 'CLOSURE': 4
       };
 
       const results = {
@@ -2992,27 +2988,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(400).json({ error: 'No data found in the uploaded file' });
           }
 
-          // Transform Excel data to transaction format
-          // Expected columns: Client Code, Transaction Type, Amount, Transaction Date, Remark, Transaction GUID
-          transactions = data.map((row: any) => ({
-            clientCode: row['Client Code'] || row['client_code'] || row['clientCode'],
-            transactionType: row['Transaction Type'] || row['transaction_type'] || row['transactionType'],
-            amount: row['Amount'] || row['amount'],
-            transactionDate: row['Transaction Date'] || row['transaction_date'] || row['transactionDate'],
-            remark: row['Remark'] || row['remark'] || row['description'] || '',
-            guiid: row['Transaction GUID'] || row['transaction_guid'] || row['guiid'] || ''
-          }));
+          // Transform Excel data to transaction format - support multiple formats
+          transactions = data.map((row: any) => {
+            // Support new format with "Transaction GUID", "Client Code", etc.
+            const clientCode = row['Client Code'] || row['client_code'] || row['clientCode'];
+            const transactionType = row['Transaction Type'] || row['transaction_type'] || row['transactionType'];
+            const amount = row['Transaction Amount'] || row['Amount'] || row['amount'];
+            const transactionDate = row['Transaction Date'] || row['transaction_date'] || row['transactionDate'];
+            const remark = row['Narration'] || row['Remark'] || row['remark'] || row['description'] || '';
+            const guiid = row['Transaction GUID'] || row['transaction_guid'] || row['guiid'] || '';
+            
+            return {
+              clientCode,
+              transactionType,
+              amount,
+              transactionDate,
+              remark,
+              guiid
+            };
+          });
 
         } catch (error) {
           return res.status(400).json({ error: 'Failed to parse Excel file: ' + (error instanceof Error ? error.message : String(error)) });
         }
       } else {
-        // Handle JSON request body
-        const { transactions: bodyTransactions } = req.body;
-        if (!bodyTransactions || !Array.isArray(bodyTransactions)) {
-          return res.status(400).json({ error: 'Transactions array is required or upload an Excel file' });
+        // Handle JSON request body - support both formats
+        let bodyData = req.body;
+        
+        // Check if it's the new format with "Result" array
+        if (bodyData.Result && Array.isArray(bodyData.Result)) {
+          transactions = bodyData.Result.map((item: any) => ({
+            clientCode: item['Client Code'],
+            transactionType: item['Transaction Type'],
+            amount: item['Transaction Amount'],
+            transactionDate: item['Transaction Date'],
+            remark: item['Narration'] || '',
+            guiid: item['Transaction GUID'] || ''
+          }));
+        } else if (bodyData.transactions && Array.isArray(bodyData.transactions)) {
+          // Legacy format
+          transactions = bodyData.transactions;
+        } else if (Array.isArray(bodyData)) {
+          // Direct array format
+          transactions = bodyData.map((item: any) => {
+            // Handle both old and new field names
+            return {
+              clientCode: item['Client Code'] || item.clientCode,
+              transactionType: item['Transaction Type'] || item.transactionType || item.indicatorName,
+              amount: item['Transaction Amount'] || item.amount,
+              transactionDate: item['Transaction Date'] || item.transactionDate,
+              remark: item['Narration'] || item.remark || '',
+              guiid: item['Transaction GUID'] || item.guiid || ''
+            };
+          });
+        } else {
+          return res.status(400).json({ error: 'Invalid request format. Expected transactions array, Result array, or upload an Excel file' });
         }
-        transactions = bodyTransactions;
       }
 
       for (const txnData of transactions) {
@@ -3030,17 +3061,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (!indicatorId) {
               results.errors.push({ 
                 transaction: txnData, 
-                error: `Invalid transaction type '${txnData.transactionType}'. Must be one of: Investment, Payout, Withdrawal, Closure` 
-              });
-              continue;
-            }
-          } else if (txnData.indicatorName) {
-            // Backward compatibility with old field name
-            indicatorId = indicatorMap[txnData.indicatorName];
-            if (!indicatorId) {
-              results.errors.push({ 
-                transaction: txnData, 
-                error: `Invalid indicator name '${txnData.indicatorName}'. Must be one of: Investment, Payout, Withdrawal, Closure` 
+                error: `Invalid transaction type '${txnData.transactionType}'. Must be one of: Investment Data, Payout Data, Withdrawal Data, Closure Data` 
               });
               continue;
             }
@@ -3061,7 +3082,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             continue;
           }
 
-          // Parse transaction date
+          // Parse transaction date - handle DD-MMM-YY format
           let transactionDate = new Date();
           if (txnData.transactionDate) {
             let parsedDate: Date;
@@ -3069,6 +3090,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (typeof txnData.transactionDate === 'number') {
               // Excel serial date number
               parsedDate = new Date((txnData.transactionDate - 25569) * 86400 * 1000);
+            } else if (typeof txnData.transactionDate === 'string') {
+              // Handle DD-MMM-YY format like "29-Dec-25"
+              const dateStr = txnData.transactionDate.trim();
+              if (dateStr.includes('-') && dateStr.length <= 10) {
+                const parts = dateStr.split('-');
+                if (parts.length === 3) {
+                  const day = parseInt(parts[0]);
+                  const monthMap: Record<string, number> = {
+                    'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+                    'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
+                  };
+                  const month = monthMap[parts[1]];
+                  let year = parseInt(parts[2]);
+                  
+                  // Handle 2-digit year (assume 20xx for years 00-50, 19xx for 51-99)
+                  if (year < 100) {
+                    year += year <= 50 ? 2000 : 1900;
+                  }
+                  
+                  if (!isNaN(day) && month !== undefined && !isNaN(year)) {
+                    parsedDate = new Date(year, month, day);
+                  } else {
+                    parsedDate = new Date(dateStr);
+                  }
+                } else {
+                  parsedDate = new Date(dateStr);
+                }
+              } else {
+                parsedDate = new Date(dateStr);
+              }
             } else {
               parsedDate = new Date(txnData.transactionDate);
             }
@@ -3144,16 +3195,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'No data found in the uploaded file' });
       }
 
-      // Indicator mapping: 1=Investment, 2=Payout, 3=Withdrawal, 4=Closure
+      // Enhanced indicator mapping: 1=Investment, 2=Payout, 3=Withdrawal, 4=Closure
       const indicatorMap: Record<string, number> = {
-        'Investment': 1,
-        'investment': 1,
-        'Payout': 2,
-        'payout': 2,
-        'Withdrawal': 3,
-        'withdrawal': 3,
-        'Closure': 4,
-        'closure': 4
+        'Investment': 1, 'investment': 1, 'Investment Data': 1, 'INVESTMENT': 1,
+        'Payout': 2, 'payout': 2, 'Payout Data': 2, 'PAYOUT': 2,
+        'Withdrawal': 3, 'withdrawal': 3, 'Withdrawal Data': 3, 'WITHDRAWAL': 3,
+        'Closure': 4, 'closure': 4, 'Closure Data': 4, 'CLOSURE': 4
       };
 
       const results = {
@@ -3168,13 +3215,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const rowIndex = i + 2; // Excel rows start from 1, plus header row
 
         try {
-          // Validate required fields
-          const clientCode = row['Client Code'] || row['client_code'] || row['clientCode'];
-          const transactionType = row['Transaction Type'] || row['transaction_type'] || row['transactionType'];
-          const amount = row['Amount'] || row['amount'];
-          const transactionDate = row['Transaction Date'] || row['transaction_date'] || row['transactionDate'];
-          const remark = row['Remark'] || row['remark'] || row['description'] || '';
-          const guiid = row['Transaction GUID'] || row['transaction_guid'] || row['guiid'] || '';
+          // Debug: Log all available keys for this row
+          if (i === 0) {
+            console.log('Available keys:', Object.keys(row));
+            console.log('Raw row data:', row);
+          }
+          
+          // Map exact column names from your Excel - try multiple variations
+          const clientCode = row['Client Code'] || row['ClientCode'] || row['Client_Code'];
+          const transactionType = row['Transaction Type'] || row['TransactionType'] || row['Transaction_Type'];
+          const amount = row['Transaction Amount'] || row['TransactionAmount'] || row['Transaction_Amount'];
+          const transactionDate = row['Transaction Date'] || row['TransactionDate'] || row['Transaction_Date'];
+          const remark = row['Narration'] || row['narration'] || '';
+          const guiid = row['Transaction GUID'] || row['TransactionGUID'] || row['Transaction_GUID'] || '';
+
+          console.log(`Row ${rowIndex}:`, { clientCode, transactionType, amount, transactionDate });
+
+          console.log(`Row ${rowIndex}:`, { clientCode, transactionType, amount, transactionDate });
 
           if (!clientCode) {
             results.errors.push({ row: rowIndex, message: 'Client Code is required' });
@@ -3204,20 +3261,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (!indicatorId) {
             results.errors.push({ 
               row: rowIndex, 
-              message: `Invalid transaction type '${transactionType}'. Must be one of: Investment, Payout, Withdrawal, Closure` 
+              message: `Invalid transaction type '${transactionType}'. Must be one of: Investment Data, Payout Data, Withdrawal Data, Closure Data` 
             });
             continue;
           }
 
-          // Parse date properly - Excel dates can be serial numbers
+          // Parse date properly - handle DD-MMM-YY format and Excel dates
           let processedDate: Date;
           
           if (typeof transactionDate === 'number') {
             // Excel serial date number
             processedDate = new Date((transactionDate - 25569) * 86400 * 1000);
           } else if (typeof transactionDate === 'string') {
-            // String date - try to parse normally
-            processedDate = new Date(transactionDate);
+            // Handle DD-MMM-YY format like "29-Dec-25"
+            const dateStr = transactionDate.trim();
+            if (dateStr.includes('-') && dateStr.length <= 10) {
+              const parts = dateStr.split('-');
+              if (parts.length === 3) {
+                const day = parseInt(parts[0]);
+                const monthMap: Record<string, number> = {
+                  'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+                  'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
+                };
+                const month = monthMap[parts[1]];
+                let year = parseInt(parts[2]);
+                
+                // Handle 2-digit year (assume 20xx for years 00-50, 19xx for 51-99)
+                if (year < 100) {
+                  year += year <= 50 ? 2000 : 1900;
+                }
+                
+                if (!isNaN(day) && month !== undefined && !isNaN(year)) {
+                  processedDate = new Date(year, month, day);
+                } else {
+                  processedDate = new Date(dateStr);
+                }
+              } else {
+                processedDate = new Date(dateStr);
+              }
+            } else {
+              processedDate = new Date(dateStr);
+            }
           } else {
             // Fallback to current date if no valid date found
             processedDate = new Date();
@@ -3265,6 +3349,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Excel upload error:', error);
       res.status(500).json({ error: 'Failed to process Excel upload' });
+    }
+  });
+
+  // Test endpoint for new transaction format
+  app.post('/api/transactions/test-format', async (req, res) => {
+    try {
+      console.log('Test endpoint called with body:', JSON.stringify(req.body, null, 2));
+      
+      // Test the new format parsing
+      let transactions: any[] = [];
+      
+      // Check if it's the new format with "Result" array
+      if (req.body.Result && Array.isArray(req.body.Result)) {
+        transactions = req.body.Result.map((item: any) => ({
+          clientCode: item['Client Code'],
+          transactionType: item['Transaction Type'],
+          amount: item['Transaction Amount'],
+          transactionDate: item['Transaction Date'],
+          remark: item['Narration'] || '',
+          guiid: item['Transaction GUID'] || ''
+        }));
+      } else {
+        return res.status(400).json({ error: 'Expected format with Result array' });
+      }
+      
+      console.log('Parsed transactions:', JSON.stringify(transactions, null, 2));
+      
+      res.json({
+        message: 'Format test successful',
+        parsedTransactions: transactions,
+        count: transactions.length
+      });
+      
+    } catch (error) {
+      console.error('Test format error:', error);
+      res.status(500).json({ error: 'Test failed: ' + (error instanceof Error ? error.message : String(error)) });
     }
   });
 
