@@ -3064,9 +3064,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
           
           console.log('Normalized transaction:', normalizedTxn);
+          console.log('Client code extracted:', normalizedTxn.clientCode, 'Type:', typeof normalizedTxn.clientCode);
           
           // Validate required fields using normalized data
-          if (!normalizedTxn.clientCode) {
+          if (!normalizedTxn.clientCode || normalizedTxn.clientCode.trim() === '') {
             console.log('Client code validation failed for:', normalizedTxn);
             results.errors.push({ transaction: txnData, error: 'Client code is required' });
             continue;
@@ -3094,11 +3095,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           // Find client by code
+          console.log('Looking for client with code:', normalizedTxn.clientCode);
           const client = await storage.getMstClientByCode(normalizedTxn.clientCode);
           if (!client) {
+            console.log('Client not found in database for code:', normalizedTxn.clientCode);
             results.errors.push({ transaction: txnData, error: `Client with code ${normalizedTxn.clientCode} not found` });
             continue;
           }
+          console.log('Client found:', { clientId: client.clientId, code: client.code, name: client.name });
 
           // Parse transaction date - handle DD-MMM-YY format
           let transactionDate = new Date();
@@ -3403,6 +3407,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Test format error:', error);
       res.status(500).json({ error: 'Test failed: ' + (error instanceof Error ? error.message : String(error)) });
+    }
+  });
+
+  // Debug endpoint to check clients in database
+  app.get('/api/debug/clients', async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Authorization token required' });
+      }
+
+      const token = authHeader.substring(7);
+      if (token !== process.env.SYNC_API_TOKEN && token !== 'sync-api-token-2024') {
+        return res.status(401).json({ error: 'Invalid token' });
+      }
+
+      const clients = await storage.getAllMstClients();
+      const clientCodes = clients.map(c => ({ clientId: c.clientId, code: c.code, name: c.name }));
+      
+      res.json({
+        message: 'Debug: All clients in database',
+        totalClients: clients.length,
+        clients: clientCodes,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Debug clients error:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
   });
 
