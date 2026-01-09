@@ -3017,14 +3017,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Check if it's the new format with "Result" array
         if (bodyData.Result && Array.isArray(bodyData.Result)) {
-          transactions = bodyData.Result.map((item: any) => ({
-            clientCode: item['Client Code'],
-            transactionType: item['Transaction Type'],
-            amount: item['Transaction Amount'],
-            transactionDate: item['Transaction Date'],
-            remark: item['Narration'] || '',
-            guiid: item['Transaction GUID'] || ''
-          }));
+          transactions = bodyData.Result.map((item: any) => {
+            console.log('Processing Result item:', item);
+            return {
+              clientCode: item['Client Code'],
+              transactionType: item['Transaction Type'],
+              amount: item['Transaction Amount'],
+              transactionDate: item['Transaction Date'],
+              remark: item['Narration'] || '',
+              guiid: item['Transaction GUID'] || ''
+            };
+          });
         } else if (bodyData.transactions && Array.isArray(bodyData.transactions)) {
           // Legacy format
           transactions = bodyData.transactions;
@@ -3048,20 +3051,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       for (const txnData of transactions) {
         try {
-          // Validate required fields
-          if (!txnData.clientCode) {
+          console.log('Processing transaction:', txnData);
+          
+          // Apply field name normalization to ensure we have the right field names
+          const normalizedTxn = {
+            clientCode: txnData['Client Code'] || txnData.clientCode || txnData.client_code,
+            transactionType: txnData['Transaction Type'] || txnData.transactionType || txnData.transaction_type || txnData.indicatorName,
+            amount: txnData['Transaction Amount'] || txnData.amount || txnData.transaction_amount,
+            transactionDate: txnData['Transaction Date'] || txnData.transactionDate || txnData.transaction_date,
+            remark: txnData['Narration'] || txnData.remark || txnData.narration || txnData.description || '',
+            guiid: txnData['Transaction GUID'] || txnData.guiid || txnData.transaction_guid || ''
+          };
+          
+          console.log('Normalized transaction:', normalizedTxn);
+          
+          // Validate required fields using normalized data
+          if (!normalizedTxn.clientCode) {
+            console.log('Client code validation failed for:', normalizedTxn);
             results.errors.push({ transaction: txnData, error: 'Client code is required' });
             continue;
           }
 
           // Validate transaction type and determine indicator ID
           let indicatorId: number;
-          if (txnData.transactionType) {
-            indicatorId = indicatorMap[txnData.transactionType];
+          if (normalizedTxn.transactionType) {
+            indicatorId = indicatorMap[normalizedTxn.transactionType];
             if (!indicatorId) {
               results.errors.push({ 
                 transaction: txnData, 
-                error: `Invalid transaction type '${txnData.transactionType}'. Must be one of: Investment Data, Payout Data, Withdrawal Data, Closure Data` 
+                error: `Invalid transaction type '${normalizedTxn.transactionType}'. Must be one of: Investment Data, Payout Data, Withdrawal Data, Closure Data` 
               });
               continue;
             }
@@ -3070,29 +3088,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
             continue;
           }
 
-          if (!txnData.amount || isNaN(parseFloat(txnData.amount))) {
+          if (!normalizedTxn.amount || isNaN(parseFloat(normalizedTxn.amount))) {
             results.errors.push({ transaction: txnData, error: 'Valid amount is required' });
             continue;
           }
 
           // Find client by code
-          const client = await storage.getMstClientByCode(txnData.clientCode);
+          const client = await storage.getMstClientByCode(normalizedTxn.clientCode);
           if (!client) {
-            results.errors.push({ transaction: txnData, error: `Client with code ${txnData.clientCode} not found` });
+            results.errors.push({ transaction: txnData, error: `Client with code ${normalizedTxn.clientCode} not found` });
             continue;
           }
 
           // Parse transaction date - handle DD-MMM-YY format
           let transactionDate = new Date();
-          if (txnData.transactionDate) {
+          if (normalizedTxn.transactionDate) {
             let parsedDate: Date;
             
-            if (typeof txnData.transactionDate === 'number') {
+            if (typeof normalizedTxn.transactionDate === 'number') {
               // Excel serial date number
-              parsedDate = new Date((txnData.transactionDate - 25569) * 86400 * 1000);
-            } else if (typeof txnData.transactionDate === 'string') {
+              parsedDate = new Date((normalizedTxn.transactionDate - 25569) * 86400 * 1000);
+            } else if (typeof normalizedTxn.transactionDate === 'string') {
               // Handle DD-MMM-YY format like "29-Dec-25"
-              const dateStr = txnData.transactionDate.trim();
+              const dateStr = normalizedTxn.transactionDate.trim();
               if (dateStr.includes('-') && dateStr.length <= 10) {
                 const parts = dateStr.split('-');
                 if (parts.length === 3) {
@@ -3121,7 +3139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 parsedDate = new Date(dateStr);
               }
             } else {
-              parsedDate = new Date(txnData.transactionDate);
+              parsedDate = new Date(normalizedTxn.transactionDate);
             }
             
             if (!isNaN(parsedDate.getTime())) {
@@ -3134,9 +3152,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             transactionDate: transactionDate,
             clientId: client.clientId,
             indicatorId,
-            amount: parseFloat(txnData.amount).toString(),
-            remark: txnData.remark || null,
-            guiid: txnData.guiid || null,
+            amount: parseFloat(normalizedTxn.amount).toString(),
+            remark: normalizedTxn.remark || null,
+            guiid: normalizedTxn.guiid || null,
             createdById: 1,
             createdByUser: 'sync-api',
             createdDate: new Date()
