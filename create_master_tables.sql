@@ -64,3 +64,10 @@ CREATE TABLE mst_client (
     deleted_by_user VARCHAR(50) NULL,
     deleted_date DATETIME NULL
 );
+
+-- Add opening balance columns to mst_client table
+ALTER TABLE mst_client 
+ADD COLUMN opening_investment DECIMAL(18,2) NULL,
+ADD COLUMN opening_withdrawl DECIMAL(18,2) NULL,
+ADD COLUMN opening_payout DECIMAL(18,2) NULL,
+ADD COLUMN opening_closure DECIMAL(18,2) NULL;
