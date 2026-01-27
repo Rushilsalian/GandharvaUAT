@@ -33,6 +33,12 @@ export function registerEnhancedDashboardRoutes(app: Express, authenticateToken:
         const totalInvestments = investmentRequests
           .reduce((sum, inv) => sum + parseFloat(inv.investmentAmount || '0'), 0);
         
+        // Add opening investments from mst_client
+        const openingInvestments = clients
+          .reduce((sum, client) => sum + parseFloat(client.openingInvestment || '0'), 0);
+        
+        const totalInvestmentsWithOpening = totalInvestments + openingInvestments;
+        
         const activeWithdrawals = withdrawalRequests.length;
         
         const thisMonthPayouts = transactions
@@ -44,11 +50,17 @@ export function registerEnhancedDashboardRoutes(app: Express, authenticateToken:
           })
           .reduce((sum, payout) => sum + parseFloat(payout.amount), 0);
         
+        // Add opening payouts from mst_client
+        const openingPayouts = clients
+          .reduce((sum, client) => sum + parseFloat(client.openingPayout || '0'), 0);
+        
+        const totalPayoutsWithOpening = thisMonthPayouts + openingPayouts;
+        
         res.json({
           totalClients: clients.length,
-          totalInvestments,
+          totalInvestments: totalInvestmentsWithOpening,
           activeWithdrawals,
-          thisMonthPayouts
+          thisMonthPayouts: totalPayoutsWithOpening
         });
         
       } else if (sessionRole === 'leader') {
@@ -65,6 +77,12 @@ export function registerEnhancedDashboardRoutes(app: Express, authenticateToken:
         const teamInvestments = leaderInvestments
           .reduce((sum, inv) => sum + parseFloat(inv.investmentAmount || '0'), 0);
         
+        // Add opening investments from leader's clients
+        const leaderOpeningInvestments = leaderClients
+          .reduce((sum, client) => sum + parseFloat(client.openingInvestment || '0'), 0);
+        
+        const totalTeamInvestments = teamInvestments + leaderOpeningInvestments;
+        
         const referralsThisMonth = referralRequests
           .filter(ref => {
             const date = new Date(ref.createdDate || new Date());
@@ -77,11 +95,17 @@ export function registerEnhancedDashboardRoutes(app: Express, authenticateToken:
         const teamPayouts = transactions
           .filter(t => leaderClientIds.includes(t.clientId) && t.indicatorId === 2)
           .reduce((sum, payout) => sum + parseFloat(payout.amount), 0);
-        const commissionEarned = teamPayouts * 0.1;
+        
+        // Add opening payouts from leader's clients
+        const leaderOpeningPayouts = leaderClients
+          .reduce((sum, client) => sum + parseFloat(client.openingPayout || '0'), 0);
+        
+        const totalTeamPayouts = teamPayouts + leaderOpeningPayouts;
+        const commissionEarned = totalTeamPayouts * 0.1;
         
         res.json({
           myClients: leaderClients.length,
-          teamInvestments,
+          teamInvestments: totalTeamInvestments,
           referralsThisMonth,
           commissionEarned
         });
@@ -96,9 +120,17 @@ export function registerEnhancedDashboardRoutes(app: Express, authenticateToken:
         const totalInvestment = investmentRequests
           .reduce((sum, inv) => sum + parseFloat(inv.investmentAmount || '0'), 0);
         
+        // Get client data to add opening amounts
+        const clientData = await storage.getMstClient(sessionClientId);
+        const openingInvestment = parseFloat(clientData?.openingInvestment || '0');
+        const totalInvestmentWithOpening = totalInvestment + openingInvestment;
+        
         const totalPayout = transactions
           .filter(t => t.indicatorId === 2)
           .reduce((sum, payout) => sum + parseFloat(payout.amount), 0);
+        
+        const openingPayout = parseFloat(clientData?.openingPayout || '0');
+        const totalPayoutWithOpening = totalPayout + openingPayout;
         
         const activeReferrals = referralRequests
           .filter(ref => ref.clientId === sessionClientId).length;
@@ -106,8 +138,8 @@ export function registerEnhancedDashboardRoutes(app: Express, authenticateToken:
         const pendingWithdrawals = withdrawalRequests.length;
         
         res.json({
-          totalInvestment,
-          totalPayout,
+          totalInvestment: totalInvestmentWithOpening,
+          totalPayout: totalPayoutWithOpening,
           activeReferrals,
           pendingWithdrawals
         });
@@ -144,11 +176,27 @@ export function registerEnhancedDashboardRoutes(app: Express, authenticateToken:
       
       const totalAmount = investmentRequests.reduce((sum, inv) => sum + parseFloat(inv.investmentAmount || '0'), 0);
       
+      // Add opening investments based on role
+      let openingInvestmentTotal = 0;
+      if (sessionRole === 'admin') {
+        const allClients = await storage.getAllMstClients();
+        openingInvestmentTotal = allClients.reduce((sum, client) => sum + parseFloat(client.openingInvestment || '0'), 0);
+      } else if (sessionRole === 'leader') {
+        const allClients = await storage.getAllMstClients();
+        const leaderClients = allClients.filter(c => c.referenceId === sessionClientId);
+        openingInvestmentTotal = leaderClients.reduce((sum, client) => sum + parseFloat(client.openingInvestment || '0'), 0);
+      } else if (sessionClientId) {
+        const clientData = await storage.getMstClient(sessionClientId);
+        openingInvestmentTotal = parseFloat(clientData?.openingInvestment || '0');
+      }
+      
+      const totalAmountWithOpening = totalAmount + openingInvestmentTotal;
+      
       const distribution = [
-        { name: "Equity", value: Math.floor(totalAmount * 0.45), amount: Math.floor(totalAmount * 0.45) },
-        { name: "Mutual Funds", value: Math.floor(totalAmount * 0.30), amount: Math.floor(totalAmount * 0.30) },
-        { name: "Bonds", value: Math.floor(totalAmount * 0.15), amount: Math.floor(totalAmount * 0.15) },
-        { name: "FD", value: Math.floor(totalAmount * 0.10), amount: Math.floor(totalAmount * 0.10) }
+        { name: "Equity", value: Math.floor(totalAmountWithOpening * 0.45), amount: Math.floor(totalAmountWithOpening * 0.45) },
+        { name: "Mutual Funds", value: Math.floor(totalAmountWithOpening * 0.30), amount: Math.floor(totalAmountWithOpening * 0.30) },
+        { name: "Bonds", value: Math.floor(totalAmountWithOpening * 0.15), amount: Math.floor(totalAmountWithOpening * 0.15) },
+        { name: "FD", value: Math.floor(totalAmountWithOpening * 0.10), amount: Math.floor(totalAmountWithOpening * 0.10) }
       ];
       
       res.json(distribution);
@@ -327,10 +375,16 @@ export function registerEnhancedDashboardRoutes(app: Express, authenticateToken:
         );
         const aum = branchInvestments.reduce((sum, inv) => sum + parseFloat(inv.investmentAmount || '0'), 0);
         
+        // Add opening investments for branch clients
+        const branchOpeningInvestments = branchClients
+          .reduce((sum, client) => sum + parseFloat(client.openingInvestment || '0'), 0);
+        
+        const totalAum = aum + branchOpeningInvestments;
+        
         return {
           branch: branch.name,
           clients: branchClients.length,
-          aum,
+          aum: totalAum,
           growth: Math.round(Math.random() * 20 + 5) // Mock growth data
         };
       }));
@@ -400,10 +454,27 @@ export function registerEnhancedDashboardRoutes(app: Express, authenticateToken:
           return date.getMonth() === index && date.getFullYear() === currentYear;
         }).length;
         
+        // Add opening amounts for the first month only to avoid double counting
+        let openingInvestmentAmount = 0;
+        let openingPayoutAmount = 0;
+        if (index === 0) { // Only add opening amounts to the first month
+          if (sessionRole === 'admin') {
+            openingInvestmentAmount = clients.reduce((sum, client) => sum + parseFloat(client.openingInvestment || '0'), 0);
+            openingPayoutAmount = clients.reduce((sum, client) => sum + parseFloat(client.openingPayout || '0'), 0);
+          } else if (sessionRole === 'leader') {
+            openingInvestmentAmount = clients.reduce((sum, client) => sum + parseFloat(client.openingInvestment || '0'), 0);
+            openingPayoutAmount = clients.reduce((sum, client) => sum + parseFloat(client.openingPayout || '0'), 0);
+          } else if (sessionClientId) {
+            const clientData = clients[0];
+            openingInvestmentAmount = parseFloat(clientData?.openingInvestment || '0');
+            openingPayoutAmount = parseFloat(clientData?.openingPayout || '0');
+          }
+        }
+        
         return {
           month,
-          investments: Math.round(monthInvestments),
-          payouts: Math.round(monthPayouts),
+          investments: Math.round(monthInvestments + (index === 0 ? openingInvestmentAmount : 0)),
+          payouts: Math.round(monthPayouts + (index === 0 ? openingPayoutAmount : 0)),
           clients: monthClients
         };
       });
@@ -643,11 +714,13 @@ export function registerEnhancedDashboardRoutes(app: Express, authenticateToken:
           clients = allClients.map(client => {
             const clientInvestments = investmentRequests.filter(inv => inv.clientId === client.clientId);
             const totalInvestment = clientInvestments.reduce((sum, inv) => sum + parseFloat(inv.investmentAmount || '0'), 0);
+            const openingInvestment = parseFloat(client.openingInvestment || '0');
+            const totalInvestmentWithOpening = totalInvestment + openingInvestment;
             
             return {
               name: client.name,
               email: client.email,
-              totalInvestment,
+              totalInvestment: totalInvestmentWithOpening,
               activeInvestments: clientInvestments.length
             };
           }).filter(client => client.totalInvestment > 0).slice(0, 10);
@@ -661,11 +734,13 @@ export function registerEnhancedDashboardRoutes(app: Express, authenticateToken:
           clients = leaderClients.map(client => {
             const clientInvestments = investmentRequests.filter(inv => inv.clientId === client.clientId);
             const totalInvestment = clientInvestments.reduce((sum, inv) => sum + parseFloat(inv.investmentAmount || '0'), 0);
+            const openingInvestment = parseFloat(client.openingInvestment || '0');
+            const totalInvestmentWithOpening = totalInvestment + openingInvestment;
             
             return {
               name: client.name,
               email: client.email,
-              totalInvestment,
+              totalInvestment: totalInvestmentWithOpening,
               activeInvestments: clientInvestments.length
             };
           }).filter(client => client.totalInvestment > 0).slice(0, 10);
@@ -676,11 +751,13 @@ export function registerEnhancedDashboardRoutes(app: Express, authenticateToken:
           if (client) {
             const investmentRequests = await storage.getInvestmentRequestsByClient(sessionClientId);
             const totalInvestment = investmentRequests.reduce((sum, inv) => sum + parseFloat(inv.investmentAmount || '0'), 0);
+            const openingInvestment = parseFloat(client.openingInvestment || '0');
+            const totalInvestmentWithOpening = totalInvestment + openingInvestment;
             
             clients = [{
               name: client.name,
               email: client.email,
-              totalInvestment,
+              totalInvestment: totalInvestmentWithOpening,
               activeInvestments: investmentRequests.length
             }];
           }
@@ -754,6 +831,10 @@ export function registerEnhancedDashboardRoutes(app: Express, authenticateToken:
             sum + parseFloat(inv.investmentAmount || '0'), 0
           );
           
+          // Add opening investment amount
+          const openingInvestment = parseFloat(client.openingInvestment || '0');
+          const totalAmountWithOpening = totalAmount + openingInvestment;
+          
           const currentMonthPayouts = transactions
             .filter(txn => {
               const date = new Date(txn.transactionDate);
@@ -780,7 +861,7 @@ export function registerEnhancedDashboardRoutes(app: Express, authenticateToken:
           
           return {
             name: client.name,
-            amount: Math.round(totalAmount),
+            amount: Math.round(totalAmountWithOpening),
             growth: Math.round(growth * 10) / 10
           };
         })

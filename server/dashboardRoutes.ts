@@ -21,16 +21,28 @@ export function registerDashboardRoutes(app: Express, authenticateToken: any, ch
         const currentMonth = new Date().getMonth();
         const currentYear = new Date().getFullYear();
         
-        // Calculate total investments from client_investment_request
+        // Calculate total investments from client_investment_request + opening amounts
         const totalInvestments = investmentRequests
           .filter(req => req.status === 'approved')
           .reduce((sum, inv) => sum + parseFloat(inv.amount || '0'), 0);
         
-        // Calculate active withdrawals from client_withdrawal_request
+        // Add opening investments from mst_client
+        const openingInvestments = clients
+          .reduce((sum, client) => sum + parseFloat(client.openingInvestment || '0'), 0);
+        
+        const totalInvestmentsWithOpening = totalInvestments + openingInvestments;
+        
+        // Calculate active withdrawals from client_withdrawal_request + opening withdrawals
         const activeWithdrawals = withdrawalRequests
           .filter(req => req.status === 'pending' || req.status === 'processing').length;
         
-        // Calculate this month payouts from transaction table
+        // Add opening withdrawals from mst_client
+        const openingWithdrawals = clients
+          .reduce((sum, client) => sum + parseFloat(client.openingWithdrawl || '0'), 0);
+        
+        const totalWithdrawalsWithOpening = activeWithdrawals + openingWithdrawals;
+        
+        // Calculate this month payouts from transaction table + opening payouts
         const thisMonthPayouts = transactions
           .filter(t => {
             const date = new Date(t.transactionDate);
@@ -40,11 +52,17 @@ export function registerDashboardRoutes(app: Express, authenticateToken: any, ch
           })
           .reduce((sum, payout) => sum + parseFloat(payout.amount), 0);
         
+        // Add opening payouts from mst_client
+        const openingPayouts = clients
+          .reduce((sum, client) => sum + parseFloat(client.openingPayout || '0'), 0);
+        
+        const totalPayoutsWithOpening = thisMonthPayouts + openingPayouts;
+        
         res.json({
           totalClients: clients.length,
-          totalInvestments,
-          activeWithdrawals,
-          thisMonthPayouts
+          totalInvestments: totalInvestmentsWithOpening,
+          activeWithdrawals: totalWithdrawalsWithOpening,
+          thisMonthPayouts: totalPayoutsWithOpening
         });
       } else if (sessionRole === 'leader' || sessionRole === 'Leader') {
         // Leader stats from referral data
@@ -61,6 +79,12 @@ export function registerDashboardRoutes(app: Express, authenticateToken: any, ch
         const teamInvestments = leaderInvestments
           .reduce((sum, inv) => sum + parseFloat(inv.amount || '0'), 0);
         
+        // Add opening investments from leader's clients
+        const leaderOpeningInvestments = leaderClients
+          .reduce((sum, client) => sum + parseFloat(client.openingInvestment || '0'), 0);
+        
+        const totalTeamInvestments = teamInvestments + leaderOpeningInvestments;
+        
         // Calculate referrals this month
         const referralsThisMonth = referralRequests
           .filter(ref => {
@@ -70,16 +94,22 @@ export function registerDashboardRoutes(app: Express, authenticateToken: any, ch
                    date.getFullYear() === new Date().getFullYear();
           }).length;
         
-        // Calculate commission (10% of team payouts)
+        // Calculate commission (10% of team payouts + opening payouts)
         const transactions = await storage.getAllTransactions();
         const teamPayouts = transactions
           .filter(t => leaderClientIds.includes(t.clientId) && t.indicatorId === 2)
           .reduce((sum, payout) => sum + parseFloat(payout.amount), 0);
-        const commissionEarned = teamPayouts * 0.1;
+        
+        // Add opening payouts from leader's clients
+        const leaderOpeningPayouts = leaderClients
+          .reduce((sum, client) => sum + parseFloat(client.openingPayout || '0'), 0);
+        
+        const totalTeamPayouts = teamPayouts + leaderOpeningPayouts;
+        const commissionEarned = totalTeamPayouts * 0.1;
         
         res.json({
           myClients: leaderClients.length,
-          teamInvestments,
+          teamInvestments: totalTeamInvestments,
           referralsThisMonth,
           commissionEarned
         });
@@ -90,29 +120,40 @@ export function registerDashboardRoutes(app: Express, authenticateToken: any, ch
         const referralRequests = await storage.getAllReferralRequests();
         const transactions = await storage.getTransactionsByClient(sessionClientId);
         
-        // Calculate total investment from approved requests
+        // Calculate total investment from approved requests + opening investment
         const totalInvestment = investmentRequests
           .filter(req => req.status === 'approved')
           .reduce((sum, inv) => sum + parseFloat(inv.amount || '0'), 0);
         
-        // Calculate total payout from transactions
+        // Get client data to add opening amounts
+        const clientData = await storage.getMstClient(sessionClientId);
+        const openingInvestment = parseFloat(clientData?.openingInvestment || '0');
+        const totalInvestmentWithOpening = totalInvestment + openingInvestment;
+        
+        // Calculate total payout from transactions + opening payout
         const totalPayout = transactions
           .filter(t => t.indicatorId === 2)
           .reduce((sum, payout) => sum + parseFloat(payout.amount), 0);
+        
+        const openingPayout = parseFloat(clientData?.openingPayout || '0');
+        const totalPayoutWithOpening = totalPayout + openingPayout;
         
         // Count active referrals
         const activeReferrals = referralRequests
           .filter(ref => ref.referrerId === sessionClientId && ref.status === 'active').length;
         
-        // Count pending withdrawals
+        // Count pending withdrawals + opening withdrawals
         const pendingWithdrawals = withdrawalRequests
           .filter(req => req.status === 'pending' || req.status === 'processing').length;
         
+        const openingWithdrawal = parseFloat(clientData?.openingWithdrawl || '0');
+        const totalWithdrawalsWithOpening = pendingWithdrawals + openingWithdrawal;
+        
         res.json({
-          totalInvestment,
-          totalPayout,
+          totalInvestment: totalInvestmentWithOpening,
+          totalPayout: totalPayoutWithOpening,
           activeReferrals,
-          pendingWithdrawals
+          pendingWithdrawals: totalWithdrawalsWithOpening
         });
       } else {
         res.status(403).json({ error: 'Access denied' });
@@ -144,16 +185,32 @@ export function registerDashboardRoutes(app: Express, authenticateToken: any, ch
         investmentRequests = await storage.getInvestmentRequestsByClient(sessionClientId);
       }
       
-      // Only consider approved investments
+      // Only consider approved investments + opening investments
       const approvedInvestments = investmentRequests.filter(inv => inv.status === 'approved');
       const totalAmount = approvedInvestments.reduce((sum, inv) => sum + parseFloat(inv.amount || '0'), 0);
       
-      // Calculate distribution based on actual investment amounts
+      // Add opening investments based on role
+      let openingInvestmentTotal = 0;
+      if (sessionRole === 'admin' || sessionRole === 'Admin') {
+        const allClients = await storage.getAllMstClients();
+        openingInvestmentTotal = allClients.reduce((sum, client) => sum + parseFloat(client.openingInvestment || '0'), 0);
+      } else if (sessionRole === 'leader' || sessionRole === 'Leader') {
+        const allClients = await storage.getAllMstClients();
+        const leaderClients = allClients.filter(c => c.referenceId === sessionClientId);
+        openingInvestmentTotal = leaderClients.reduce((sum, client) => sum + parseFloat(client.openingInvestment || '0'), 0);
+      } else if (sessionClientId) {
+        const clientData = await storage.getMstClient(sessionClientId);
+        openingInvestmentTotal = parseFloat(clientData?.openingInvestment || '0');
+      }
+      
+      const totalAmountWithOpening = totalAmount + openingInvestmentTotal;
+      
+      // Calculate distribution based on actual investment amounts + opening amounts
       const distribution = [
-        { name: "Equity", value: Math.floor(totalAmount * 0.45), amount: Math.floor(totalAmount * 0.45) },
-        { name: "Mutual Funds", value: Math.floor(totalAmount * 0.30), amount: Math.floor(totalAmount * 0.30) },
-        { name: "Bonds", value: Math.floor(totalAmount * 0.15), amount: Math.floor(totalAmount * 0.15) },
-        { name: "FD", value: Math.floor(totalAmount * 0.10), amount: Math.floor(totalAmount * 0.10) }
+        { name: "Equity", value: Math.floor(totalAmountWithOpening * 0.45), amount: Math.floor(totalAmountWithOpening * 0.45) },
+        { name: "Mutual Funds", value: Math.floor(totalAmountWithOpening * 0.30), amount: Math.floor(totalAmountWithOpening * 0.30) },
+        { name: "Bonds", value: Math.floor(totalAmountWithOpening * 0.15), amount: Math.floor(totalAmountWithOpening * 0.15) },
+        { name: "FD", value: Math.floor(totalAmountWithOpening * 0.10), amount: Math.floor(totalAmountWithOpening * 0.10) }
       ];
       
       res.json(distribution);
@@ -225,11 +282,17 @@ export function registerDashboardRoutes(app: Express, authenticateToken: any, ch
         const branchClients = clients.filter(c => c.branchId === branch.branchId);
         const branchClientIds = branchClients.map(c => c.clientId);
         
-        // Calculate AUM from approved investment requests
+        // Calculate AUM from approved investment requests + opening investments
         const branchInvestments = investmentRequests.filter(inv => 
           branchClientIds.includes(inv.clientId) && inv.status === 'approved'
         );
         const aum = branchInvestments.reduce((sum, inv) => sum + parseFloat(inv.amount || '0'), 0);
+        
+        // Add opening investments for branch clients
+        const branchOpeningInvestments = branchClients
+          .reduce((sum, client) => sum + parseFloat(client.openingInvestment || '0'), 0);
+        
+        const totalAum = aum + branchOpeningInvestments;
         
         // Calculate growth based on last 3 months vs previous 3 months
         const currentDate = new Date();
@@ -252,7 +315,7 @@ export function registerDashboardRoutes(app: Express, authenticateToken: any, ch
         return {
           branch: branch.name,
           clients: branchClients.length,
-          aum,
+          aum: totalAum,
           growth: Math.round(growth * 10) / 10
         };
       }));
@@ -400,10 +463,30 @@ export function registerDashboardRoutes(app: Express, authenticateToken: any, ch
         const investments = monthInvestments.reduce((sum, inv) => sum + parseFloat(inv.amount || '0'), 0);
         const payouts = monthPayouts.reduce((sum, t) => sum + parseFloat(t.amount), 0);
         
+        // Add opening amounts for the first month only to avoid double counting
+        let openingInvestmentAmount = 0;
+        let openingPayoutAmount = 0;
+        if (i === months - 1) { // Only add opening amounts to the first month
+          if (sessionRole === 'admin' || sessionRole === 'Admin') {
+            const allClients = await storage.getAllMstClients();
+            openingInvestmentAmount = allClients.reduce((sum, client) => sum + parseFloat(client.openingInvestment || '0'), 0);
+            openingPayoutAmount = allClients.reduce((sum, client) => sum + parseFloat(client.openingPayout || '0'), 0);
+          } else if (sessionRole === 'leader' || sessionRole === 'Leader') {
+            const allClients = await storage.getAllMstClients();
+            const leaderClients = allClients.filter(c => c.referenceId === sessionClientId);
+            openingInvestmentAmount = leaderClients.reduce((sum, client) => sum + parseFloat(client.openingInvestment || '0'), 0);
+            openingPayoutAmount = leaderClients.reduce((sum, client) => sum + parseFloat(client.openingPayout || '0'), 0);
+          } else if (sessionClientId) {
+            const clientData = await storage.getMstClient(sessionClientId);
+            openingInvestmentAmount = parseFloat(clientData?.openingInvestment || '0');
+            openingPayoutAmount = parseFloat(clientData?.openingPayout || '0');
+          }
+        }
+        
         trends.push({
           month: monthNames[date.getMonth()],
-          investments,
-          payouts,
+          investments: Math.round(investments + (i === months - 1 ? openingInvestmentAmount : 0)),
+          payouts: Math.round(payouts + (i === months - 1 ? openingPayoutAmount : 0)),
           clients: activeClientIds.size
         });
       }

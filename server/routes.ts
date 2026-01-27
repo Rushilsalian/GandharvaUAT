@@ -1824,6 +1824,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transactions = transactions.filter(txn => txn.type === type);
       }
       
+      // Add opening amounts as virtual transactions if they exist
+      const client = await storage.getMstClient(parseInt(clientId));
+      if (client) {
+        const openingTransactions = [];
+        
+        if (type === 'investment' && client.openingInvestment && parseFloat(client.openingInvestment) > 0) {
+          openingTransactions.push({
+            id: `opening-investment-${clientId}`,
+            type: 'investment',
+            amount: parseFloat(client.openingInvestment),
+            status: 'completed',
+            description: 'Opening Investment Balance',
+            processedAt: client.createdDate,
+            createdAt: client.createdDate
+          });
+        }
+        
+        if (type === 'payout' && client.openingPayout && parseFloat(client.openingPayout) > 0) {
+          openingTransactions.push({
+            id: `opening-payout-${clientId}`,
+            type: 'payout',
+            amount: parseFloat(client.openingPayout),
+            status: 'completed',
+            description: 'Opening Payout Balance',
+            processedAt: client.createdDate,
+            createdAt: client.createdDate
+          });
+        }
+        
+        if (type === 'withdrawal' && client.openingWithdrawl && parseFloat(client.openingWithdrawl) > 0) {
+          openingTransactions.push({
+            id: `opening-withdrawal-${clientId}`,
+            type: 'withdrawal',
+            amount: parseFloat(client.openingWithdrawl),
+            status: 'completed',
+            description: 'Opening Withdrawal Balance',
+            processedAt: client.createdDate,
+            createdAt: client.createdDate
+          });
+        }
+        
+        if (type === 'closure' && client.openingClosure && parseFloat(client.openingClosure) > 0) {
+          openingTransactions.push({
+            id: `opening-closure-${clientId}`,
+            type: 'closure',
+            amount: parseFloat(client.openingClosure),
+            status: 'completed',
+            description: 'Opening Closure Balance',
+            processedAt: client.createdDate,
+            createdAt: client.createdDate
+          });
+        }
+        
+        // Add opening transactions at the beginning (oldest first)
+        transactions = [...openingTransactions, ...transactions];
+      }
+      
       res.json(transactions);
     } catch (error) {
       res.status(500).json({ error: 'Internal server error' });
