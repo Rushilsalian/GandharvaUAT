@@ -133,6 +133,14 @@ export function ClientDetailsModal({ client, isOpen, onClose }: ClientDetailsMod
     });
   };
 
+  // Helper function to get isActive status
+  const getIsActiveStatus = (isActive: { type: string; data: number[]; } | boolean | number): boolean => {
+    if (typeof isActive === 'boolean') return isActive;
+    if (typeof isActive === 'number') return isActive === 1;
+    if (typeof isActive === 'object' && isActive.data) return isActive.data[0] === 1;
+    return false;
+  };
+
   // Remove investment calculations as they're not available in this data structure
 
   return (
@@ -275,13 +283,13 @@ export function ClientDetailsModal({ client, isOpen, onClose }: ClientDetailsMod
 
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Status</p>
-                <Badge className={`${typeof client.isActive === 'object' && client.isActive.data[0] === 1
+                <Badge className={`${getIsActiveStatus(client.isActive)
                   ? 'text-green-800'
                   : 'text-red-800'
                   } bg-transparent border-none shadow-none badge-status text-start`}
                   data-testid="badge-status"
                 >
-                  {typeof client.isActive === 'object' && client.isActive.data[0] === 1 ? 'Active' : 'Inactive'}
+                  {getIsActiveStatus(client.isActive) ? 'Active' : 'Inactive'}
                 </Badge>
               </div>
 
