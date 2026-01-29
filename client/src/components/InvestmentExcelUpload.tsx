@@ -12,6 +12,7 @@ interface TransactionRow {
   date: string;
   amount: number;
   remark: string;
+  guiid?: string;
 }
 
 interface ValidationError {
@@ -95,6 +96,11 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
     // Validate remark (Length = 500, Alpha Numeric, Optional)
     if (row.remark && typeof row.remark === 'string' && row.remark.length > 500) {
       errors.push({ row: rowIndex, field: 'remark', message: 'Remark must be 500 characters or less' });
+    }
+
+    // Validate guiid (Optional, but if provided should be valid)
+    if (row.guiid && typeof row.guiid === 'string' && row.guiid.length > 100) {
+      errors.push({ row: rowIndex, field: 'guiid', message: 'GUID must be 100 characters or less' });
     }
 
     return errors;
@@ -237,6 +243,7 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
           indicatorName: 'Investment',
           amount: parseFloat(row.amount).toString(),
           remark: row.remark || '',
+          guiid: row.guiid || '',
           transactionDate: transactionDate.toISOString()
         };
         
@@ -305,9 +312,9 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
 
   const downloadSample = (format: 'excel' | 'json') => {
     const sampleData = [
-      { client_code: 'CL001', date: '15-01-2024', amount: 50000, remark: 'Initial investment' },
-      { client_code: 'CL001', date: '16-01-2024', amount: 75000, remark: 'Additional investment' },
-      { client_code: 'CL001', date: '17-01-2024', amount: 100000, remark: '' }
+      { guiid: 'INV-001-2024-001',client_code: 'CL001', date: '15-01-2024', amount: 50000, remark: 'Initial investment' },
+      { guiid: 'INV-001-2024-002',client_code: 'CL001', date: '16-01-2024', amount: 75000, remark: 'Additional investment' },
+      { guiid: '',client_code: 'CL001', date: '17-01-2024', amount: 100000, remark: '' }
     ];
     
     if (format === 'excel') {

@@ -3632,6 +3632,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             indicatorName: indicatorNames[txn.indicatorId] || 'Unknown',
             amount: txn.amount,
             remark: txn.remark,
+            guiid: txn.guiid,
             createdDate: txn.createdDate
           };
         })
