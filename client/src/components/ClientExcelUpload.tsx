@@ -16,6 +16,7 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadResults, setUploadResults] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadMutation = useMutation({
@@ -52,15 +53,22 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
     },
     onSuccess: (data) => {
       setUploadProgress(100);
+      setUploadResults(data);
       onUploadComplete(data);
-      setSelectedFile(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      setTimeout(() => {
+        setSelectedFile(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }, 3000);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Upload error:', error);
+      console.log('Full error response:', error.response);
       setUploadProgress(0);
+      const errorData = error.response?.data || { message: error.message, errors: [] };
+      console.log('Setting upload results:', errorData);
+      setUploadResults(errorData);
     },
   });
 
@@ -163,13 +171,14 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
       'address',
       'city',
       'pincode',
-      'reference_code'
+      'reference_code',
+      'opening_investment'
     ];
     
     const sampleData = [
       headers,
-      ['CLI001', 'John Doe', '9876543210', 'john@example.com', '01-01-1990', 'ABCDE1234F', '123456789012', 'Main Branch', '123 Main St', 'Mumbai', '400001', 'REF001'],
-      ['CLI002', 'Jane Smith', '9876543211', 'jane@example.com', '15-05-1985', 'FGHIJ5678K', '123456789013', 'Branch A', '456 Oak Ave', 'Delhi', '110001', 'REF002']
+      ['CLI001', 'John Doe', '9876543210', 'john@example.com', '01-01-1990', 'ABCDE1234F', '123456789012', 'Main Branch', '123 Main St', 'Mumbai', '400001', 'REF001', '100000'],
+      ['CLI002', 'Jane Smith', '9876543211', 'jane@example.com', '15-05-1985', 'FGHIJ5678K', '123456789013', 'Branch A', '456 Oak Ave', 'Delhi', '110001', 'REF002', '250000']
     ];
     
     const worksheet = XLSX.utils.aoa_to_sheet(sampleData);
@@ -270,24 +279,41 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
             </div>
           )}
 
-          {/* Error Display */}
-          {uploadMutation.isError && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                {uploadMutation.error?.message || 'Upload failed. Please try again.'}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Success Display */}
-          {uploadMutation.isSuccess && (
-            <Alert>
-              <CheckCircle className="h-4 w-4" />
-              <AlertDescription>
-                File uploaded successfully! Check the results tab for details.
-              </AlertDescription>
-            </Alert>
+          {/* Results Display */}
+          {uploadResults && (
+            <div className="space-y-4">
+              <Alert className={uploadResults.results?.errors?.length > 0 ? "border-orange-200 bg-orange-50" : ""}>
+                <CheckCircle className="h-4 w-4" />
+                <AlertDescription>
+                  {uploadResults.message}
+                </AlertDescription>
+              </Alert>
+              
+              {uploadResults.results?.errors?.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-red-600 flex items-center gap-2">
+                      <AlertCircle className="h-5 w-5" />
+                      Upload Errors ({uploadResults.results.errors.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="max-h-60 overflow-y-auto space-y-2">
+                      {uploadResults.results.errors.map((error: any, index: number) => (
+                        <div key={index} className="p-3 bg-red-50 border border-red-200 rounded text-sm">
+                          <div className="font-medium text-red-800">
+                            Row {index + 2}: {error.client?.client_code || 'Unknown'}
+                          </div>
+                          <div className="text-red-600 mt-1">
+                            {error.error}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           )}
 
           {/* Upload Button */}

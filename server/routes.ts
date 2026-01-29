@@ -1832,48 +1832,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (type === 'investment' && client.openingInvestment && parseFloat(client.openingInvestment) > 0) {
           openingTransactions.push({
             id: `opening-investment-${clientId}`,
+            method: 'opening_balance',
             type: 'investment',
-            amount: parseFloat(client.openingInvestment),
             status: 'completed',
-            description: 'Opening Investment Balance',
+            clientId: clientId,
+            amount: parseFloat(client.openingInvestment).toString(),
             processedAt: client.createdDate,
-            createdAt: client.createdDate
+            description: 'Opening Investment Balance',
+            createdAt: client.createdDate,
+            referenceNumber: `OPN-INV-${clientId}`,
+            processedBy: 'system'
           });
         }
         
         if (type === 'payout' && client.openingPayout && parseFloat(client.openingPayout) > 0) {
           openingTransactions.push({
             id: `opening-payout-${clientId}`,
+            method: 'opening_balance',
             type: 'payout',
-            amount: parseFloat(client.openingPayout),
             status: 'completed',
-            description: 'Opening Payout Balance',
+            clientId: clientId,
+            amount: parseFloat(client.openingPayout).toString(),
             processedAt: client.createdDate,
-            createdAt: client.createdDate
+            description: 'Opening Payout Balance',
+            createdAt: client.createdDate,
+            referenceNumber: `OPN-PAY-${clientId}`,
+            processedBy: 'system'
           });
         }
         
         if (type === 'withdrawal' && client.openingWithdrawl && parseFloat(client.openingWithdrawl) > 0) {
           openingTransactions.push({
             id: `opening-withdrawal-${clientId}`,
+            method: 'opening_balance',
             type: 'withdrawal',
-            amount: parseFloat(client.openingWithdrawl),
             status: 'completed',
-            description: 'Opening Withdrawal Balance',
+            clientId: clientId,
+            amount: parseFloat(client.openingWithdrawl).toString(),
             processedAt: client.createdDate,
-            createdAt: client.createdDate
+            description: 'Opening Withdrawal Balance',
+            createdAt: client.createdDate,
+            referenceNumber: `OPN-WTH-${clientId}`,
+            processedBy: 'system'
           });
         }
         
         if (type === 'closure' && client.openingClosure && parseFloat(client.openingClosure) > 0) {
           openingTransactions.push({
             id: `opening-closure-${clientId}`,
+            method: 'opening_balance',
             type: 'closure',
-            amount: parseFloat(client.openingClosure),
             status: 'completed',
-            description: 'Opening Closure Balance',
+            clientId: clientId,
+            amount: parseFloat(client.openingClosure).toString(),
             processedAt: client.createdDate,
-            createdAt: client.createdDate
+            description: 'Opening Closure Balance',
+            createdAt: client.createdDate,
+            referenceNumber: `OPN-CLS-${clientId}`,
+            processedBy: 'system'
           });
         }
         
@@ -2682,22 +2698,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         failedEmails: [] as Array<{ email: string; credentials: string }>
       };
 
-      // Required fields validation
-      const requiredFields = ['client_code', 'name', 'mobile', 'email'];
+      // Required fields validation - either email or mobile is required
+      const requiredFields = ['client_code', 'name'];
 
       for (const rawClientData of data) {
         try {
           const clientData = rawClientData as any;
+          console.log(`Processing client: ${clientData.client_code || 'NO_CODE'} - ${clientData.name || 'NO_NAME'}`);
+          
           // Validate required fields
           const missingFields = requiredFields.filter(field => !clientData[field] || clientData[field].toString().trim() === '');
           if (missingFields.length > 0) {
+            console.log(`Validation failed for ${clientData.client_code}: Missing ${missingFields.join(', ')}`);
             results.errors.push({ client: clientData, error: `Missing required fields: ${missingFields.join(', ')}` });
+            continue;
+          }
+          
+          // Check that either email or mobile is provided
+          if ((!clientData.email || clientData.email.toString().trim() === '') && 
+              (!clientData.mobile || clientData.mobile.toString().trim() === '')) {
+            console.log(`Validation failed for ${clientData.client_code}: No email or mobile`);
+            results.errors.push({ client: clientData, error: 'Either email or mobile is required' });
             continue;
           }
 
           // Check if client exists by code
           const existingClient = await storage.getMstClientByCode(clientData.client_code);
           if (existingClient) {
+            console.log(`Client ${clientData.client_code} already exists, skipping`);
             results.skipped++;
             continue;
           }
@@ -2737,6 +2765,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             city: clientData.city || null,
             pincode: clientData.pincode && !isNaN(parseInt(clientData.pincode)) ? parseInt(clientData.pincode) : null,
             referenceId: clientData.reference_code ? (await storage.getMstClientByCode(clientData.reference_code))?.clientId || null : null,
+            openingInvestment: clientData.opening_investment && !isNaN(parseFloat(clientData.opening_investment)) ? clientData.opening_investment.toString() : null,
+            openingWithdrawl: null,
+            openingPayout: null,
+            openingClosure: null,
             isActive: 1,
             createdById: 1,
             createdByUser: 'bulk-upload',
@@ -2750,52 +2782,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
 
           const createdClient = await storage.createMstClient(newClient);
+          console.log(`Client created successfully: ${clientData.client_code} (ID: ${createdClient.clientId})`);
 
-          // Create user if email is provided
+          // Create user for every client (check for existing by email or mobile)
+          let existingUser = null;
           if (clientData.email) {
-            const existingUser = await storage.getMstUserByEmail(clientData.email);
-            if (!existingUser) {
-              const password = generateSecurePassword();
-              const userData = {
-                userName: clientData.name || clientData.email,
-                password,
-                email: clientData.email,
-                mobile: clientData.mobile || null,
-                roleId: 3, // Client role
-                clientId: createdClient.clientId,
-                isActive: 1,
-                createdById: 1,
-                createdByUser: 'bulk-upload',
-                createdDate: new Date(),
-                mobileVerified: null,
-                emailVerified: null,
-                modifiedById: null,
-                modifiedByUser: null,
-                modifiedDate: null,
-                deletedById: null,
-                deletedByUser: null,
-                deletedDate: null
-              };
+            existingUser = await storage.getMstUserByEmail(clientData.email);
+          }
+          if (!existingUser && clientData.mobile) {
+            existingUser = await storage.getMstUserByMobile(clientData.mobile);
+          }
+          
+          if (!existingUser) {
+            const password = generateSecurePassword();
+            const userData = {
+              userName: clientData.name || clientData.client_code,
+              password,
+              email: clientData.email || null,
+              mobile: clientData.mobile || null,
+              roleId: 3, // Client role
+              clientId: createdClient.clientId,
+              isActive: 1,
+              createdById: 1,
+              createdByUser: 'bulk-upload',
+              createdDate: new Date(),
+              mobileVerified: null,
+              emailVerified: null,
+              modifiedById: null,
+              modifiedByUser: null,
+              modifiedDate: null,
+              deletedById: null,
+              deletedByUser: null,
+              deletedDate: null
+            };
 
-              await storage.createMstUser(userData);
-              
-              // Send welcome email
+            const createdUser = await storage.createMstUser(userData);
+            console.log(`User created successfully for ${clientData.client_code} (User ID: ${createdUser.userId})`);
+            
+            // Send welcome email only if email is provided
+            if (clientData.email) {
               const emailSent = await sendWelcomeEmail(clientData.email, clientData.name || 'Client', password);
               
               if (emailSent) {
                 emailResults.sent++;
+                console.log(`Welcome email sent to ${clientData.email}`);
               } else {
                 emailResults.failed++;
                 emailResults.failedEmails.push({
                   email: clientData.email,
                   credentials: `Login: ${clientData.email}, Password: ${password}`
                 });
+                console.log(`Welcome email failed for ${clientData.email}`);
               }
             }
+          } else {
+            console.log(`User already exists for ${clientData.client_code}, skipping user creation`);
           }
 
           results.success++;
+          console.log(`Successfully processed client: ${clientData.client_code}`);
         } catch (error) {
+          console.error(`Error processing client ${rawClientData.client_code || 'UNKNOWN'}:`, error);
           results.errors.push({ 
             client: rawClientData, 
             error: error instanceof Error ? error.message : 'Unknown error' 
@@ -2812,8 +2859,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success,
         message,
         processed: results.success + results.skipped + results.errors.length,
-        results,
+        totalRecords: data.length,
+        results: {
+          ...results,
+          errors: results.errors // Return all errors, not limited
+        },
         emailResults,
+        summary: {
+          totalRecords: data.length,
+          successful: results.success,
+          skipped: results.skipped,
+          failed: results.errors.length,
+          emailsSent: emailResults.sent,
+          emailsFailed: emailResults.failed
+        },
         timestamp: new Date().toISOString()
       });
     } catch (error) {
@@ -2878,6 +2937,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             city: clientData.city || null,
             pincode: clientData.pincode || null,
             referenceId: clientData.referenceId || null,
+            openingInvestment: clientData.openingInvestment && !isNaN(parseFloat(clientData.openingInvestment)) ? clientData.openingInvestment.toString() : null,
+            openingWithdrawl: clientData.openingWithdrawl && !isNaN(parseFloat(clientData.openingWithdrawl)) ? clientData.openingWithdrawl.toString() : null,
+            openingPayout: clientData.openingPayout && !isNaN(parseFloat(clientData.openingPayout)) ? clientData.openingPayout.toString() : null,
+            openingClosure: clientData.openingClosure && !isNaN(parseFloat(clientData.openingClosure)) ? clientData.openingClosure.toString() : null,
             isActive: 1,
             createdById: 1,
             createdByUser: 'sync-api',
@@ -2892,16 +2955,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           const createdClient = await storage.createMstClient(newClient);
 
-          // Create user if email is provided
+          // Create user if email or mobile is provided
           let userCredentials = null;
-          if (clientData.email) {
-            const existingUser = await storage.getMstUserByEmail(clientData.email);
+          if (clientData.email || clientData.mobile) {
+            let existingUser = null;
+            if (clientData.email) {
+              existingUser = await storage.getMstUserByEmail(clientData.email);
+            }
+            if (!existingUser && clientData.mobile) {
+              existingUser = await storage.getMstUserByMobile(clientData.mobile);
+            }
+            
             if (!existingUser) {
               const password = generateSecurePassword();
               const userData = {
-                userName: clientData.name || clientData.email,
+                userName: clientData.name || clientData.code,
                 password,
-                email: clientData.email,
+                email: clientData.email || null,
                 mobile: clientData.mobile || null,
                 roleId: 3, // Client role
                 clientId: createdClient.clientId,
@@ -2920,13 +2990,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               };
 
               await storage.createMstUser(userData);
-              console.log('Attempting to send welcome email to:', clientData.email);
-              const emailSent = await sendWelcomeEmail(clientData.email, clientData.name || 'Client', password);
-              console.log('Email sent result:', emailSent);
               
-              if (!emailSent) {
-                console.log('Email failed, storing credentials for response');
-                userCredentials = { email: clientData.email, password };
+              // Send welcome email only if email is provided
+              if (clientData.email) {
+                console.log('Attempting to send welcome email to:', clientData.email);
+                const emailSent = await sendWelcomeEmail(clientData.email, clientData.name || 'Client', password);
+                console.log('Email sent result:', emailSent);
+                
+                if (!emailSent) {
+                  console.log('Email failed, storing credentials for response');
+                  userCredentials = { email: clientData.email, password };
+                }
               }
             }
           }

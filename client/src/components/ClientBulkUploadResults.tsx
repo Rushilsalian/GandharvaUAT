@@ -40,7 +40,7 @@ export function ClientBulkUploadResults({ results }: ClientBulkUploadResultsProp
   const totalProcessed = results.processed || 0;
   const successCount = results.results?.success || 0;
   const skippedCount = results.results?.skipped || 0;
-  const errorCount = results.errors?.length || 0;
+  const errorCount = results.results?.errors?.length || results.errors?.length || 0;
   
   const emailsSent = results.emailResults?.sent || 0;
   const emailsFailed = results.emailResults?.failed || 0;
@@ -177,10 +177,10 @@ export function ClientBulkUploadResults({ results }: ClientBulkUploadResultsProp
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {results.errors.map((error, index) => (
+                  {(results.results?.errors || results.errors || []).map((error, index) => (
                     <TableRow key={index}>
                       <TableCell className="font-mono text-sm">
-                        {error.client?.code || 'N/A'}
+                        {error.client?.client_code || error.client?.code || 'N/A'}
                       </TableCell>
                       <TableCell>{error.client?.name || 'N/A'}</TableCell>
                       <TableCell>{error.client?.email || 'N/A'}</TableCell>
