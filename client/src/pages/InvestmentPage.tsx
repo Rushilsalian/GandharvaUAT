@@ -82,6 +82,23 @@ export default function InvestmentPage() {
     enabled: !!token
   });
 
+  // Fetch opening investments based on role
+  const { data: openingInvestments = [] } = useQuery({
+    queryKey: ['/api/clients/opening-investments'],
+    queryFn: async () => {
+      const response = await fetch('/api/clients/opening-investments', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch opening investments');
+      }
+      return response.json();
+    },
+    enabled: !!token
+  });
+
   // Apply filters to investments
   const filteredInvestments = useMemo(() => {
     return investments.filter((investment: Transaction) => {
@@ -132,13 +149,19 @@ export default function InvestmentPage() {
     totalItems
   } = usePagination({ data: filteredInvestments, itemsPerPage: 10 });
 
+  // Calculate opening investment total based on role
+  const openingInvestmentTotal = useMemo(() => {
+    return openingInvestments.reduce((sum: number, client: any) => sum + Number(client.opening_investment || 0), 0);
+  }, [openingInvestments]);
+
   // Calculate investment statistics from filtered data
   const stats = {
     totalInvestments: filteredInvestments.length,
     totalAmount: filteredInvestments.reduce((sum: number, inv: Transaction) => sum + Number(inv.amount), 0),
     completedInvestments: filteredInvestments.filter((inv: Transaction) => inv.status === 'completed').length,
     pendingInvestments: filteredInvestments.filter((inv: Transaction) => inv.status === 'pending').length,
-    uniqueClients: new Set(filteredInvestments.map((inv: Transaction) => inv.client?.id)).size
+    uniqueClients: new Set(filteredInvestments.map((inv: Transaction) => inv.client?.id)).size,
+    openingInvestment: openingInvestmentTotal
   };
 
   const handleFiltersChange = (newFilters: FilterState) => {
@@ -254,6 +277,15 @@ export default function InvestmentPage() {
 
       {/* Investment Statistics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+         <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Opening Investments</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">₹{stats.openingInvestment.toLocaleString()}</div>
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Investments</CardTitle>

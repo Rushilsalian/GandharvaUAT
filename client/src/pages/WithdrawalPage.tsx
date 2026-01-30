@@ -78,6 +78,23 @@ export default function WithdrawalPage() {
     enabled: !!token
   });
 
+  // Fetch opening withdrawals based on role
+  const { data: openingWithdrawals = [] } = useQuery({
+    queryKey: ['/api/clients/opening-withdrawals'],
+    queryFn: async () => {
+      const response = await fetch('/api/clients/opening-withdrawals', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch opening withdrawals');
+      }
+      return response.json();
+    },
+    enabled: !!token
+  });
+
   const filteredWithdrawals = useMemo(() => {
     return withdrawals.filter((withdrawal: Transaction) => {
       if (filters.dateRange?.from || filters.dateRange?.to) {
@@ -124,12 +141,18 @@ export default function WithdrawalPage() {
     totalItems
   } = usePagination({ data: filteredWithdrawals, itemsPerPage: 10 });
 
+  // Calculate opening withdrawal total based on role
+  const openingWithdrawalTotal = useMemo(() => {
+    return openingWithdrawals.reduce((sum: number, client: any) => sum + Number(client.opening_withdrawl || 0), 0);
+  }, [openingWithdrawals]);
+
   const stats = {
     totalWithdrawals: filteredWithdrawals.length,
     totalAmount: filteredWithdrawals.reduce((sum: number, w: Transaction) => sum + Number(w.amount), 0),
     completedWithdrawals: filteredWithdrawals.filter((w: Transaction) => w.status === 'completed').length,
     pendingWithdrawals: filteredWithdrawals.filter((w: Transaction) => w.status === 'pending').length,
-    uniqueClients: new Set(filteredWithdrawals.map((w: Transaction) => w.client?.id)).size
+    uniqueClients: new Set(filteredWithdrawals.map((w: Transaction) => w.client?.id)).size,
+    openingWithdrawal: openingWithdrawalTotal
   };
 
   const handleFiltersChange = (newFilters: FilterState) => {
@@ -240,6 +263,16 @@ export default function WithdrawalPage() {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Opening Withdrawals</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">₹{stats.openingWithdrawal.toLocaleString()}</div>
+          </CardContent>
+        </Card>
+        
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Withdrawals</CardTitle>

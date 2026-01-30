@@ -1666,6 +1666,164 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get opening investments based on role
+  app.get('/api/clients/opening-investments', authenticateToken, async (req, res) => {
+    try {
+      const userSession = (req as any).user;
+      let clients = await storage.getAllMstClients();
+      const roleName = userSession.roleName || userSession.role || 'client';
+      if (roleName === 'admin' || roleName === 'Admin') {
+      } else if (roleName === 'leader' || roleName === 'Leader') {
+        if (userSession.clientId) {
+          const leaderClients = clients.filter(c => c.referenceId === userSession.clientId || c.clientId === userSession.clientId);
+          clients = leaderClients;
+        }
+      } else if (roleName === 'client' || roleName === 'Client') {
+        if (userSession.clientId) {
+          clients = clients.filter(c => c.clientId === userSession.clientId);
+        } else {
+          clients = [];
+        }
+      } else {
+        clients = [];
+      }
+      
+      const openingInvestments = clients.map(client => ({
+        clientId: client.clientId,
+        clientCode: client.code,
+        clientName: client.name,
+        opening_investment: client.openingInvestment || '0'
+      }));
+      
+      res.json(openingInvestments);
+    } catch (error) {
+      console.error('Error fetching opening investments:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // Get opening withdrawals based on role
+  app.get('/api/clients/opening-withdrawals', authenticateToken, async (req, res) => {
+    try {
+      const userSession = (req as any).user;
+      let clients = await storage.getAllMstClients();
+      const roleName = userSession.roleName || userSession.role || 'client';
+      if (roleName === 'admin' || roleName === 'Admin') {
+      } else if (roleName === 'leader' || roleName === 'Leader') {
+        if (userSession.clientId) {
+          const leaderClients = clients.filter(c => c.referenceId === userSession.clientId || c.clientId === userSession.clientId);
+          clients = leaderClients;
+        }
+      } else if (roleName === 'client' || roleName === 'Client') {
+        if (userSession.clientId) {
+          clients = clients.filter(c => c.clientId === userSession.clientId);
+        } else {
+          clients = [];
+        }
+      } else {
+        clients = [];
+      }
+      
+      const openingWithdrawals = clients.map(client => ({
+        clientId: client.clientId,
+        clientCode: client.code,
+        clientName: client.name,
+        opening_withdrawl: client.openingWithdrawl || '0'
+      }));
+      
+      res.json(openingWithdrawals);
+    } catch (error) {
+      console.error('Error fetching opening withdrawals:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // Get opening payouts based on role
+  app.get('/api/clients/opening-payouts', authenticateToken, async (req, res) => {
+    try {
+      const userSession = (req as any).user;
+      console.log('Opening payouts request - User session:', { userId: userSession.userId, roleName: userSession.roleName, clientId: userSession.clientId });
+      
+      let clients = await storage.getAllMstClients();
+      console.log('Total clients found:', clients.length);
+      
+      const roleName = userSession.roleName || userSession.role || 'client';
+      if (roleName === 'admin' || roleName === 'Admin') {
+        console.log('Admin access - showing all clients');
+      } else if (roleName === 'leader' || roleName === 'Leader') {
+        if (userSession.clientId) {
+          const leaderClients = clients.filter(c => c.referenceId === userSession.clientId || c.clientId === userSession.clientId);
+          clients = leaderClients;
+          console.log('Leader access - filtered clients:', clients.length);
+        }
+      } else if (roleName === 'client' || roleName === 'Client') {
+        if (userSession.clientId) {
+          clients = clients.filter(c => c.clientId === userSession.clientId);
+          console.log('Client access - filtered to own client:', clients.length);
+        } else {
+          clients = [];
+          console.log('Client access - no clientId, empty result');
+        }
+      } else {
+        clients = [];
+        console.log('Unknown role - empty result');
+      }
+      
+      const openingPayouts: any[] = clients.map(client => {
+        console.log('Processing client:', { clientId: client.clientId, code: client.code, availableFields: Object.keys(client) });
+        return {
+          clientId: client.clientId,
+          clientCode: client.code,
+          clientName: client.name,
+          opening_payout: (client as any).opening_payout || (client as any).openingPayout || '0'
+        };
+      });
+      
+      console.log('Returning opening payouts:', openingPayouts.length);
+      res.json(openingPayouts);
+    } catch (error) {
+      console.error('Error fetching opening payouts:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
+      res.status(500).json({ error: 'Internal server error', details: error instanceof Error ? error.message : String(error) });
+    }
+  });
+
+  // Get opening closures based on role
+  app.get('/api/clients/opening-closures', authenticateToken, async (req, res) => {
+    try {
+      const userSession = (req as any).user;
+      let clients = await storage.getAllMstClients();
+      const roleName = userSession.roleName || userSession.role || 'client';
+      if (roleName === 'admin' || roleName === 'Admin') {
+      } else if (roleName === 'leader' || roleName === 'Leader') {
+        if (userSession.clientId) {
+          const leaderClients = clients.filter(c => c.referenceId === userSession.clientId || c.clientId === userSession.clientId);
+          clients = leaderClients;
+        }
+      } else if (roleName === 'client' || roleName === 'Client') {
+        if (userSession.clientId) {
+          clients = clients.filter(c => c.clientId === userSession.clientId);
+        } else {
+          clients = [];
+        }
+      } else {
+        clients = [];
+      }
+      
+      const openingClosures = clients.map(client => ({
+        clientId: client.clientId,
+        clientCode: client.code,
+        clientName: client.name,
+        opening_closure: (client as any).opening_closure || (client as any).openingClosure || '0'
+      }));
+      
+      res.json(openingClosures);
+    } catch (error) {
+      console.error('Error fetching opening closures:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   // Secure client creation endpoint
   app.post('/api/clients/create', async (req, res) => {
     try {

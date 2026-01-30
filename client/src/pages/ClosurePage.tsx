@@ -78,6 +78,22 @@ export default function ClosurePage() {
     enabled: !!token
   });
 
+  const { data: openingClosures = [] } = useQuery({
+    queryKey: ['/api/clients/opening-closures'],
+    queryFn: async () => {
+      const response = await fetch('/api/clients/opening-closures', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch opening closures');
+      }
+      return response.json();
+    },
+    enabled: !!token
+  });
+
   const filteredClosures = useMemo(() => {
     return closures.filter((closure: Transaction) => {
       if (filters.dateRange?.from || filters.dateRange?.to) {
@@ -129,7 +145,12 @@ export default function ClosurePage() {
     totalAmount: filteredClosures.reduce((sum: number, c: Transaction) => sum + Number(c.amount), 0),
     completedClosures: filteredClosures.filter((c: Transaction) => c.status === 'completed').length,
     pendingClosures: filteredClosures.filter((c: Transaction) => c.status === 'pending').length,
-    uniqueClients: new Set(filteredClosures.map((c: Transaction) => c.client?.id)).size
+    uniqueClients: new Set(filteredClosures.map((c: Transaction) => c.client?.id)).size,
+    openingClosureTotal: useMemo(() => {
+      return openingClosures.reduce((sum: number, item: any) => {
+        return sum + Number(item.opening_closure || 0);
+      }, 0);
+    }, [openingClosures])
   };
 
   const handleFiltersChange = (newFilters: FilterState) => {
@@ -239,7 +260,17 @@ export default function ClosurePage() {
         />
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Opening Closure</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">₹{stats.openingClosureTotal.toLocaleString()}</div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Closures</CardTitle>

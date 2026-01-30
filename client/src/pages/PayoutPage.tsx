@@ -78,6 +78,23 @@ export default function PayoutPage() {
     enabled: !!token
   });
 
+  // Fetch opening payouts based on role
+  const { data: openingPayouts = [] } = useQuery({
+    queryKey: ['/api/clients/opening-payouts'],
+    queryFn: async () => {
+      const response = await fetch('/api/clients/opening-payouts', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch opening payouts');
+      }
+      return response.json();
+    },
+    enabled: !!token
+  });
+
   const filteredPayouts = useMemo(() => {
     if (!payouts || payouts.length === 0) return [];
 
@@ -138,12 +155,18 @@ export default function PayoutPage() {
     totalItems
   } = usePagination({ data: filteredPayouts, itemsPerPage: 10 });
 
+  // Calculate opening payout total based on role
+  const openingPayoutTotal = useMemo(() => {
+    return openingPayouts.reduce((sum: number, client: any) => sum + Number(client.opening_payout || 0), 0);
+  }, [openingPayouts]);
+
   const stats = {
     totalPayouts: filteredPayouts.length,
     totalAmount: filteredPayouts.reduce((sum: number, p: Transaction) => sum + Number(p.amount), 0),
     completedPayouts: filteredPayouts.filter((p: Transaction) => p.status === 'completed').length,
     pendingPayouts: filteredPayouts.filter((p: Transaction) => p.status === 'pending').length,
-    uniqueClients: new Set(filteredPayouts.map((p: Transaction) => p.client?.id)).size
+    uniqueClients: new Set(filteredPayouts.map((p: Transaction) => p.client?.id)).size,
+    openingPayout: openingPayoutTotal
   };
 
   const handleFiltersChange = (newFilters: FilterState) => {
@@ -254,6 +277,16 @@ export default function PayoutPage() {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Opening Payouts</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">₹{stats.openingPayout.toLocaleString()}</div>
+          </CardContent>
+        </Card>
+        
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Payouts</CardTitle>
