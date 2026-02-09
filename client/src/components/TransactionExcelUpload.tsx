@@ -139,18 +139,46 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
       reader.onload = (e) => {
         try {
           const jsonData = JSON.parse(e.target?.result as string);
+          console.log('Raw JSON data:', jsonData);
           
-          if (!Array.isArray(jsonData)) {
-            reject(new Error('JSON file must contain an array of transactions'));
+          let transactions: any[];
+          
+          // Handle nested structure with "Result" property
+          if (jsonData.Result && Array.isArray(jsonData.Result)) {
+            console.log('Found Result property with array:', jsonData.Result);
+            transactions = jsonData.Result;
+          } else if (Array.isArray(jsonData)) {
+            console.log('Found direct array:', jsonData);
+            transactions = jsonData;
+          } else {
+            console.log('Invalid JSON structure:', jsonData);
+            console.log('jsonData.Result exists:', !!jsonData.Result);
+            console.log('jsonData.Result is array:', Array.isArray(jsonData.Result));
+            console.log('jsonData is array:', Array.isArray(jsonData));
+            reject(new Error('JSON file must contain an array of transactions or have a "Result" property with an array'));
             return;
           }
 
-          if (jsonData.length === 0) {
+          if (transactions.length === 0) {
             reject(new Error('No data found in the JSON file'));
             return;
           }
 
-          resolve(jsonData as TransactionRow[]);
+          // Map field names to expected format
+          const mappedTransactions = transactions.map(transaction => {
+            console.log('Parsing JSON transaction:', transaction);
+            const mappedTransaction = {
+              client_code: transaction['Client Code'] || transaction.client_code,
+              date: transaction['Transaction Date'] || transaction.date,
+              amount: Math.abs(parseFloat(transaction['Transaction Amount'] || transaction.amount)), // Convert negative to positive
+              remark: transaction['Remark'] || transaction.remark || '',
+              guiid: transaction['GUID'] || transaction.guiid || ''
+            };
+            console.log('Mapped transaction:', mappedTransaction);
+            return mappedTransaction;
+          });
+
+          resolve(mappedTransactions as TransactionRow[]);
         } catch (error) {
           reject(new Error('Failed to parse JSON file. Please ensure it contains valid JSON.'));
         }

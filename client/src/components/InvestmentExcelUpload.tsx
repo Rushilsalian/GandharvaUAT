@@ -6,11 +6,12 @@ import { Progress } from '@/components/ui/progress';
 
 import { Upload, FileSpreadsheet, FileText, CheckCircle, XCircle, AlertCircle, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { clientAPI } from '@/lib/clientApi';
 
 interface TransactionRow {
   client_code: string;
   date: string;
-  amount: number;
+  amount: string | number;
   remark: string;
   guiid?: string;
 }
@@ -21,9 +22,19 @@ interface ValidationError {
   message: string;
 }
 
+interface RecordStatus {
+  row: number;
+  clientCode: string;
+  amount: number;
+  status: 'success' | 'error' | 'skipped';
+  message?: string;
+  guiid?: string;
+}
+
 interface UploadResult {
   success: number;
   errors: Array<{ row: number; message: string }>;
+  records?: RecordStatus[];
 }
 
 interface InvestmentExcelUploadProps {
@@ -35,11 +46,12 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<UploadResult | null>(null);
+  const [recordStatuses, setRecordStatuses] = useState<RecordStatus[]>([]);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const validateRow = (row: any, rowIndex: number): ValidationError[] => {
+  const validateRow = async (row: any, rowIndex: number): Promise<ValidationError[]> => {
     const errors: ValidationError[] = [];
     
     // Validate client_code (Length = 50, Alpha Numeric, Mandatory)
@@ -49,6 +61,16 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
       errors.push({ row: rowIndex, field: 'client_code', message: 'Client code must be 50 characters or less' });
     } else if (!/^[a-zA-Z0-9]+$/.test(row.client_code)) {
       errors.push({ row: rowIndex, field: 'client_code', message: 'Client code must be alphanumeric' });
+    } else {
+      // Check if client exists in database
+      try {
+        const client = await clientAPI.getClientByCode(row.client_code);
+        if (!client) {
+          errors.push({ row: rowIndex, field: 'client_code', message: `Client with code '${row.client_code}' not found in database` });
+        }
+      } catch (error) {
+        errors.push({ row: rowIndex, field: 'client_code', message: `Unable to validate client code '${row.client_code}'` });
+      }
     }
 
     // Validate date (DD-MM-YYYY, Mandatory)
@@ -139,17 +161,33 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
         try {
           const jsonData = JSON.parse(e.target?.result as string);
           
-          if (!Array.isArray(jsonData)) {
-            reject(new Error('JSON file must contain an array of transactions'));
+          let transactions: any[];
+          
+          // Handle nested structure with "Result" property
+          if (jsonData.Result && Array.isArray(jsonData.Result)) {
+            transactions = jsonData.Result;
+          } else if (Array.isArray(jsonData)) {
+            transactions = jsonData;
+          } else {
+            reject(new Error('JSON file must contain an array of transactions or have a "Result" property with an array'));
             return;
           }
 
-          if (jsonData.length === 0) {
+          if (transactions.length === 0) {
             reject(new Error('No data found in the JSON file'));
             return;
           }
 
-          resolve(jsonData as TransactionRow[]);
+          // Map field names to expected format
+          const mappedTransactions = transactions.map(transaction => ({
+            client_code: transaction['Client Code'] || transaction.client_code,
+            date: transaction['Transaction Date'] || transaction.date,
+            amount: Math.abs(parseFloat(transaction['Transaction Amount'] || transaction.amount)), // Convert negative to positive
+            remark: transaction['Remark'] || transaction.remark || '',
+            guiid: transaction['GUID'] || transaction.guiid || ''
+          }));
+
+          resolve(mappedTransactions as TransactionRow[]);
         } catch (error) {
           reject(new Error('Failed to parse JSON file. Please ensure it contains valid JSON.'));
         }
@@ -199,18 +237,44 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
       setProgress(40);
       const allErrors: ValidationError[] = [];
       const validRows: any[] = [];
+      const recordStatuses: RecordStatus[] = [];
 
-      data.forEach((row, index) => {
-        const rowErrors = validateRow(row, index + 2); // +2 for Excel row numbering (1-based + header)
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i];
+        const rowNumber = i + 2; // +2 for Excel row numbering (1-based + header)
+        const rowErrors = await validateRow(row, rowNumber);
+        
         if (rowErrors.length > 0) {
           allErrors.push(...rowErrors);
+          recordStatuses.push({
+            row: rowNumber,
+            clientCode: row.client_code || 'Unknown',
+            amount: typeof row.amount === 'number' ? row.amount : parseFloat(row.amount) || 0,
+            status: 'error',
+            message: rowErrors.map(e => e.message).join(', '),
+            guiid: row.guiid
+          });
         } else {
-          validRows.push(row);
+          validRows.push({ ...row, originalRowNumber: rowNumber });
+          recordStatuses.push({
+            row: rowNumber,
+            clientCode: row.client_code,
+            amount: typeof row.amount === 'number' ? row.amount : parseFloat(row.amount),
+            status: 'success',
+            guiid: row.guiid
+          });
         }
-      });
+      }
+
+      setRecordStatuses(recordStatuses);
 
       if (allErrors.length > 0) {
         setValidationErrors(allErrors);
+        setResult({
+          success: 0,
+          errors: allErrors.map(e => ({ row: e.row, message: e.message })),
+          records: recordStatuses
+        });
         setUploading(false);
         return;
       }
@@ -274,17 +338,26 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
       const uploadResult = await response.json();
       setProgress(100);
       
+      // Update record statuses based on API response
+      const apiErrors = uploadResult.results?.errors || [];
+      const updatedRecordStatuses = recordStatuses.map(record => {
+        const apiError = apiErrors.find((err: any) => err.clientCode === record.clientCode);
+        if (apiError) {
+          return { ...record, status: 'error' as const, message: apiError.message };
+        }
+        return record;
+      });
+      
       const result: UploadResult = {
         success: uploadResult.results?.success || 0,
-        errors: uploadResult.results?.errors || []
+        errors: uploadResult.results?.errors || [],
+        records: updatedRecordStatuses
       };
       
       console.log('Upload result:', uploadResult);
       console.log('Processed result:', result);
       
-      // Log the actual API response structure
-      console.log('API Response Structure:', JSON.stringify(uploadResult, null, 2));
-      
+      setRecordStatuses(updatedRecordStatuses);
       setResult(result);
       onUploadComplete?.(result);
 
@@ -304,6 +377,7 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
     setFile(null);
     setResult(null);
     setValidationErrors([]);
+    setRecordStatuses([]);
     setProgress(0);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -454,23 +528,64 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
                     : `Uploaded ${result.success} transactions with ${result.errors.length} errors`
                   }
                 </p>
-                {result.errors.length > 0 && (
-                  <div className="max-h-40 overflow-y-auto space-y-1">
-                    {result.errors.slice(0, 5).map((error, index) => (
-                      <p key={index} className="text-sm">
-                        {error.row > 0 ? `Row ${error.row}: ` : ''}{error.message}
-                      </p>
-                    ))}
-                    {result.errors.length > 5 && (
-                      <p className="text-sm font-medium">
-                        ... and {result.errors.length - 5} more errors
-                      </p>
-                    )}
-                  </div>
-                )}
               </div>
             </AlertDescription>
           </Alert>
+        )}
+
+        {/* Record Status Table */}
+        {recordStatuses.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Record Processing Status</CardTitle>
+              <CardDescription>
+                Detailed status for each record in the uploaded file
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="max-h-60 overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-white border-b">
+                    <tr>
+                      <th className="text-left p-2">Row</th>
+                      <th className="text-left p-2">Client Code</th>
+                      <th className="text-left p-2">Amount</th>
+                      <th className="text-left p-2">Status</th>
+                      <th className="text-left p-2">Message</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recordStatuses.map((record, index) => (
+                      <tr key={index} className="border-b hover:bg-gray-50">
+                        <td className="p-2">{record.row}</td>
+                        <td className="p-2">{record.clientCode}</td>
+                        <td className="p-2">₹{record.amount.toLocaleString()}</td>
+                        <td className="p-2">
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                            record.status === 'success' ? 'bg-green-100 text-green-800' :
+                            record.status === 'error' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {record.status === 'success' ? (
+                              <CheckCircle className="h-3 w-3" />
+                            ) : record.status === 'error' ? (
+                              <XCircle className="h-3 w-3" />
+                            ) : (
+                              <AlertCircle className="h-3 w-3" />
+                            )}
+                            {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                          </span>
+                        </td>
+                        <td className="p-2 text-gray-600">
+                          {record.message || (record.status === 'success' ? 'Successfully processed' : '-')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </CardContent>
     </Card>
