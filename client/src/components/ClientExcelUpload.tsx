@@ -204,69 +204,48 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* File Upload Area */}
-          <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-              dragActive
-                ? 'border-primary bg-primary/5'
-                : 'border-gray-300 hover:border-gray-400'
-            }`}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-          >
-            <FileSpreadsheet className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <div className="space-y-2">
-              <p className="text-lg font-medium">
-                Drop your file here, or{' '}
-                <Button
-                  variant="ghost"
-                  className="p-0 h-auto font-medium text-primary underline hover:no-underline"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  browse
-                </Button>
-              </p>
-              <p className="text-sm text-gray-500">
-                Supports .xls, .xlsx and .json files up to 10MB
-              </p>
-            </div>
-            <Input
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+            <input
               ref={fileInputRef}
               type="file"
-              accept=".xls,.xlsx,.csv,.json"
+              accept=".xlsx,.xls,.json"
               onChange={handleFileSelect}
               className="hidden"
             />
-          </div>
-
-          {/* Selected File Display */}
-          {selectedFile && (
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                {selectedFile.name.toLowerCase().endsWith('.json') ? (
-                  <FileText className="h-8 w-8 text-blue-600" />
-                ) : (
-                  <FileSpreadsheet className="h-8 w-8 text-green-600" />
-                )}
+            {!selectedFile ? (
+              <div className="space-y-2">
+                <Upload className="h-12 w-12 mx-auto text-gray-400" />
                 <div>
-                  <p className="font-medium">{selectedFile.name}</p>
-                  <p className="text-sm text-gray-500">
-                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
+                  <Button onClick={() => fileInputRef.current?.click()}>
+                    Select File
+                  </Button>
+                </div>
+                <p className="text-sm text-gray-500">
+                  Supported formats: .xlsx, .xls, .json
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {selectedFile.name.endsWith('.json') ? (
+                  <FileText className="h-12 w-12 mx-auto text-green-500" />
+                ) : (
+                  <FileSpreadsheet className="h-12 w-12 mx-auto text-green-500" />
+                )}
+                <p className="font-medium">{selectedFile.name}</p>
+                <p className="text-sm text-gray-500">
+                  {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                </p>
+                <div className="flex gap-2 justify-center">
+                  <Button onClick={handleUpload} disabled={uploadMutation.isPending}>
+                    {uploadMutation.isPending ? 'Uploading...' : 'Upload'}
+                  </Button>
+                  <Button variant="outline" onClick={removeFile}>
+                    Remove
+                  </Button>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={removeFile}
-                disabled={uploadMutation.isPending}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Upload Progress */}
           {uploadMutation.isPending && (
@@ -316,26 +295,7 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
             </div>
           )}
 
-          {/* Upload Button */}
-          <div className="flex justify-end">
-            <Button
-              onClick={handleUpload}
-              disabled={!selectedFile || uploadMutation.isPending}
-              className="min-w-32"
-            >
-              {uploadMutation.isPending ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload Clients
-                </>
-              )}
-            </Button>
-          </div>
+
         </CardContent>
       </Card>
 
