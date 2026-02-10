@@ -43,36 +43,41 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
   const validateRow = (row: any, rowIndex: number): ValidationError[] => {
     const errors: ValidationError[] = [];
     
-    // Validate client_code (Length = 50, Alpha Numeric, Mandatory)
-    if (!row.client_code || typeof row.client_code !== 'string') {
+    // Use exact header names from your Excel file
+    const clientCode = row['Client Code'];
+    const dateField = row['Transaction Date'];
+    const amountField = row['Transaction Amount'];
+    const remarkField = row['Narration'];
+    const guiidField = row['Transaction GUID'];
+    
+    // Validate client_code
+    if (!clientCode || typeof clientCode !== 'string') {
       errors.push({ row: rowIndex, field: 'client_code', message: 'Client code is required' });
-    } else if (row.client_code.length > 50) {
+    } else if (clientCode.length > 50) {
       errors.push({ row: rowIndex, field: 'client_code', message: 'Client code must be 50 characters or less' });
-    } else if (!/^[a-zA-Z0-9]+$/.test(row.client_code)) {
+    } else if (!/^[a-zA-Z0-9]+$/.test(clientCode)) {
       errors.push({ row: rowIndex, field: 'client_code', message: 'Client code must be alphanumeric' });
     }
 
-    // Validate date (DD-MM-YYYY, Mandatory)
-    if (!row.date) {
+    // Validate date
+    if (!dateField) {
       errors.push({ row: rowIndex, field: 'date', message: 'Date is required' });
     } else {
       let dateValue: Date;
       
-      if (typeof row.date === 'number') {
-        // Excel serial date
-        dateValue = new Date((row.date - 25569) * 86400 * 1000);
-      } else if (typeof row.date === 'string') {
-        // Try DD-MM-YYYY format first
+      if (typeof dateField === 'number') {
+        dateValue = new Date((dateField - 25569) * 86400 * 1000);
+      } else if (typeof dateField === 'string') {
         const ddmmyyyy = /^(\d{2})-(\d{2})-(\d{4})$/;
-        const match = row.date.match(ddmmyyyy);
+        const match = dateField.match(ddmmyyyy);
         if (match) {
           const [, day, month, year] = match;
           dateValue = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
         } else {
-          dateValue = new Date(row.date);
+          dateValue = new Date(dateField);
         }
       } else {
-        dateValue = new Date(row.date);
+        dateValue = new Date(dateField);
       }
       
       if (isNaN(dateValue.getTime())) {
@@ -80,11 +85,11 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
       }
     }
 
-    // Validate amount (999999999.99, Numeric, Mandatory)
-    if (!row.amount && row.amount !== 0) {
+    // Validate amount
+    if (!amountField && amountField !== 0) {
       errors.push({ row: rowIndex, field: 'amount', message: 'Amount is required' });
     } else {
-      const amount = parseFloat(row.amount);
+      const amount = parseFloat(amountField);
       if (isNaN(amount)) {
         errors.push({ row: rowIndex, field: 'amount', message: 'Amount must be numeric' });
       } else if (amount <= 0) {
@@ -94,13 +99,13 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
       }
     }
 
-    // Validate remark (Length = 500, Alpha Numeric, Optional)
-    if (row.remark && typeof row.remark === 'string' && row.remark.length > 500) {
+    // Validate remark (optional)
+    if (remarkField && typeof remarkField === 'string' && remarkField.length > 500) {
       errors.push({ row: rowIndex, field: 'remark', message: 'Remark must be 500 characters or less' });
     }
 
-    // Validate guiid (Length = 200, Optional)
-    if (row.guiid && typeof row.guiid === 'string' && row.guiid.length > 200) {
+    // Validate guiid (optional)
+    if (guiidField && typeof guiidField === 'string' && guiidField.length > 200) {
       errors.push({ row: rowIndex, field: 'guiid', message: 'Transaction GUID must be 200 characters or less' });
     }
 
@@ -118,6 +123,9 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
           const worksheet = workbook.Sheets[sheetName];
           const jsonData = XLSX.utils.sheet_to_json(worksheet);
           
+          console.log('Excel parsing - Raw data:', jsonData);
+          console.log('Excel parsing - First row keys:', jsonData.length > 0 ? Object.keys(jsonData[0]) : 'No data');
+          
           if (!jsonData || jsonData.length === 0) {
             reject(new Error('No data found in the Excel file'));
             return;
@@ -125,6 +133,7 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
 
           resolve(jsonData as TransactionRow[]);
         } catch (error) {
+          console.error('Excel parsing error:', error);
           reject(new Error('Failed to parse Excel file'));
         }
       };
@@ -167,13 +176,31 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
           // Map field names to expected format
           const mappedTransactions = transactions.map(transaction => {
             console.log('Parsing JSON transaction:', transaction);
+            
+            // Check if this looks like client data instead of transaction data
+            if (transaction.user && !transaction.amount && !transaction.date) {
+              throw new Error('This appears to be client data, not transaction data. Transaction data requires: Client Code, Transaction Date, Transaction Amount, Transaction Type.');
+            }
+            
             const mappedTransaction = {
-              client_code: transaction['Client Code'] || transaction.client_code,
-              date: transaction['Transaction Date'] || transaction.date,
-              amount: Math.abs(parseFloat(transaction['Transaction Amount'] || transaction.amount)), // Convert negative to positive
-              remark: transaction['Remark'] || transaction.remark || '',
-              guiid: transaction['GUID'] || transaction.guiid || ''
+              client_code: transaction['Client Code'] || transaction.client_code || transaction.clientCode,
+              date: transaction['Transaction Date'] || transaction.date || transaction.transactionDate,
+              amount: Math.abs(parseFloat(transaction['Transaction Amount'] || transaction.amount || transaction.transactionAmount || 0)), // Convert negative to positive
+              remark: transaction['Remark'] || transaction.remark || transaction.narration || '',
+              guiid: transaction['GUID'] || transaction.guiid || transaction.transactionGuid || ''
             };
+            
+            // Additional validation for required fields
+            if (!mappedTransaction.client_code) {
+              throw new Error('Client Code is required for each transaction');
+            }
+            if (!mappedTransaction.date) {
+              throw new Error('Transaction Date is required for each transaction');
+            }
+            if (!mappedTransaction.amount || mappedTransaction.amount === 0) {
+              throw new Error('Transaction Amount is required and must be greater than 0');
+            }
+            
             console.log('Mapped transaction:', mappedTransaction);
             return mappedTransaction;
           });
@@ -230,6 +257,8 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
       const validRows: any[] = [];
 
       data.forEach((row, index) => {
+        console.log(`Validating row ${index + 2}:`, row);
+        console.log(`Row keys:`, Object.keys(row));
         const rowErrors = validateRow(row, index + 2); // +2 for Excel row numbering (1-based + header)
         if (rowErrors.length > 0) {
           allErrors.push(...rowErrors);
@@ -251,27 +280,28 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
       const transactions = validRows.map(row => {
         let transactionDate: Date;
         
-        if (typeof row.date === 'number') {
-          transactionDate = new Date((row.date - 25569) * 86400 * 1000);
-        } else if (typeof row.date === 'string') {
+        const dateField = row['Transaction Date'];
+        if (typeof dateField === 'number') {
+          transactionDate = new Date((dateField - 25569) * 86400 * 1000);
+        } else if (typeof dateField === 'string') {
           const ddmmyyyy = /^(\d{2})-(\d{2})-(\d{4})$/;
-          const match = row.date.match(ddmmyyyy);
+          const match = dateField.match(ddmmyyyy);
           if (match) {
             const [, day, month, year] = match;
             transactionDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
           } else {
-            transactionDate = new Date(row.date);
+            transactionDate = new Date(dateField);
           }
         } else {
-          transactionDate = new Date(row.date);
+          transactionDate = new Date(dateField);
         }
 
         const transaction = {
-          clientCode: row.client_code,
+          clientCode: row['Client Code'],
           transactionType: transactionType,
-          amount: parseFloat(row.amount).toString(),
-          remark: row.remark || '',
-          guiid: row.guiid || '',
+          amount: parseFloat(row['Transaction Amount']).toString(),
+          remark: row['Narration'] || '',
+          guiid: row['Transaction GUID'] || '',
           transactionDate: transactionDate.toISOString()
         };
         
@@ -317,14 +347,20 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
       const uploadResult = await response.json();
       setProgress(100);
       
+      console.log('=== FULL API RESPONSE ===');
+      console.log('Raw API Response:', JSON.stringify(uploadResult, null, 2));
+      console.log('uploadResult.results:', uploadResult.results);
+      console.log('uploadResult.results?.success:', uploadResult.results?.success);
+      console.log('uploadResult.results?.errors:', uploadResult.results?.errors);
+      console.log('uploadResult.success:', uploadResult.success);
+      console.log('uploadResult.message:', uploadResult.message);
+      
       const result: UploadResult = {
-        success: uploadResult.results?.success || 0,
-        errors: uploadResult.results?.errors || []
+        success: uploadResult.results?.success || uploadResult.success || 0,
+        errors: uploadResult.results?.errors || uploadResult.errors || []
       };
       
-      console.log('Upload result:', uploadResult);
-      console.log('Processed result:', result);
-      console.log('API Response Structure:', JSON.stringify(uploadResult, null, 2));
+      console.log('Final processed result:', result);
       
       setResult(result);
       onUploadComplete?.(result);
@@ -353,9 +389,9 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
 
   const downloadSample = (format: 'excel' | 'json') => {
     const sampleData = [
-      { 'Client Code': 'CL001', 'Transaction Type': transactionType, 'Amount': 50000, 'Transaction Date': '15-01-2024', 'Remark': `Initial ${transactionType.toLowerCase()}`, 'Transaction GUID': 'TXN-001-2024' },
-      { 'Client Code': 'CL002', 'Transaction Type': transactionType, 'Amount': 75000, 'Transaction Date': '16-01-2024', 'Remark': `Additional ${transactionType.toLowerCase()}`, 'Transaction GUID': 'TXN-002-2024' },
-      { 'Client Code': 'CL003', 'Transaction Type': transactionType, 'Amount': 100000, 'Transaction Date': '17-01-2024', 'Remark': '', 'Transaction GUID': 'TXN-003-2024' }
+      { 'Client Code': 'GF00000650', 'Transaction Type': `${transactionType} Data`, 'Transaction Amount': 50000, 'Transaction Date': '15-Jan-24', 'Narration': `Initial ${transactionType.toLowerCase()}`, 'Transaction GUID': 'TXN-001-2024' },
+      { 'Client Code': 'GF00000651', 'Transaction Type': `${transactionType} Data`, 'Transaction Amount': 75000, 'Transaction Date': '16-Jan-24', 'Narration': `Additional ${transactionType.toLowerCase()}`, 'Transaction GUID': 'TXN-002-2024' },
+      { 'Client Code': 'GF00000652', 'Transaction Type': `${transactionType} Data`, 'Transaction Amount': 100000, 'Transaction Date': '17-Jan-24', 'Narration': '', 'Transaction GUID': 'TXN-003-2024' }
     ];
     
     if (format === 'excel') {
@@ -364,7 +400,11 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
       XLSX.utils.book_append_sheet(wb, ws, `${transactionType} Sample`);
       XLSX.writeFile(wb, `${transactionType.toLowerCase()}_sample.xlsx`);
     } else {
-      const jsonString = JSON.stringify(sampleData, null, 2);
+      // For JSON format, show the expected structure more clearly
+      const jsonSample = {
+        "Result": sampleData
+      };
+      const jsonString = JSON.stringify(jsonSample, null, 2);
       const blob = new Blob([jsonString], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -383,7 +423,10 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
           {transactionType} File Upload
         </CardTitle>
         <CardDescription>
-          Upload {transactionType.toLowerCase()} transactions from Excel (.xlsx, .xls) or JSON files. Format: Client Code, Transaction Type, Amount, Transaction Date, Remark, Transaction GUID (optional - for updates).
+          Upload {transactionType.toLowerCase()} transactions from Excel (.xlsx, .xls) or JSON files. 
+          <br /><strong>Required fields:</strong> Client Code, Transaction Type, Transaction Amount, Transaction Date
+          <br /><strong>Optional fields:</strong> Narration, Transaction GUID
+          <br /><strong>Note:</strong> This is for transaction data, not client data. Each record must have amount and date.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -392,10 +435,10 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
             <Download className="h-4 w-4" />
             Download Excel Sample
           </Button>
-          {/* <Button variant="outline" onClick={() => downloadSample('json')} className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => downloadSample('json')} className="flex items-center gap-2">
             <Download className="h-4 w-4" />
             Download JSON Sample
-          </Button> */}
+          </Button>
         </div>
 
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">

@@ -2977,8 +2977,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const createdUser = await storage.createMstUser(userData);
             console.log(`User created successfully for ${clientData.client_code} (User ID: ${createdUser.userId})`);
             
-            // Send welcome email only if email is provided
+            // Handle credentials notification based on available contact method
             if (clientData.email) {
+              // Try to send welcome email if email is provided
               const emailSent = await sendWelcomeEmail(clientData.email, clientData.name || 'Client', password);
               
               if (emailSent) {
@@ -2992,6 +2993,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 });
                 console.log(`Welcome email failed for ${clientData.email}`);
               }
+            } else if (clientData.mobile) {
+              // For mobile-only users, store credentials for manual distribution
+              emailResults.failed++;
+              emailResults.failedEmails.push({
+                email: clientData.mobile, // Using mobile field to store contact info
+                credentials: `Mobile: ${clientData.mobile}, Login: ${clientData.mobile}, Password: ${password}`
+              });
+              console.log(`User created with mobile only: ${clientData.mobile}, credentials need manual distribution`);
             }
           } else {
             console.log(`User already exists for ${clientData.client_code}, skipping user creation`);
@@ -3022,14 +3031,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...results,
           errors: results.errors // Return all errors, not limited
         },
-        emailResults,
+        emailResults: {
+          ...emailResults,
+          mobileOnlyUsers: emailResults.failedEmails.filter(item => item.credentials.includes('Mobile:')).length
+        },
         summary: {
           totalRecords: data.length,
           successful: results.success,
           skipped: results.skipped,
           failed: results.errors.length,
           emailsSent: emailResults.sent,
-          emailsFailed: emailResults.failed
+          emailsFailed: emailResults.failed,
+          mobileOnlyUsers: emailResults.failedEmails.filter(item => item.credentials.includes('Mobile:')).length,
+          credentialsNeedManualDistribution: emailResults.failedEmails.length
         },
         timestamp: new Date().toISOString()
       });
@@ -3149,7 +3163,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
               await storage.createMstUser(userData);
               
-              // Send welcome email only if email is provided
+              // Handle credentials notification based on available contact method
               if (clientData.email) {
                 console.log('Attempting to send welcome email to:', clientData.email);
                 const emailSent = await sendWelcomeEmail(clientData.email, clientData.name || 'Client', password);
@@ -3159,16 +3173,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   console.log('Email failed, storing credentials for response');
                   userCredentials = { email: clientData.email, password };
                 }
+              } else if (clientData.mobile) {
+                // For mobile-only users, store credentials for manual distribution
+                console.log('Mobile-only user created, credentials need manual distribution');
+                userCredentials = { mobile: clientData.mobile, password };
               }
             }
           }
 
           results.success++;
           if (userCredentials) {
-            results.errors.push({ 
-              client: clientData, 
-              error: `Email failed - Login: ${userCredentials.email}, Password: ${userCredentials.password}` 
-            });
+            if (userCredentials.email) {
+              results.errors.push({ 
+                client: clientData, 
+                error: `Email failed - Login: ${userCredentials.email}, Password: ${userCredentials.password}` 
+              });
+            } else if (userCredentials.mobile) {
+              results.errors.push({ 
+                client: clientData, 
+                error: `Mobile-only user - Mobile: ${userCredentials.mobile}, Login: ${userCredentials.mobile}, Password: ${userCredentials.password}` 
+              });
+            }
           }
         } catch (error) {
           results.errors.push({ 
@@ -3549,20 +3574,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           console.log(`Row ${rowIndex}:`, { clientCode, transactionType, amount, transactionDate });
 
-          console.log(`Row ${rowIndex}:`, { clientCode, transactionType, amount, transactionDate });
-
           if (!clientCode) {
-            results.errors.push({ row: rowIndex, message: 'Client Code is required' });
+            results.errors.push({ row: rowIndex, message: `Client Code is required. Available fields: ${Object.keys(row).join(', ')}` });
             continue;
           }
 
           if (!transactionType) {
-            results.errors.push({ row: rowIndex, message: 'Transaction Type is required' });
+            results.errors.push({ row: rowIndex, message: `Transaction Type is required. Available fields: ${Object.keys(row).join(', ')}` });
             continue;
           }
 
           if (!amount || isNaN(parseFloat(amount))) {
-            results.errors.push({ row: rowIndex, message: 'Valid amount is required' });
+            results.errors.push({ row: rowIndex, message: `Valid amount is required. Found: '${amount}'. Available fields: ${Object.keys(row).join(', ')}` });
             continue;
           }
 
@@ -3570,7 +3593,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const clients = await storage.getAllMstClients();
           const client = clients.find(c => c.code === clientCode);
           if (!client) {
-            results.errors.push({ row: rowIndex, message: `Client with code ${clientCode} not found` });
+            results.errors.push({ row: rowIndex, message: `Client with code '${clientCode}' not found in database` });
+            continue;
+          }
+
+          // Validate amount range
+          const numericAmount = parseFloat(amount);
+          if (numericAmount <= 0) {
+            results.errors.push({ row: rowIndex, message: `Amount must be positive. Found: ${numericAmount}` });
+            continue;
+          }
+          if (numericAmount > 999999999.99) {
+            results.errors.push({ row: rowIndex, message: `Amount exceeds maximum limit (999999999.99). Found: ${numericAmount}` });
+            continue;
+          }
+
+          // Validate remark length
+          if (remark && remark.length > 500) {
+            results.errors.push({ row: rowIndex, message: `Remark must be 500 characters or less. Found: ${remark.length} characters` });
+            continue;
+          }
+
+          // Validate GUID length
+          if (guiid && guiid.length > 200) {
+            results.errors.push({ row: rowIndex, message: `Transaction GUID must be 200 characters or less. Found: ${guiid.length} characters` });
             continue;
           }
 
@@ -3586,6 +3632,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Parse date properly - handle DD-MMM-YY format and Excel dates
           let processedDate: Date;
+          
+          if (!transactionDate) {
+            results.errors.push({ row: rowIndex, message: 'Transaction Date is required' });
+            continue;
+          }
           
           if (typeof transactionDate === 'number') {
             // Excel serial date number
@@ -3627,7 +3678,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Validate the parsed date
           if (isNaN(processedDate.getTime())) {
-            processedDate = new Date(); // Fallback to current date
+            results.errors.push({ row: rowIndex, message: `Invalid date format '${transactionDate}'. Use DD-MMM-YY format (e.g., 29-Dec-25) or DD-MM-YYYY` });
+            continue;
           }
 
           // Create or update transaction in the new transaction table based on GUID
@@ -3651,7 +3703,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Return results
+      // Return results in the same format as JSON uploads for consistency
       const success = results.errors.length === 0;
       const message = success 
         ? `Successfully processed ${results.success} transactions` 
@@ -3660,7 +3712,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success,
         message,
-        results,
+        results: {
+          success: results.success,
+          errors: results.errors
+        },
         timestamp: new Date().toISOString()
       });
 

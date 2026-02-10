@@ -14,6 +14,12 @@ interface TransactionRow {
   amount: string | number;
   remark: string;
   guiid?: string;
+  // Excel column names
+  'Client Code'?: string;
+  'Transaction Date'?: string;
+  'Transaction Amount'?: string | number;
+  'Narration'?: string;
+  'Transaction GUID'?: string;
 }
 
 interface ValidationError {
@@ -54,46 +60,51 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
   const validateRow = async (row: any, rowIndex: number): Promise<ValidationError[]> => {
     const errors: ValidationError[] = [];
     
-    // Validate client_code (Length = 50, Alpha Numeric, Mandatory)
-    if (!row.client_code || typeof row.client_code !== 'string') {
+    // Use exact header names from Excel file
+    const clientCode = row['Client Code'];
+    const dateField = row['Transaction Date'];
+    const amountField = row['Transaction Amount'];
+    const remarkField = row['Narration'];
+    const guiidField = row['Transaction GUID'];
+    
+    // Validate client_code
+    if (!clientCode || typeof clientCode !== 'string') {
       errors.push({ row: rowIndex, field: 'client_code', message: 'Client code is required' });
-    } else if (row.client_code.length > 50) {
+    } else if (clientCode.length > 50) {
       errors.push({ row: rowIndex, field: 'client_code', message: 'Client code must be 50 characters or less' });
-    } else if (!/^[a-zA-Z0-9]+$/.test(row.client_code)) {
+    } else if (!/^[a-zA-Z0-9]+$/.test(clientCode)) {
       errors.push({ row: rowIndex, field: 'client_code', message: 'Client code must be alphanumeric' });
     } else {
       // Check if client exists in database
       try {
-        const client = await clientAPI.getClientByCode(row.client_code);
+        const client = await clientAPI.getClientByCode(clientCode);
         if (!client) {
-          errors.push({ row: rowIndex, field: 'client_code', message: `Client with code '${row.client_code}' not found in database` });
+          errors.push({ row: rowIndex, field: 'client_code', message: `Client with code '${clientCode}' not found in database` });
         }
       } catch (error) {
-        errors.push({ row: rowIndex, field: 'client_code', message: `Unable to validate client code '${row.client_code}'` });
+        errors.push({ row: rowIndex, field: 'client_code', message: `Unable to validate client code '${clientCode}'` });
       }
     }
 
-    // Validate date (DD-MM-YYYY, Mandatory)
-    if (!row.date) {
+    // Validate date
+    if (!dateField) {
       errors.push({ row: rowIndex, field: 'date', message: 'Date is required' });
     } else {
       let dateValue: Date;
       
-      if (typeof row.date === 'number') {
-        // Excel serial date
-        dateValue = new Date((row.date - 25569) * 86400 * 1000);
-      } else if (typeof row.date === 'string') {
-        // Try DD-MM-YYYY format first
+      if (typeof dateField === 'number') {
+        dateValue = new Date((dateField - 25569) * 86400 * 1000);
+      } else if (typeof dateField === 'string') {
         const ddmmyyyy = /^(\d{2})-(\d{2})-(\d{4})$/;
-        const match = row.date.match(ddmmyyyy);
+        const match = dateField.match(ddmmyyyy);
         if (match) {
           const [, day, month, year] = match;
           dateValue = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
         } else {
-          dateValue = new Date(row.date);
+          dateValue = new Date(dateField);
         }
       } else {
-        dateValue = new Date(row.date);
+        dateValue = new Date(dateField);
       }
       
       if (isNaN(dateValue.getTime())) {
@@ -101,11 +112,11 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
       }
     }
 
-    // Validate amount (999999999.99, Numeric, Mandatory)
-    if (!row.amount && row.amount !== 0) {
+    // Validate amount
+    if (!amountField && amountField !== 0) {
       errors.push({ row: rowIndex, field: 'amount', message: 'Amount is required' });
     } else {
-      const amount = parseFloat(row.amount);
+      const amount = parseFloat(amountField);
       if (isNaN(amount)) {
         errors.push({ row: rowIndex, field: 'amount', message: 'Amount must be numeric' });
       } else if (amount <= 0) {
@@ -115,20 +126,20 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
       }
     }
 
-    // Validate remark (Length = 500, Alpha Numeric, Optional)
-    if (row.remark && typeof row.remark === 'string' && row.remark.length > 500) {
+    // Validate remark (optional)
+    if (remarkField && typeof remarkField === 'string' && remarkField.length > 500) {
       errors.push({ row: rowIndex, field: 'remark', message: 'Remark must be 500 characters or less' });
     }
 
-    // Validate guiid (Optional, but if provided should be valid)
-    if (row.guiid && typeof row.guiid === 'string' && row.guiid.length > 100) {
+    // Validate guiid (optional)
+    if (guiidField && typeof guiidField === 'string' && guiidField.length > 100) {
       errors.push({ row: rowIndex, field: 'guiid', message: 'GUID must be 100 characters or less' });
     }
 
     return errors;
   };
 
-  const parseExcelFile = (file: File): Promise<TransactionRow[]> => {
+  const parseExcelFile = (file: File): Promise<any[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -144,7 +155,7 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
             return;
           }
 
-          resolve(jsonData as TransactionRow[]);
+          resolve(jsonData as any[]);
         } catch (error) {
           reject(new Error('Failed to parse Excel file'));
         }
@@ -216,6 +227,7 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
   };
 
   const handleUpload = async () => {
+    console.log('=== HANDLE UPLOAD STARTED ===');
     if (!file) return;
 
     setUploading(true);
@@ -223,18 +235,26 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
     setValidationErrors([]);
 
     try {
+      console.log('=== STARTING FILE PARSING ===');
       // Parse file based on type
       setProgress(20);
-      let data: TransactionRow[];
+      let data: any[];
       
       if (file.name.endsWith('.json')) {
+        console.log('Parsing JSON file...');
         data = await parseJsonFile(file);
       } else {
+        console.log('Parsing Excel file...');
         data = await parseExcelFile(file);
       }
       
+      console.log('=== FILE PARSED SUCCESSFULLY ===');
+      console.log('Parsed data length:', data.length);
+      console.log('First row sample:', data[0]);
+      
       // Validate data
       setProgress(40);
+      console.log('=== STARTING VALIDATION ===');
       const allErrors: ValidationError[] = [];
       const validRows: any[] = [];
       const recordStatuses: RecordStatus[] = [];
@@ -242,33 +262,48 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
       for (let i = 0; i < data.length; i++) {
         const row = data[i];
         const rowNumber = i + 2; // +2 for Excel row numbering (1-based + header)
-        const rowErrors = await validateRow(row, rowNumber);
+        console.log(`Validating row ${rowNumber}:`, row);
         
-        if (rowErrors.length > 0) {
-          allErrors.push(...rowErrors);
-          recordStatuses.push({
-            row: rowNumber,
-            clientCode: row.client_code || 'Unknown',
-            amount: typeof row.amount === 'number' ? row.amount : parseFloat(row.amount) || 0,
-            status: 'error',
-            message: rowErrors.map(e => e.message).join(', '),
-            guiid: row.guiid
-          });
-        } else {
-          validRows.push({ ...row, originalRowNumber: rowNumber });
-          recordStatuses.push({
-            row: rowNumber,
-            clientCode: row.client_code,
-            amount: typeof row.amount === 'number' ? row.amount : parseFloat(row.amount),
-            status: 'success',
-            guiid: row.guiid
-          });
+        try {
+          const rowErrors = await validateRow(row, rowNumber);
+          console.log(`Row ${rowNumber} validation result:`, rowErrors.length > 0 ? 'ERRORS' : 'SUCCESS');
+          
+          if (rowErrors.length > 0) {
+            console.log(`Row ${rowNumber} errors:`, rowErrors);
+            allErrors.push(...rowErrors);
+            recordStatuses.push({
+              row: rowNumber,
+              clientCode: row['Client Code'] || 'Unknown',
+              amount: typeof row['Transaction Amount'] === 'number' ? row['Transaction Amount'] : parseFloat(row['Transaction Amount']) || 0,
+              status: 'error',
+              message: rowErrors.map(e => e.message).join(', '),
+              guiid: row['Transaction GUID']
+            });
+          } else {
+            validRows.push({ ...row, originalRowNumber: rowNumber });
+            recordStatuses.push({
+              row: rowNumber,
+              clientCode: row['Client Code'],
+              amount: typeof row['Transaction Amount'] === 'number' ? row['Transaction Amount'] : parseFloat(row['Transaction Amount']),
+              status: 'success',
+              guiid: row['Transaction GUID']
+            });
+          }
+        } catch (validationError) {
+          console.error(`Row ${rowNumber} validation failed:`, validationError);
+          allErrors.push({ row: rowNumber, field: 'general', message: validationError instanceof Error ? validationError.message : 'Validation failed' });
         }
       }
 
       setRecordStatuses(recordStatuses);
 
+      console.log('=== VALIDATION LOOP COMPLETED ===');
+      console.log('Total errors found:', allErrors.length);
+      console.log('Valid rows found:', validRows.length);
+      console.log('Record statuses:', recordStatuses.length);
+
       if (allErrors.length > 0) {
+        console.log('=== VALIDATION FAILED - RETURNING EARLY ===');
         setValidationErrors(allErrors);
         setResult({
           success: 0,
@@ -282,32 +317,35 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
       // Prepare transactions for API
       setProgress(60);
       
-      console.log('Valid rows to process:', validRows);
+      console.log('=== VALIDATION COMPLETED SUCCESSFULLY ===');
+      console.log('Valid rows to process:', validRows.length);
+      console.log('Sample valid row:', validRows[0]);
       
       const transactions = validRows.map(row => {
         let transactionDate: Date;
         
-        if (typeof row.date === 'number') {
-          transactionDate = new Date((row.date - 25569) * 86400 * 1000);
-        } else if (typeof row.date === 'string') {
+        const dateField = row['Transaction Date'];
+        if (typeof dateField === 'number') {
+          transactionDate = new Date((dateField - 25569) * 86400 * 1000);
+        } else if (typeof dateField === 'string') {
           const ddmmyyyy = /^(\d{2})-(\d{2})-(\d{4})$/;
-          const match = row.date.match(ddmmyyyy);
+          const match = dateField.match(ddmmyyyy);
           if (match) {
             const [, day, month, year] = match;
             transactionDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
           } else {
-            transactionDate = new Date(row.date);
+            transactionDate = new Date(dateField);
           }
         } else {
-          transactionDate = new Date(row.date);
+          transactionDate = new Date(dateField);
         }
 
         const transaction = {
-          clientCode: row.client_code,
+          clientCode: row['Client Code'],
           indicatorName: 'Investment',
-          amount: parseFloat(row.amount).toString(),
-          remark: row.remark || '',
-          guiid: row.guiid || '',
+          amount: parseFloat(row['Transaction Amount']).toString(),
+          remark: row['Narration'] || '',
+          guiid: row['Transaction GUID'] || '',
           transactionDate: transactionDate.toISOString()
         };
         
@@ -318,8 +356,11 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
       // Upload to API
       setProgress(80);
       
+      console.log('=== STARTING API UPLOAD ===');
+      console.log('Number of transactions to upload:', transactions.length);
       console.log('Sending transactions to API:', JSON.stringify({ transactions }, null, 2));
       
+      console.log('Making fetch request to /api/sync/transactions...');
       const response = await fetch('/api/sync/transactions', {
         method: 'POST',
         headers: {
@@ -329,14 +370,26 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
         body: JSON.stringify({ transactions })
       });
 
+      console.log('API Response received. Status:', response.status, 'OK:', response.ok);
+      
       if (!response.ok) {
         const errorText = await response.text();
         console.error('API Error Response:', errorText);
         throw new Error(`Failed to upload transactions: ${response.status} - ${errorText}`);
       }
 
+      console.log('Parsing API response JSON...');
       const uploadResult = await response.json();
+      console.log('API response parsed successfully');
       setProgress(100);
+      
+      console.log('=== FULL API RESPONSE ===');
+      console.log('Raw API Response:', JSON.stringify(uploadResult, null, 2));
+      console.log('uploadResult.results:', uploadResult.results);
+      console.log('uploadResult.results?.success:', uploadResult.results?.success);
+      console.log('uploadResult.results?.errors:', uploadResult.results?.errors);
+      console.log('uploadResult.success:', uploadResult.success);
+      console.log('uploadResult.message:', uploadResult.message);
       
       // Update record statuses based on API response
       const apiErrors = uploadResult.results?.errors || [];
@@ -349,25 +402,28 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
       });
       
       const result: UploadResult = {
-        success: uploadResult.results?.success || 0,
-        errors: uploadResult.results?.errors || [],
+        success: uploadResult.results?.success || uploadResult.success || 0,
+        errors: uploadResult.results?.errors || uploadResult.errors || [],
         records: updatedRecordStatuses
       };
       
-      console.log('Upload result:', uploadResult);
-      console.log('Processed result:', result);
+      console.log('Final processed result:', result);
       
       setRecordStatuses(updatedRecordStatuses);
       setResult(result);
       onUploadComplete?.(result);
 
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error('=== UPLOAD ERROR ===');
+      console.error('Error details:', error);
+      console.error('Error message:', error instanceof Error ? error.message : String(error));
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
       setResult({
         success: 0,
         errors: [{ row: 0, message: error instanceof Error ? error.message : 'Upload failed' }]
       });
     } finally {
+      console.log('=== UPLOAD PROCESS FINISHED ===');
       setUploading(false);
       setProgress(0);
     }
@@ -386,9 +442,9 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
 
   const downloadSample = (format: 'excel' | 'json') => {
     const sampleData = [
-      { guiid: 'INV-001-2024-001',client_code: 'CL001', date: '15-01-2024', amount: 50000, remark: 'Initial investment' },
-      { guiid: 'INV-001-2024-002',client_code: 'CL001', date: '16-01-2024', amount: 75000, remark: 'Additional investment' },
-      { guiid: '',client_code: 'CL001', date: '17-01-2024', amount: 100000, remark: '' }
+      { 'Transaction GUID': 'INV-001-2024-001', 'Client Code': 'GF00000650', 'Transaction Type': 'Investment Data', 'Transaction Date': '15-01-2024', 'Transaction Amount': 50000, 'Narration': 'Initial investment' },
+      { 'Transaction GUID': 'INV-001-2024-002', 'Client Code': 'GF00000651', 'Transaction Type': 'Investment Data', 'Transaction Date': '16-01-2024', 'Transaction Amount': 75000, 'Narration': 'Additional investment' },
+      { 'Transaction GUID': '', 'Client Code': 'GF00000652', 'Transaction Type': 'Investment Data', 'Transaction Date': '17-01-2024', 'Transaction Amount': 100000, 'Narration': '' }
     ];
     
     if (format === 'excel') {

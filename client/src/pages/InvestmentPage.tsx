@@ -173,6 +173,7 @@ export default function InvestmentPage() {
   };
 
   const handleUploadComplete = () => {
+    console.log('=== UPLOAD COMPLETE CALLBACK TRIGGERED ===');
     // Refresh the investments data after upload
     queryClient.invalidateQueries({ queryKey: ['/api/transactions', { type: 'investment' }] });
     queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
