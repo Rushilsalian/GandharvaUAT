@@ -186,7 +186,7 @@ export default function PayoutPage() {
     setTimeout(() => {
       queryClient.refetchQueries({ queryKey: ['/api/transactions', { type: 'payout' }] });
     }, 1000);
-    setShowUpload(false);
+    // setShowUpload(false);
   };
 
   const handleExport = async () => {

@@ -398,6 +398,10 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
         if (apiError) {
           return { ...record, status: 'error' as const, message: apiError.message };
         }
+        // Ensure success records have a proper success message
+        if (record.status === 'success') {
+          return { ...record, message: 'Successfully processed and uploaded' };
+        }
         return record;
       });
       
@@ -477,14 +481,10 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => downloadSample('excel')} className="flex items-center gap-2">
+          <Button type="button" variant="outline" onClick={() => downloadSample('excel')} className="flex items-center gap-2">
             <Download className="h-4 w-4" />
             Download Excel Sample
           </Button>
-          {/* <Button variant="outline" onClick={() => downloadSample('json')} className="flex items-center gap-2">
-            <Download className="h-4 w-4" />
-            Download JSON Sample
-          </Button> */}
         </div>
 
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
@@ -499,7 +499,7 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
             <div className="space-y-2">
               <Upload className="h-12 w-12 mx-auto text-gray-400" />
               <div>
-                <Button onClick={() => fileInputRef.current?.click()}>
+                <Button type="button" onClick={() => fileInputRef.current?.click()}>
                   Select File
                 </Button>
               </div>
@@ -519,10 +519,10 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
                 {(file.size / 1024 / 1024).toFixed(2)} MB
               </p>
               <div className="flex gap-2 justify-center">
-                <Button onClick={handleUpload} disabled={uploading}>
+                <Button type="button" onClick={handleUpload} disabled={uploading}>
                   {uploading ? 'Uploading...' : 'Upload'}
                 </Button>
-                <Button variant="outline" onClick={resetUpload}>
+                <Button type="button" variant="outline" onClick={resetUpload}>
                   Remove
                 </Button>
               </div>
@@ -584,13 +584,25 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
                     : `Uploaded ${result.success} transactions with ${result.errors.length} errors`
                   }
                 </p>
+                {result.records && result.records.length > 0 && (
+                  <div className="text-sm text-gray-600">
+                    <p>Total records processed: {result.records.length}</p>
+                    <p>✅ Successful: {result.records.filter(r => r.status === 'success').length}</p>
+                    {result.records.filter(r => r.status === 'error').length > 0 && (
+                      <p>❌ Failed: {result.records.filter(r => r.status === 'error').length}</p>
+                    )}
+                    {result.records.filter(r => r.status === 'skipped').length > 0 && (
+                      <p>⏭️ Skipped: {result.records.filter(r => r.status === 'skipped').length}</p>
+                    )}
+                  </div>
+                )}
               </div>
             </AlertDescription>
           </Alert>
         )}
 
-        {/* Record Status Table */}
-        {recordStatuses.length > 0 && (
+        {/* Record Status Table - Always show when there are records */}
+        {(recordStatuses.length > 0 || (result && result.records && result.records.length > 0)) && (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Record Processing Status</CardTitle>
@@ -611,7 +623,7 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
                     </tr>
                   </thead>
                   <tbody>
-                    {recordStatuses.map((record, index) => (
+                    {(result?.records || recordStatuses).map((record, index) => (
                       <tr key={index} className="border-b hover:bg-gray-50">
                         <td className="p-2">{record.row}</td>
                         <td className="p-2">{record.clientCode}</td>
@@ -633,7 +645,7 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
                           </span>
                         </td>
                         <td className="p-2 text-gray-600">
-                          {record.message || (record.status === 'success' ? 'Successfully processed' : '-')}
+                          {record.message || (record.status === 'success' ? 'Successfully processed and uploaded' : '-')}
                         </td>
                       </tr>
                     ))}

@@ -170,7 +170,7 @@ export default function ClosurePage() {
     setTimeout(() => {
       queryClient.refetchQueries({ queryKey: ['/api/transactions', { type: 'closure' }] });
     }, 1000);
-    setShowUpload(false);
+    // setShowUpload(false);
   };
 
   const handleExport = async () => {

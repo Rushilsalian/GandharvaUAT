@@ -13,6 +13,12 @@ interface TransactionRow {
   amount: number;
   remark: string;
   guiid?: string;
+  // Excel column names
+  'Client Code'?: string;
+  'Transaction Date'?: string;
+  'Transaction Amount'?: string | number;
+  'Narration'?: string;
+  'Transaction GUID'?: string;
 }
 
 interface ValidationError {
@@ -21,9 +27,19 @@ interface ValidationError {
   message: string;
 }
 
+interface RecordStatus {
+  row: number;
+  clientCode: string;
+  amount: number;
+  status: 'success' | 'error' | 'skipped';
+  message?: string;
+  guiid?: string;
+}
+
 interface UploadResult {
   success: number;
   errors: Array<{ row: number; message: string }>;
+  records?: RecordStatus[];
 }
 
 interface TransactionExcelUploadProps {
@@ -36,6 +52,7 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<UploadResult | null>(null);
+  const [recordStatuses, setRecordStatuses] = useState<RecordStatus[]>([]);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -124,7 +141,7 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
           const jsonData = XLSX.utils.sheet_to_json(worksheet);
           
           console.log('Excel parsing - Raw data:', jsonData);
-          console.log('Excel parsing - First row keys:', jsonData.length > 0 ? Object.keys(jsonData[0]) : 'No data');
+          console.log('Excel parsing - First row keys:', jsonData.length > 0 ? Object.keys(jsonData[0] as any) : 'No data');
           
           if (!jsonData || jsonData.length === 0) {
             reject(new Error('No data found in the Excel file'));
@@ -255,20 +272,44 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
       setProgress(40);
       const allErrors: ValidationError[] = [];
       const validRows: any[] = [];
+      const recordStatuses: RecordStatus[] = [];
 
       data.forEach((row, index) => {
-        console.log(`Validating row ${index + 2}:`, row);
-        console.log(`Row keys:`, Object.keys(row));
-        const rowErrors = validateRow(row, index + 2); // +2 for Excel row numbering (1-based + header)
+        const rowNumber = index + 2; // +2 for Excel row numbering (1-based + header)
+        console.log(`Validating row ${rowNumber}:`, row);
+        console.log(`Row keys:`, Object.keys(row as any));
+        const rowErrors = validateRow(row, rowNumber);
         if (rowErrors.length > 0) {
           allErrors.push(...rowErrors);
+          recordStatuses.push({
+            row: rowNumber,
+            clientCode: (row as any)['Client Code'] || 'Unknown',
+            amount: typeof (row as any)['Transaction Amount'] === 'number' ? (row as any)['Transaction Amount'] : parseFloat((row as any)['Transaction Amount']) || 0,
+            status: 'error',
+            message: rowErrors.map(e => e.message).join(', '),
+            guiid: (row as any)['Transaction GUID']
+          });
         } else {
           validRows.push(row);
+          recordStatuses.push({
+            row: rowNumber,
+            clientCode: (row as any)['Client Code'],
+            amount: typeof (row as any)['Transaction Amount'] === 'number' ? (row as any)['Transaction Amount'] : parseFloat((row as any)['Transaction Amount']),
+            status: 'success',
+            guiid: (row as any)['Transaction GUID']
+          });
         }
       });
 
+      setRecordStatuses(recordStatuses);
+
       if (allErrors.length > 0) {
         setValidationErrors(allErrors);
+        setResult({
+          success: 0,
+          errors: allErrors.map(e => ({ row: e.row, message: e.message })),
+          records: recordStatuses
+        });
         setUploading(false);
         return;
       }
@@ -280,7 +321,7 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
       const transactions = validRows.map(row => {
         let transactionDate: Date;
         
-        const dateField = row['Transaction Date'];
+        const dateField = (row as any)['Transaction Date'];
         if (typeof dateField === 'number') {
           transactionDate = new Date((dateField - 25569) * 86400 * 1000);
         } else if (typeof dateField === 'string') {
@@ -297,11 +338,11 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
         }
 
         const transaction = {
-          clientCode: row['Client Code'],
+          clientCode: (row as any)['Client Code'],
           transactionType: transactionType,
-          amount: parseFloat(row['Transaction Amount']).toString(),
-          remark: row['Narration'] || '',
-          guiid: row['Transaction GUID'] || '',
+          amount: parseFloat((row as any)['Transaction Amount']).toString(),
+          remark: (row as any)['Narration'] || '',
+          guiid: (row as any)['Transaction GUID'] || '',
           transactionDate: transactionDate.toISOString()
         };
         
@@ -355,13 +396,29 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
       console.log('uploadResult.success:', uploadResult.success);
       console.log('uploadResult.message:', uploadResult.message);
       
+      // Update record statuses based on API response
+      const apiErrors = uploadResult.results?.errors || [];
+      const updatedRecordStatuses = recordStatuses.map(record => {
+        const apiError = apiErrors.find((err: any) => err.clientCode === record.clientCode);
+        if (apiError) {
+          return { ...record, status: 'error' as const, message: apiError.message };
+        }
+        // Ensure success records have a proper success message
+        if (record.status === 'success') {
+          return { ...record, message: 'Successfully processed and uploaded' };
+        }
+        return record;
+      });
+      
       const result: UploadResult = {
         success: uploadResult.results?.success || uploadResult.success || 0,
-        errors: uploadResult.results?.errors || uploadResult.errors || []
+        errors: uploadResult.results?.errors || uploadResult.errors || [],
+        records: updatedRecordStatuses
       };
       
       console.log('Final processed result:', result);
       
+      setRecordStatuses(updatedRecordStatuses);
       setResult(result);
       onUploadComplete?.(result);
 
@@ -381,6 +438,7 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
     setFile(null);
     setResult(null);
     setValidationErrors([]);
+    setRecordStatuses([]);
     setProgress(0);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -423,19 +481,16 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
           {transactionType} File Upload
         </CardTitle>
         <CardDescription>
-          Upload {transactionType.toLowerCase()} transactions from Excel (.xlsx, .xls) or JSON files. 
-          <br /><strong>Required fields:</strong> Client Code, Transaction Type, Transaction Amount, Transaction Date
-          <br /><strong>Optional fields:</strong> Narration, Transaction GUID
-          <br /><strong>Note:</strong> This is for transaction data, not client data. Each record must have amount and date.
+          Upload investment transactions from Excel (.xlsx, .xls) or JSON files. Download sample format below.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => downloadSample('excel')} className="flex items-center gap-2">
+          <Button type="button" variant="outline" onClick={() => downloadSample('excel')} className="flex items-center gap-2">
             <Download className="h-4 w-4" />
             Download Excel Sample
           </Button>
-          <Button variant="outline" onClick={() => downloadSample('json')} className="flex items-center gap-2">
+          <Button type="button" variant="outline" onClick={() => downloadSample('json')} className="flex items-center gap-2">
             <Download className="h-4 w-4" />
             Download JSON Sample
           </Button>
@@ -453,7 +508,7 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
             <div className="space-y-2">
               <Upload className="h-12 w-12 mx-auto text-gray-400" />
               <div>
-                <Button onClick={() => fileInputRef.current?.click()}>
+                <Button type="button" onClick={() => fileInputRef.current?.click()}>
                   Select File
                 </Button>
               </div>
@@ -473,10 +528,10 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
                 {(file.size / 1024 / 1024).toFixed(2)} MB
               </p>
               <div className="flex gap-2 justify-center">
-                <Button onClick={handleUpload} disabled={uploading}>
+                <Button type="button" onClick={handleUpload} disabled={uploading}>
                   {uploading ? 'Uploading...' : 'Upload'}
                 </Button>
-                <Button variant="outline" onClick={resetUpload}>
+                <Button type="button" variant="outline" onClick={resetUpload}>
                   Remove
                 </Button>
               </div>
@@ -538,23 +593,76 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
                     : `Uploaded ${result.success} transactions with ${result.errors.length} errors`
                   }
                 </p>
-                {result.errors.length > 0 && (
-                  <div className="max-h-40 overflow-y-auto space-y-1">
-                    {result.errors.slice(0, 5).map((error, index) => (
-                      <p key={index} className="text-sm">
-                        {error.row > 0 ? `Row ${error.row}: ` : ''}{error.message}
-                      </p>
-                    ))}
-                    {result.errors.length > 5 && (
-                      <p className="text-sm font-medium">
-                        ... and {result.errors.length - 5} more errors
-                      </p>
+                {result.records && result.records.length > 0 && (
+                  <div className="text-sm text-gray-600">
+                    <p>Total records processed: {result.records.length}</p>
+                    <p>✅ Successful: {result.records.filter(r => r.status === 'success').length}</p>
+                    {result.records.filter(r => r.status === 'error').length > 0 && (
+                      <p>❌ Failed: {result.records.filter(r => r.status === 'error').length}</p>
+                    )}
+                    {result.records.filter(r => r.status === 'skipped').length > 0 && (
+                      <p>⏭️ Skipped: {result.records.filter(r => r.status === 'skipped').length}</p>
                     )}
                   </div>
                 )}
               </div>
             </AlertDescription>
           </Alert>
+        )}
+
+        {/* Record Status Table - Always show when there are records */}
+        {(recordStatuses.length > 0 || (result && result.records && result.records.length > 0)) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Record Processing Status</CardTitle>
+              <CardDescription>
+                Detailed status for each record in the uploaded file
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="max-h-60 overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-white border-b">
+                    <tr>
+                      <th className="text-left p-2">Row</th>
+                      <th className="text-left p-2">Client Code</th>
+                      <th className="text-left p-2">Amount</th>
+                      <th className="text-left p-2">Status</th>
+                      <th className="text-left p-2">Message</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(result?.records || recordStatuses).map((record, index) => (
+                      <tr key={index} className="border-b hover:bg-gray-50">
+                        <td className="p-2">{record.row}</td>
+                        <td className="p-2">{record.clientCode}</td>
+                        <td className="p-2">₹{record.amount.toLocaleString()}</td>
+                        <td className="p-2">
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                            record.status === 'success' ? 'bg-green-100 text-green-800' :
+                            record.status === 'error' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {record.status === 'success' ? (
+                              <CheckCircle className="h-3 w-3" />
+                            ) : record.status === 'error' ? (
+                              <XCircle className="h-3 w-3" />
+                            ) : (
+                              <AlertCircle className="h-3 w-3" />
+                            )}
+                            {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                          </span>
+                        </td>
+                        <td className="p-2 text-gray-600">
+                          {record.message || (record.status === 'success' ? 'Successfully processed and uploaded' : '-')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </CardContent>
     </Card>

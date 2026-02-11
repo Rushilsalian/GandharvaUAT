@@ -186,7 +186,8 @@ export default function InvestmentPage() {
     setTimeout(() => {
       queryClient.refetchQueries({ queryKey: ['/api/transactions', { type: 'investment' }] });
     }, 1000);
-    setShowUpload(false);
+    // Don't automatically hide upload section - let user see the results
+    // setShowUpload(false);
   };
 
   const handleExport = async () => {
