@@ -282,7 +282,7 @@ export default function InvestmentPage() {
       )}
 
       {/* Investment Statistics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
          <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Opening Investments</CardTitle>
@@ -347,10 +347,10 @@ export default function InvestmentPage() {
               <table className="w-full min-w-[600px] table-fixed">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Date</th>
-                    <th className="text-left p-2 font-medium whitespace-nowrap w-[150px]">Client</th>
-                    <th className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Amount</th>
-                    <th className="text-left p-2 font-medium whitespace-nowrap w-[200px]">Description</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[80px]">Date</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Client</th>
+                    <th className="text-right p-2 font-medium whitespace-nowrap w-[120px]">Amount</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[280px]">Description</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -367,13 +367,13 @@ export default function InvestmentPage() {
                           }
                         </div>
                       </td>
-                      <td className="p-2 font-medium text-sm whitespace-nowrap">
+                      <td className="p-2 font-medium text-sm whitespace-nowrap text-right">
                         ₹{formatIndianCurrency(Number(investment.amount))}
                       </td>
                       <td className="p-2 text-sm text-muted-foreground hidden sm:table-cell">
-                        <div className="max-w-[200px] truncate">
+                        {/* <div className="max-w-[280px] truncate"> */}
                           {investment.description || 'N/A'}
-                        </div>
+                        {/* </div> */}
                       </td>
                     </tr>
                   ))}

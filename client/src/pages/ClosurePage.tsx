@@ -328,10 +328,10 @@ export default function ClosurePage() {
               <table className="w-full min-w-[600px] table-fixed">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Date</th>
-                    <th className="text-left p-2 font-medium whitespace-nowrap w-[200px]">Client</th>
-                    <th className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Amount</th>
-                    <th className="text-left p-2 font-medium whitespace-nowrap w-[200px]">Description</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[80px]">Date</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Client</th>
+                    <th className="text-right p-2 font-medium whitespace-nowrap w-[120px]">Amount</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[280px]">Description</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -348,7 +348,7 @@ export default function ClosurePage() {
                         }
                         </div>
                       </td>
-                      <td className="p-2 font-medium text-sm">
+                      <td className="p-2 font-medium text-sm whitespace-nowrap text-right">
                         ₹{formatIndianCurrency(Number(closure.amount))}
                       </td>
                       <td className="p-2 text-sm text-muted-foreground hidden sm:table-cell">
