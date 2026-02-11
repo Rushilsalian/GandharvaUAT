@@ -12,6 +12,11 @@ import { usePagination } from "@/hooks/usePagination";
 import { DateRange } from "react-day-picker";
 import { useAuth } from "@/contexts/AuthContext";
 
+// Utility function to format numbers in Indian lakh format
+const formatIndianCurrency = (amount: number): string => {
+  return amount.toLocaleString('en-IN');
+};
+
 interface Transaction {
   id: string;
   type: string;
@@ -284,7 +289,7 @@ export default function InvestmentPage() {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{stats.openingInvestment.toLocaleString()}</div>
+            <div className="text-2xl font-bold">₹{formatIndianCurrency(stats.openingInvestment)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -303,7 +308,7 @@ export default function InvestmentPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{stats.totalAmount.toLocaleString()}</div>
+            <div className="text-2xl font-bold">₹{formatIndianCurrency(stats.totalAmount)}</div>
           </CardContent>
         </Card>
 
@@ -363,7 +368,7 @@ export default function InvestmentPage() {
                         </div>
                       </td>
                       <td className="p-2 font-medium text-sm whitespace-nowrap">
-                        ₹{Number(investment.amount).toLocaleString()}
+                        ₹{formatIndianCurrency(Number(investment.amount))}
                       </td>
                       <td className="p-2 text-sm text-muted-foreground hidden sm:table-cell">
                         <div className="max-w-[200px] truncate">

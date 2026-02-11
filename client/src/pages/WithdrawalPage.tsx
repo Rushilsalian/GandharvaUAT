@@ -11,6 +11,9 @@ import { usePagination } from "@/hooks/usePagination";
 import { DateRange } from "react-day-picker";
 import { useAuth } from "@/contexts/AuthContext";
 
+const formatIndianCurrency = (amount: number): string => {
+  return amount.toLocaleString('en-IN');
+};
 interface Transaction {
   id: string;
   type: string;
@@ -269,7 +272,7 @@ export default function WithdrawalPage() {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{stats.openingWithdrawal.toLocaleString()}</div>
+            <div className="text-2xl font-bold">₹{formatIndianCurrency(stats.openingWithdrawal)}</div>
           </CardContent>
         </Card>
         
@@ -289,7 +292,7 @@ export default function WithdrawalPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{stats.totalAmount.toLocaleString()}</div>
+            <div className="text-2xl font-bold">₹{formatIndianCurrency(stats.totalAmount)}</div>
           </CardContent>
         </Card>
         
@@ -348,7 +351,7 @@ export default function WithdrawalPage() {
                         </div>
                       </td>
                       <td className="p-2 font-medium text-sm">
-                        ₹{Number(withdrawal.amount).toLocaleString()}
+                        ₹{formatIndianCurrency(Number(withdrawal.amount))}
                       </td>
                       <td className="p-2 text-sm text-muted-foreground hidden sm:table-cell">
                         {withdrawal.description || 'N/A'}

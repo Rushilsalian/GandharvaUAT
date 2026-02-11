@@ -53,7 +53,7 @@ CREATE TABLE transaction (
     client_id INT NOT NULL,
     indicator_id INT NOT NULL,
     amount DECIMAL(18,2) NOT NULL,
-    remark VARCHAR(50) NULL,
+    remark VARCHAR(1000) NULL,
     guiid VARCHAR(200) NULL,
     created_by_id INT NOT NULL,
     created_by_user VARCHAR(50) NOT NULL,

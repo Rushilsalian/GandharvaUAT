@@ -47,7 +47,7 @@ CREATE TABLE mst_client (
     dob DATE NULL,
     pan_no VARCHAR(10) NULL,
     aadhaar_no VARCHAR(15) NULL,
-    branch VARCHAR(20) NULL,
+    branch VARCHAR(100) NULL,
     branch_id INT NULL,
     address VARCHAR(200) NULL,
     city VARCHAR(50) NULL,
