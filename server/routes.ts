@@ -26,6 +26,16 @@ import {
 import { z } from "zod";
 import { generateSecurePassword, sendWelcomeEmail, sendPasswordResetEmail, sendInvestmentReceipt } from "./emailService";
 import { generateToken, generateResetToken, verifyToken, authenticateToken, checkLoggedIn } from "./jwtUtils";
+import { 
+  validateEmail, 
+  validateMobile, 
+  normalizeMobile,
+  bulkClientValidationSchema,
+  thirdPartyClientValidationSchema,
+  userValidationSchema,
+  validateClientBatch,
+  formatValidationErrors
+} from "./validation";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import { registerDashboardRoutes } from "./dashboardRoutes";
@@ -193,7 +203,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/mst/users', authenticateToken, async (req, res) => {
     try {
-      const userData = insertMstUserSchema.parse(req.body);
+      // Validate user data with proper email and mobile validation
+      const userData = userValidationSchema.parse(req.body);
       
       // Check if user with email already exists
       if (userData.email) {
@@ -218,7 +229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ 
           error: 'Validation error', 
-          details: error.errors.map(e => ({ field: e.path.join('.'), message: e.message }))
+          details: formatValidationErrors(error)
         });
       }
       console.error('Master user creation error:', error);
@@ -1000,6 +1011,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Password must be at least 6 characters' });
       }
       
+      // Validate email format if provided
+      if (email && !validateEmail(email)) {
+        return res.status(400).json({ error: 'Invalid email format' });
+      }
+      
+      // Validate mobile format if provided
+      if (mobile && !validateMobile(mobile)) {
+        return res.status(400).json({ error: 'Invalid mobile number format. Must be 10 digits starting with 6-9' });
+      }
+      
+      // Check that either email or mobile is provided
+      if (!email && !mobile) {
+        return res.status(400).json({ error: 'Either email or mobile number is required' });
+      }
+      
       // Check if user with email already exists
       if (email) {
         const existingUserByEmail = await storage.getMstUserByEmail(email);
@@ -1011,9 +1037,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if user with mobile already exists
       if (mobile) {
-        const existingUserByMobile = await storage.getMstUserByMobile(mobile);
+        const normalizedMobile = normalizeMobile(mobile);
+        const existingUserByMobile = await storage.getMstUserByMobile(normalizedMobile);
         if (existingUserByMobile) {
-          console.log('User with mobile already exists:', mobile);
+          console.log('User with mobile already exists:', normalizedMobile);
           return res.status(400).json({ error: 'User with this mobile already exists' });
         }
       }
@@ -1023,7 +1050,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userName: userName.trim(),
         password,
         email: email || null,
-        mobile: mobile || null,
+        mobile: mobile ? normalizeMobile(mobile) : null,
         roleId,
         clientId: null,
         isActive: 1,
@@ -1408,6 +1435,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { firstName, lastName, email, mobile, password, role } = req.body;
       
+      // Validate email format if provided
+      if (email && !validateEmail(email)) {
+        return res.status(400).json({ error: 'Invalid email format' });
+      }
+      
+      // Validate mobile format if provided
+      if (mobile && !validateMobile(mobile)) {
+        return res.status(400).json({ error: 'Invalid mobile number format. Must be 10 digits starting with 6-9' });
+      }
+      
+      // Check that either email or mobile is provided
+      if (!email && !mobile) {
+        return res.status(400).json({ error: 'Either email or mobile number is required' });
+      }
+      
       // Check if user with email already exists
       if (email) {
         const existingUserByEmail = await storage.getMstUserByEmail(email);
@@ -1418,7 +1460,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if user with mobile already exists (if mobile provided)
       if (mobile) {
-        const existingUserByMobile = await storage.getMstUserByMobile(mobile);
+        const normalizedMobile = normalizeMobile(mobile);
+        const existingUserByMobile = await storage.getMstUserByMobile(normalizedMobile);
         if (existingUserByMobile) {
           return res.status(400).json({ error: 'User with this mobile already exists' });
         }
@@ -1431,7 +1474,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userName: `${firstName} ${lastName}`,
         password: password || 'defaultpass123',
         email: email || null,
-        mobile: mobile || null,
+        mobile: mobile ? normalizeMobile(mobile) : null,
         roleId,
         clientId: null,
         isActive: 1,
@@ -1482,6 +1525,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'User not found' });
       }
       
+      // Validate email format if provided
+      if (email && !validateEmail(email)) {
+        return res.status(400).json({ error: 'Invalid email format' });
+      }
+      
+      // Validate mobile format if provided
+      if (mobile && !validateMobile(mobile)) {
+        return res.status(400).json({ error: 'Invalid mobile number format. Must be 10 digits starting with 6-9' });
+      }
+      
+      // Check that either email or mobile is provided
+      if (!email && !mobile) {
+        return res.status(400).json({ error: 'Either email or mobile number is required' });
+      }
+      
       // Check if email is being changed and already exists
       if (email && email !== existingUser.email) {
         const existingUserByEmail = await storage.getMstUserByEmail(email);
@@ -1491,10 +1549,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if mobile is being changed and already exists
-      if (mobile && mobile !== existingUser.mobile) {
-        const existingUserByMobile = await storage.getMstUserByMobile(mobile);
-        if (existingUserByMobile && existingUserByMobile.userId !== userId) {
-          return res.status(400).json({ error: 'User with this mobile already exists' });
+      if (mobile) {
+        const normalizedMobile = normalizeMobile(mobile);
+        if (normalizedMobile !== existingUser.mobile) {
+          const existingUserByMobile = await storage.getMstUserByMobile(normalizedMobile);
+          if (existingUserByMobile && existingUserByMobile.userId !== userId) {
+            return res.status(400).json({ error: 'User with this mobile already exists' });
+          }
         }
       }
       
@@ -1503,7 +1564,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updateData: any = {
         userName: `${firstName} ${lastName}`,
         email: email || null,
-        mobile: mobile || null,
+        mobile: mobile ? normalizeMobile(mobile) : null,
         roleId,
         modifiedById: 1,
         modifiedByUser: 'system',
@@ -1832,8 +1893,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // User data
         firstName: z.string().min(1, 'First name is required'),
         lastName: z.string().min(1, 'Last name is required'),
-        email: z.string().email('Invalid email address'),
-        mobile: z.string().optional(),
+        email: z.string().email('Invalid email address').optional().nullable(),
+        mobile: z.string().optional().nullable(),
         // Client data
         clientCode: z.string().min(1, 'Client code is required'),
         panNumber: z.string().optional(),
@@ -1843,7 +1904,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         nomineeDetails: z.string().optional(),
         bankDetails: z.string().optional(),
         kycStatus: z.enum(['pending', 'verified', 'rejected']).default('pending')
-      });
+      }).refine(
+        (data) => data.email || data.mobile,
+        {
+          message: "Either email or mobile number is required",
+          path: ["email"]
+        }
+      ).transform((data) => ({
+        ...data,
+        email: data.email && validateEmail(data.email) ? data.email : null,
+        mobile: data.mobile && validateMobile(data.mobile) ? normalizeMobile(data.mobile) : null
+      })).refine(
+        (data) => {
+          if (data.email && !validateEmail(data.email)) return false;
+          if (data.mobile && !validateMobile(data.mobile)) return false;
+          return true;
+        },
+        {
+          message: "Invalid email or mobile format",
+          path: ["email"]
+        }
+      );
 
       const data = clientCreationSchema.parse(req.body);
       
@@ -2856,29 +2937,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         failedEmails: [] as Array<{ email: string; credentials: string }>
       };
 
-      // Required fields validation - either email or mobile is required
-      const requiredFields = ['client_code', 'name'];
+      // Validate all client records using the validation schema
+      const { valid: validClients, invalid: invalidClients } = validateClientBatch(data);
+      
+      // Add invalid clients to errors
+      for (const invalidClient of invalidClients) {
+        results.errors.push({ 
+          client: invalidClient.client, 
+          error: invalidClient.errors.map(e => `${e.field}: ${e.message}`).join(', ')
+        });
+      }
 
-      for (const rawClientData of data) {
+      for (const clientData of validClients) {
         try {
-          const clientData = rawClientData as any;
-          console.log(`Processing client: ${clientData.client_code || 'NO_CODE'} - ${clientData.name || 'NO_NAME'}`);
-          
-          // Validate required fields
-          const missingFields = requiredFields.filter(field => !clientData[field] || clientData[field].toString().trim() === '');
-          if (missingFields.length > 0) {
-            console.log(`Validation failed for ${clientData.client_code}: Missing ${missingFields.join(', ')}`);
-            results.errors.push({ client: clientData, error: `Missing required fields: ${missingFields.join(', ')}` });
-            continue;
-          }
-          
-          // Check that either email or mobile is provided
-          if ((!clientData.email || clientData.email.toString().trim() === '') && 
-              (!clientData.mobile || clientData.mobile.toString().trim() === '')) {
-            console.log(`Validation failed for ${clientData.client_code}: No email or mobile`);
-            results.errors.push({ client: clientData, error: 'Either email or mobile is required' });
-            continue;
-          }
+          console.log(`Processing validated client: ${clientData.client_code} - ${clientData.name}`);
 
           // Check if client exists by code
           const existingClient = await storage.getMstClientByCode(clientData.client_code);
@@ -2908,12 +2980,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
-          // Create client record
+          // Create client record with validated and normalized data
           const newClient = {
             code: clientData.client_code,
             name: clientData.name,
-            mobile: clientData.mobile || null,
-            email: clientData.email || null,
+            mobile: clientData.mobile || null, // Already normalized by validation
+            email: clientData.email || null, // Already validated
             dob: dob,
             panNo: clientData.pan_no || null,
             aadhaarNo: clientData.aadhaar_no || null,
@@ -3077,12 +3149,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         errors: [] as Array<{ client: any; error: string }>
       };
 
+      // Validate all client records using the validation schema
+      const validationResults = [];
       for (const clientData of clients) {
         try {
-          if (!clientData.code) {
-            results.errors.push({ client: clientData, error: 'Client code is required' });
-            continue;
+          const validatedClient = thirdPartyClientValidationSchema.parse(clientData);
+          validationResults.push({ client: validatedClient, valid: true });
+        } catch (error) {
+          if (error instanceof z.ZodError) {
+            const formattedErrors = formatValidationErrors(error);
+            validationResults.push({ 
+              client: clientData, 
+              valid: false, 
+              errors: formattedErrors.map(e => `${e.field}: ${e.message}`).join(', ')
+            });
+          } else {
+            validationResults.push({ 
+              client: clientData, 
+              valid: false, 
+              errors: 'Unknown validation error'
+            });
           }
+        }
+      }
+
+      for (const result of validationResults) {
+        if (!result.valid) {
+          results.errors.push({ client: result.client, error: result.errors });
+          continue;
+        }
+        
+        const clientData = result.client;
+        try {
 
           // Check if client exists by code
           console.log('Checking for existing client with code:', clientData.code);
@@ -3094,12 +3192,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           console.log('Client does not exist, creating new client:', clientData.code);
 
-          // Create client first
+          // Create client first with validated and normalized data
           const newClient = {
             code: clientData.code,
             name: clientData.name || 'Unknown',
-            mobile: clientData.mobile || null,
-            email: clientData.email || null,
+            mobile: clientData.mobile || null, // Already normalized by validation
+            email: clientData.email || null, // Already validated
             dob: clientData.dob ? new Date(clientData.dob) : null,
             panNo: clientData.panNo || null,
             aadhaarNo: clientData.aadhaarNo || null,

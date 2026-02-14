@@ -1,0 +1,6 @@
+client_code,name,email,mobile,dob,pan_no,aadhaar_no,address,city,pincode,branch,reference_code,opening_investment
+CLI001,John Doe,john.doe@example.com,9876543210,15-01-1990,ABCDE1234F,123456789012,"123 Main St, Apt 4B",Mumbai,400001,Mumbai Branch,,50000
+CLI002,Jane Smith,jane.smith@company.com,8765432109,22-05-1985,FGHIJ5678K,234567890123,"456 Oak Ave",Delhi,110001,Delhi Branch,CLI001,75000
+CLI003,Bob Johnson,,7654321098,10-12-1992,KLMNO9012P,345678901234,"789 Pine Rd",Bangalore,560001,Bangalore Branch,,25000
+CLI004,Alice Brown,alice.brown@email.com,,05-08-1988,QRSTU3456V,456789012345,"321 Elm St",Chennai,600001,Chennai Branch,CLI002,100000
+CLI005,Charlie Wilson,charlie@domain.org,6543210987,18-03-1995,WXYZ7890A,567890123456,"654 Maple Dr",Pune,411001,Pune Branch,,30000
