@@ -37,10 +37,14 @@ interface User {
   createdAt: Date | null;
 }
 
+interface UserFormData extends Partial<User> {
+  password?: string;
+}
+
 export function UsersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<Partial<User>>({});
+  const [formData, setFormData] = useState<UserFormData>({});
   const [password, setPassword] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -178,10 +182,15 @@ export function UsersPage() {
       return;
     }
 
-    const userData = {
-      ...formData,
-      password: password || 'defaultpass123'
-    };
+    const userData: UserFormData = { ...formData };
+    
+    // Only include password if it's provided
+    if (password) {
+      userData.password = password;
+    } else if (!isEditing) {
+      // For new users, set default password if none provided
+      userData.password = 'defaultpass123';
+    }
 
     if (isEditing && formData.id) {
       updateUserMutation.mutate({ id: formData.id, ...userData });

@@ -67,15 +67,15 @@ function Router({ userRole, isLoggedIn, onLogin, onSignup }: { userRole: "admin"
       <Switch>
         <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/reset-password" component={ResetPassword} />
-        <Route path="/" component={() => <LoginForm onLogin={onLogin} onSignup={onSignup} />} />
+        <Route path="/" component={() => <LoginForm onLogin={onLogin} />} />
       </Switch>
     );
   }
 
   return (
     <Switch>
-      <Route path="/" component={() => <Dashboard userRole={userRole} />} />
-      <Route path="/dashboard" component={() => <Dashboard userRole={userRole} />} />
+      <Route path="/" component={() => <Dashboard />} />
+      <Route path="/dashboard" component={() => <Dashboard />} />
       
       {/* Admin Routes */}
       {userRole === "admin" && (
