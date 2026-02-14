@@ -77,11 +77,7 @@ function LiveMetricCard({ metric }: { metric: RealTimeMetric }) {
 }
 
 function LiveTransactionFeed() {
-  const [transactions, setTransactions] = useState([
-    { id: 1, type: "Investment", client: "John Doe", amount: 150000, time: "10:30:45" },
-    { id: 2, type: "Withdrawal", client: "Jane Smith", amount: 75000, time: "10:29:12" },
-    { id: 3, type: "Payout", client: "Mike Johnson", amount: 25000, time: "10:28:33" }
-  ]);
+  const [transactions, setTransactions] = useState<any[]>([]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -120,7 +116,7 @@ function LiveTransactionFeed() {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {transactions.map((txn) => (
+          {transactions.length > 0 ? transactions.map((txn) => (
             <div key={txn.id} className="flex items-center justify-between p-3 rounded-lg border animate-in slide-in-from-top-2">
               <div className="flex items-center gap-3">
                 <Badge className={`${getTypeColor(txn.type)} border-0 text-xs`}>
@@ -133,7 +129,11 @@ function LiveTransactionFeed() {
               </div>
               <span className="text-xs text-muted-foreground">{txn.time}</span>
             </div>
-          ))}
+          )) : (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-sm text-muted-foreground">No live transactions</div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -234,10 +234,7 @@ function SystemHealthMonitor() {
     network: 23
   });
 
-  const [alerts, setAlerts] = useState([
-    { id: 1, type: "warning", message: "High memory usage detected", time: "2 min ago" },
-    { id: 2, type: "info", message: "System backup completed", time: "15 min ago" }
-  ]);
+  const [alerts, setAlerts] = useState<any[]>([]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -282,7 +279,7 @@ function SystemHealthMonitor() {
         
         <div className="mt-6 space-y-2">
           <h4 className="font-medium text-sm">Recent Alerts</h4>
-          {alerts.map((alert) => (
+          {alerts.length > 0 ? alerts.map((alert) => (
             <div key={alert.id} className="flex items-center gap-2 text-xs">
               {alert.type === "warning" ? (
                 <AlertCircle className="h-3 w-3 text-yellow-600" />
@@ -292,7 +289,9 @@ function SystemHealthMonitor() {
               <span className="flex-1">{alert.message}</span>
               <span className="text-muted-foreground">{alert.time}</span>
             </div>
-          ))}
+          )) : (
+            <div className="text-xs text-muted-foreground">No recent alerts</div>
+          )}
         </div>
       </CardContent>
     </Card>

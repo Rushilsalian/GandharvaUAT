@@ -263,11 +263,7 @@ export function registerEnhancedDashboardRoutes(app: Express, authenticateToken:
         if (allRequests.length === 0) {
           const now = new Date();
           const mockTransactions = [
-            { id: 1, type: 'investment', client: 'Rajesh Kumar', amount: 150000, time: includeDateTime ? new Date(now.getTime() - 3600000).toLocaleString() : '10:30 AM', dateTime: includeDateTime ? new Date(now.getTime() - 3600000).toISOString() : undefined },
-            { id: 2, type: 'withdrawal', client: 'Priya Sharma', amount: 75000, time: includeDateTime ? new Date(now.getTime() - 7200000).toLocaleString() : '11:45 AM', dateTime: includeDateTime ? new Date(now.getTime() - 7200000).toISOString() : undefined },
-            { id: 3, type: 'payout', client: 'Amit Patel', amount: 25000, time: includeDateTime ? new Date(now.getTime() - 10800000).toLocaleString() : '2:15 PM', dateTime: includeDateTime ? new Date(now.getTime() - 10800000).toISOString() : undefined },
-            { id: 4, type: 'investment', client: 'Sunita Gupta', amount: 200000, time: includeDateTime ? new Date(now.getTime() - 14400000).toLocaleString() : '3:20 PM', dateTime: includeDateTime ? new Date(now.getTime() - 14400000).toISOString() : undefined },
-            { id: 5, type: 'payout', client: 'Vikram Singh', amount: 18000, time: includeDateTime ? new Date(now.getTime() - 18000000).toLocaleString() : '4:10 PM', dateTime: includeDateTime ? new Date(now.getTime() - 18000000).toISOString() : undefined }
+           ''
           ];
           return res.json(mockTransactions.slice(0, limit));
         }

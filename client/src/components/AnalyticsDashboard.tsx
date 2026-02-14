@@ -14,41 +14,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 
-// Mock data for analytics
-const clientAcquisitionData = [
-  { month: "Jan", organic: 0, referral: 0, marketing: 0, total: 0 },
-  { month: "Feb", organic: 0, referral: 0, marketing: 0, total: 0 },
-  { month: "Mar", organic: 0, referral: 0, marketing: 0, total: 0 },
-  { month: "Apr", organic: 0, referral: 0, marketing: 0, total: 0 },
-  { month: "May", organic: 0, referral: 0, marketing: 0, total: 0 },
-  { month: "Jun", organic: 0, referral: 0, marketing: 0, total: 0 }
-];
+// Mock data for analytics - removed static fallback data
+const clientAcquisitionData: any[] = [];
 
-const investmentFlowData = [
-  { month: "Jan", inflow: 0, outflow: 0, net: 0 },
-  { month: "Feb", inflow: 0, outflow: 0, net: 0 },
-  { month: "Mar", inflow: 0, outflow: 0, net: 0 },
-  { month: "Apr", inflow: 0, outflow: 0, net: 0 },
-  { month: "May", inflow: 0, outflow: 0, net: 0 },
-  { month: "Jun", inflow: 0, outflow: 0, net: 0 }
-];
+const investmentFlowData: any[] = [];
 
-const performanceMetrics = [
-  { metric: "Client Satisfaction", value: 0, benchmark: 0 },
-  { metric: "Portfolio Performance", value: 0, benchmark: 0 },
-  { metric: "Service Quality", value: 0, benchmark: 0 },
-  { metric: "Digital Adoption", value: 0, benchmark: 0 },
-  { metric: "Risk Management", value: 0, benchmark: 0 },
-  { metric: "Compliance Score", value: 0, benchmark: 0 }
-];
+const performanceMetrics: any[] = [];
 
-const conversionFunnelData = [
-  { name: "Leads", value: 0, fill: "#8884d8" },
-  { name: "Qualified", value: 0, fill: "#83a6ed" },
-  { name: "Proposals", value: 0, fill: "#8dd1e1" },
-  { name: "Negotiations", value: 0, fill: "#82ca9d" },
-  { name: "Closed", value: 0, fill: "#a4de6c" }
-];
+const conversionFunnelData: any[] = [];
 
 
 function InvestmentFlowAnalytics() {
@@ -59,38 +32,44 @@ function InvestmentFlowAnalytics() {
         <CardDescription>Monthly inflow vs outflow trends</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={350}>
-          <ComposedChart data={investmentFlowData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
-            <YAxis />
-            <Tooltip formatter={(value) => `₹${(Number(value) / 100000).toFixed(1)}L`} />
-            <Legend />
-            <Area 
-              type="monotone" 
-              dataKey="inflow" 
-              fill="#8884d8" 
-              stroke="#8884d8" 
-              fillOpacity={0.6}
-              name="Inflow"
-            />
-            <Area 
-              type="monotone" 
-              dataKey="outflow" 
-              fill="#82ca9d" 
-              stroke="#82ca9d" 
-              fillOpacity={0.6}
-              name="Outflow"
-            />
-            <Line 
-              type="monotone" 
-              dataKey="net" 
-              stroke="#ff7300" 
-              strokeWidth={3}
-              name="Net Flow"
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
+        {investmentFlowData.length > 0 ? (
+          <ResponsiveContainer width="100%" height={350}>
+            <ComposedChart data={investmentFlowData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip formatter={(value) => `₹${(Number(value) / 100000).toFixed(1)}L`} />
+              <Legend />
+              <Area 
+                type="monotone" 
+                dataKey="inflow" 
+                fill="#8884d8" 
+                stroke="#8884d8" 
+                fillOpacity={0.6}
+                name="Inflow"
+              />
+              <Area 
+                type="monotone" 
+                dataKey="outflow" 
+                fill="#82ca9d" 
+                stroke="#82ca9d" 
+                fillOpacity={0.6}
+                name="Outflow"
+              />
+              <Line 
+                type="monotone" 
+                dataKey="net" 
+                stroke="#ff7300" 
+                strokeWidth={3}
+                name="Net Flow"
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-sm text-muted-foreground">No investment flow data available</div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -104,36 +83,42 @@ function PerformanceRadarChart() {
         <CardDescription>Key performance indicators vs benchmarks</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={350}>
-          <RadarChart data={performanceMetrics}>
-            <PolarGrid />
-            <PolarAngleAxis dataKey="metric" tick={{ fontSize: 12 }} />
-            <PolarRadiusAxis 
-              angle={90} 
-              domain={[0, 100]} 
-              tick={{ fontSize: 10 }}
-            />
-            <Radar
-              name="Actual"
-              dataKey="value"
-              stroke="#8884d8"
-              fill="#8884d8"
-              fillOpacity={0.3}
-              strokeWidth={2}
-            />
-            <Radar
-              name="Benchmark"
-              dataKey="benchmark"
-              stroke="#82ca9d"
-              fill="#82ca9d"
-              fillOpacity={0.1}
-              strokeWidth={2}
-              strokeDasharray="5 5"
-            />
-            <Legend />
-            <Tooltip />
-          </RadarChart>
-        </ResponsiveContainer>
+        {performanceMetrics.length > 0 ? (
+          <ResponsiveContainer width="100%" height={350}>
+            <RadarChart data={performanceMetrics}>
+              <PolarGrid />
+              <PolarAngleAxis dataKey="metric" tick={{ fontSize: 12 }} />
+              <PolarRadiusAxis 
+                angle={90} 
+                domain={[0, 100]} 
+                tick={{ fontSize: 10 }}
+              />
+              <Radar
+                name="Actual"
+                dataKey="value"
+                stroke="#8884d8"
+                fill="#8884d8"
+                fillOpacity={0.3}
+                strokeWidth={2}
+              />
+              <Radar
+                name="Benchmark"
+                dataKey="benchmark"
+                stroke="#82ca9d"
+                fill="#82ca9d"
+                fillOpacity={0.1}
+                strokeWidth={2}
+                strokeDasharray="5 5"
+              />
+              <Legend />
+              <Tooltip />
+            </RadarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-sm text-muted-foreground">No performance data available</div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -147,36 +132,44 @@ function ConversionFunnelChart() {
         <CardDescription>Lead to client conversion analysis</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={350}>
-          <FunnelChart>
-            <Tooltip />
-            <Funnel
-              dataKey="value"
-              data={conversionFunnelData}
-              isAnimationActive
-            >
-              <LabelList position="center" fill="#fff" stroke="none" />
-            </Funnel>
-          </FunnelChart>
-        </ResponsiveContainer>
-        <div className="mt-4 space-y-2">
-          {conversionFunnelData.map((stage, index) => {
-            const conversionRate = index > 0 
-              ? ((stage.value / conversionFunnelData[index - 1].value) * 100).toFixed(1)
-              : "100.0";
-            return (
-              <div key={stage.name} className="flex justify-between items-center">
-                <span className="text-sm font-medium">{stage.name}</span>
-                <div className="text-right">
-                  <span className="text-sm">{stage.value}</span>
-                  <Badge variant="outline" className="ml-2">
-                    {conversionRate}%
-                  </Badge>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        {conversionFunnelData.length > 0 ? (
+          <>
+            <ResponsiveContainer width="100%" height={350}>
+              <FunnelChart>
+                <Tooltip />
+                <Funnel
+                  dataKey="value"
+                  data={conversionFunnelData}
+                  isAnimationActive
+                >
+                  <LabelList position="center" fill="#fff" stroke="none" />
+                </Funnel>
+              </FunnelChart>
+            </ResponsiveContainer>
+            <div className="mt-4 space-y-2">
+              {conversionFunnelData.map((stage, index) => {
+                const conversionRate = index > 0 
+                  ? ((stage.value / conversionFunnelData[index - 1].value) * 100).toFixed(1)
+                  : "100.0";
+                return (
+                  <div key={stage.name} className="flex justify-between items-center">
+                    <span className="text-sm font-medium">{stage.name}</span>
+                    <div className="text-right">
+                      <span className="text-sm">{stage.value}</span>
+                      <Badge variant="outline" className="ml-2">
+                        {conversionRate}%
+                      </Badge>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-sm text-muted-foreground">No conversion data available</div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -266,20 +259,22 @@ export function AnalyticsDashboard() {
 
       {/* Key Metrics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">     
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Active Clients</p>
-                <p className="text-2xl font-bold">{keyMetrics.activeClients.toLocaleString()}</p>
-                <div className="flex items-center text-xs">
-                  <span className="text-green-500">+8.2%</span>
+        {keyMetrics.activeClients > 0 && (
+          <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Active Clients</p>
+                  <p className="text-2xl font-bold">{keyMetrics.activeClients.toLocaleString()}</p>
+                  <div className="flex items-center text-xs">
+                    <span className="text-green-500">+8.2%</span>
+                  </div>
                 </div>
+                <Users className="h-8 w-8 text-green-500" />
               </div>
-              <Users className="h-8 w-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Analytics Tabs */}

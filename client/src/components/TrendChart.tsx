@@ -103,78 +103,74 @@ export function DashboardCharts({ userRole }: DashboardChartsProps) {
   }, [userRole, session?.clientId]);
 
   const getChartsForRole = () => {
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    
     if (loading) {
-      return [
-        {
-          title: "Loading...",
-          description: "Fetching data...",
-          data: months.map(month => ({ month, value: 0 })),
-          color: "hsl(var(--chart-1))"
-        },
-        {
-          title: "Loading...",
-          description: "Fetching data...",
-          data: months.map(month => ({ month, value: 0 })),
-          color: "hsl(var(--chart-2))"
-        }
-      ];
+      return [];
     }
     
     if (userRole === "admin" && trends) {
-      return [
-        {
+      const charts = [];
+      if (trends.clientTrend && trends.clientTrend.some(d => d.value > 0)) {
+        charts.push({
           title: "New Clients Trend",
           description: "Monthly new client acquisitions",
-          data: trends.clientTrend || months.map(month => ({ month, value: 0 })),
+          data: trends.clientTrend,
           color: "hsl(var(--chart-1))"
-        },
-        {
+        });
+      }
+      if (trends.investmentTrend && trends.investmentTrend.some(d => d.value > 0)) {
+        charts.push({
           title: "Investment Trend",
           description: "Monthly investment volume in ₹",
-          data: trends.investmentTrend || months.map(month => ({ month, value: 0 })),
+          data: trends.investmentTrend,
           color: "hsl(var(--chart-2))"
-        }
-      ];
+        });
+      }
+      return charts;
     }
     
     if (userRole === "leader" && trends) {
-      return [
-        {
+      const charts = [];
+      if (trends.teamTrend && trends.teamTrend.some(d => d.value > 0)) {
+        charts.push({
           title: "Team Performance",
           description: "Monthly team investment performance",
-          data: trends.teamTrend || months.map(month => ({ month, value: 0 })),
+          data: trends.teamTrend,
           color: "hsl(var(--chart-2))"
-        },
-        {
+        });
+      }
+      if (trends.referralTrend && trends.referralTrend.some(d => d.value > 0)) {
+        charts.push({
           title: "Referral Trend",
           description: "Monthly referrals brought in",
-          data: trends.referralTrend || months.map(month => ({ month, value: 0 })),
+          data: trends.referralTrend,
           color: "hsl(var(--chart-1))"
-        }
-      ];
+        });
+      }
+      return charts;
     }
     
     // Client charts
     if (userRole === "client" && trends) {
-      return [
-        {
+      const charts = [];
+      if (trends.investmentTrend && trends.investmentTrend.some(d => d.value > 0)) {
+        charts.push({
           title: "Investment Growth",
           description: "Your investment growth over time",
-          data: trends.investmentTrend || months.map(month => ({ month, value: 0 })),
+          data: trends.investmentTrend,
           color: "hsl(var(--chart-2))"
-        },
-        {
+        });
+      }
+      if (trends.payoutTrend && trends.payoutTrend.some(d => d.value > 0)) {
+        charts.push({
           title: "Payout History",
           description: "Monthly payouts received",
-          data: trends.payoutTrend || months.map(month => ({ month, value: 0 })),
+          data: trends.payoutTrend,
           color: "hsl(var(--chart-1))"
-        }
-      ];
+        });
+      }
+      return charts;
     }
 
-    // Fallback
     return [];
   };
 

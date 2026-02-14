@@ -67,7 +67,11 @@ function MonthlyTrends() {
         });
         if (response.ok) {
           const data = await response.json();
-          setMonthlyData(data);
+          // Only set data if there are actual non-zero values
+          const hasData = data.some((item: any) => item.investments > 0 || item.payouts > 0);
+          if (hasData) {
+            setMonthlyData(data);
+          }
         }
       } catch (error) {
         console.error('Failed to fetch monthly trends:', error);
@@ -152,12 +156,16 @@ function RecentActivity() {
         });
         if (response.ok) {
           const data = await response.json();
-          setActivities(data.map((txn: any) => ({
-            type: txn.type.toLowerCase(),
-            user: txn.client,
-            amount: txn.amount,
-            time: txn.dateTime ? formatDateTime(txn.dateTime) : txn.time
-          })));
+          // Only show activities with actual amounts > 0
+          const validActivities = data
+            .filter((txn: any) => txn.amount > 0)
+            .map((txn: any) => ({
+              type: txn.type.toLowerCase(),
+              user: txn.client,
+              amount: txn.amount,
+              time: txn.dateTime ? formatDateTime(txn.dateTime) : txn.time
+            }));
+          setActivities(validActivities);
         }
       } catch (error) {
         console.error('Failed to fetch recent activity:', error);
@@ -391,6 +399,7 @@ function ActiveClients({ userRole }: { userRole: "admin" | "leader" | "client" }
 
 export function EnhancedDashboard({ userRole }: EnhancedDashboardProps) {
   const [quickStats, setQuickStats] = useState<any[]>([]);
+  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   
   useEffect(() => {
     const fetchStats = async () => {
@@ -431,19 +440,37 @@ export function EnhancedDashboard({ userRole }: EnhancedDashboardProps) {
       }
     };
     
+    const fetchMonthlyData = async () => {
+      try {
+        const response = await fetch('/api/dashboard/monthly-trends', {
+          headers: { 'Authorization': `Bearer ${sessionStorage.getItem('authToken')}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const hasData = data.some((item: any) => item.investments > 0 || item.payouts > 0);
+          if (hasData) {
+            setMonthlyData(data);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch monthly trends:', error);
+      }
+    };
+    
     fetchStats();
+    fetchMonthlyData();
   }, [userRole]);
 
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {quickStats.map((stat, index) => (
+        {quickStats.length > 0 && quickStats.map((stat, index) => (
           <QuickStatsCard key={index} {...stat} />
         ))}
       </div>
       
       <div className="grid gap-6 md:grid-cols-2">
-        <MonthlyTrends />
+        {monthlyData.length > 0 && <MonthlyTrends />}
         <RecentActivity />
       </div>
       

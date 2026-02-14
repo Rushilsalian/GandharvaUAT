@@ -82,135 +82,137 @@ export function DashboardStats({ userRole }: DashboardStatsProps) {
 
   const getStatsForRole = () => {
     if (userRole === "admin" && stats) {
-      return [
-        { 
+      const adminStats = [];
+      if (stats.totalClients && stats.totalClients > 0) {
+        adminStats.push({ 
           title: "Total Clients", 
-          value: stats.totalClients || 0, 
+          value: stats.totalClients, 
           change: 12.5, 
           icon: Users, 
           trend: "up" as const 
-        },
-        { 
+        });
+      }
+      if (stats.totalInvestments && stats.totalInvestments > 0) {
+        adminStats.push({ 
           title: "Total Investments", 
-          value: stats.totalInvestments || 0, 
+          value: stats.totalInvestments, 
           change: 8.2, 
           icon: TrendingUp, 
           trend: "up" as const 
-        },
-        { 
+        });
+      }
+      if (stats.activeWithdrawals && stats.activeWithdrawals > 0) {
+        adminStats.push({ 
           title: "Active Withdrawals", 
-          value: stats.activeWithdrawals || 0, 
+          value: stats.activeWithdrawals, 
           change: -2.1, 
           icon: TrendingDown, 
           trend: "down" as const 
-        },
-        { 
+        });
+      }
+      if (stats.thisMonthPayouts && stats.thisMonthPayouts > 0) {
+        adminStats.push({ 
           title: "This Month Payouts", 
-          value: stats.thisMonthPayouts || 0, 
+          value: stats.thisMonthPayouts, 
           change: 15.3, 
           icon: DollarSign, 
           trend: "up" as const 
-        },
-      ];
+        });
+      }
+      return adminStats;
     }
     
     if (userRole === "leader" && stats) {
-      return [
-        { 
+      const leaderStats = [];
+      if (stats.myClients && stats.myClients > 0) {
+        leaderStats.push({ 
           title: "My Clients", 
-          value: stats.myClients || 0, 
+          value: stats.myClients, 
           change: 5.7, 
           icon: Users, 
           trend: "up" as const 
-        },
-        { 
+        });
+      }
+      if (stats.teamInvestments && stats.teamInvestments > 0) {
+        leaderStats.push({ 
           title: "Team Investments", 
-          value: stats.teamInvestments || 0, 
+          value: stats.teamInvestments, 
           change: 12.1, 
           icon: TrendingUp, 
           trend: "up" as const 
-        },
-        { 
+        });
+      }
+      if (stats.referralsThisMonth && stats.referralsThisMonth > 0) {
+        leaderStats.push({ 
           title: "Referrals This Month", 
-          value: stats.referralsThisMonth || 0, 
+          value: stats.referralsThisMonth, 
           change: 14.3, 
           icon: Users, 
           trend: "up" as const 
-        },
-        { 
+        });
+      }
+      if (stats.commissionEarned && stats.commissionEarned > 0) {
+        leaderStats.push({ 
           title: "Commission Earned", 
-          value: stats.commissionEarned || 0, 
+          value: stats.commissionEarned, 
           change: 9.8, 
           icon: DollarSign, 
           trend: "up" as const 
-        },
-      ];
+        });
+      }
+      return leaderStats;
     }
     
     // Client stats
     if (userRole === "client" && stats) {
-      return [
-        { 
+      const clientStats = [];
+      if (stats.totalInvestment && stats.totalInvestment > 0) {
+        clientStats.push({ 
           title: "Total Investment", 
-          value: stats.totalInvestment || 0, 
+          value: stats.totalInvestment, 
           change: 0, 
           icon: TrendingUp, 
           trend: "neutral" as const 
-        },
-        { 
+        });
+      }
+      if (stats.totalPayout && stats.totalPayout > 0) {
+        clientStats.push({ 
           title: "Total Payout", 
-          value: stats.totalPayout || 0, 
+          value: stats.totalPayout, 
           change: 0, 
           icon: DollarSign, 
           trend: "neutral" as const 
-        },
-        { 
+        });
+      }
+      if (stats.activeReferrals && stats.activeReferrals > 0) {
+        clientStats.push({ 
           title: "Active Referrals", 
-          value: stats.activeReferrals || 0, 
+          value: stats.activeReferrals, 
           change: 0, 
           icon: Users, 
           trend: "neutral" as const 
-        },
-        { 
+        });
+      }
+      if (stats.pendingWithdrawals && stats.pendingWithdrawals > 0) {
+        clientStats.push({ 
           title: "Pending Withdrawals", 
-          value: stats.pendingWithdrawals || 0, 
+          value: stats.pendingWithdrawals, 
           change: 0, 
           icon: TrendingDown, 
           trend: "neutral" as const 
-        },
-      ];
+        });
+      }
+      return clientStats;
     }
 
-    // Loading state - show role-appropriate titles
-    const loadingStats = {
-      admin: [
-        { title: "Total Clients", value: 0, icon: Users, trend: "neutral" as const },
-        { title: "Total Investments", value: 0, icon: TrendingUp, trend: "neutral" as const },
-        { title: "Active Withdrawals", value: 0, icon: TrendingDown, trend: "neutral" as const },
-        { title: "This Month Payouts", value: 0, icon: DollarSign, trend: "neutral" as const },
-      ],
-      leader: [
-        { title: "My Clients", value: 0, icon: Users, trend: "neutral" as const },
-        { title: "Team Investments", value: 0, icon: TrendingUp, trend: "neutral" as const },
-        { title: "Referrals This Month", value: 0, icon: Users, trend: "neutral" as const },
-        { title: "Commission Earned", value: 0, icon: DollarSign, trend: "neutral" as const },
-      ],
-      client: [
-        { title: "Total Investment", value: 0, icon: TrendingUp, trend: "neutral" as const },
-        { title: "Total Payout", value: 0, icon: DollarSign, trend: "neutral" as const },
-        { title: "Active Referrals", value: 0, icon: Users, trend: "neutral" as const },
-        { title: "Pending Withdrawals", value: 0, icon: TrendingDown, trend: "neutral" as const },
-      ]
-    };
-    
-    return loadingStats[userRole] || loadingStats.client;
+    return [];
   };
 
   const roleStats = getStatsForRole();
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {roleStats.map((stat, index) => (
+      {roleStats.length > 0 && roleStats.map((stat, index) => (
         <StatCard
           key={`${stat.title}-${index}`}
           title={stat.title}
