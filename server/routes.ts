@@ -222,7 +222,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const user = await storage.createMstUser(userData);
+      const userDataWithDefaults = {
+        ...userData,
+        isActive: 1,
+        createdById: 1,
+        createdByUser: 'system',
+        createdDate: new Date(),
+        mobileVerified: null,
+        emailVerified: null,
+        modifiedById: null,
+        modifiedByUser: null,
+        modifiedDate: null,
+        deletedById: null,
+        deletedByUser: null,
+        deletedDate: null
+      };
+      
+      const user = await storage.createMstUser(userDataWithDefaults);
       const { password, ...userWithoutPassword } = user;
       res.status(201).json(userWithoutPassword);
     } catch (error) {
@@ -1734,12 +1750,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let clients = await storage.getAllMstClients();
       const roleName = userSession.roleName || userSession.role || 'client';
       if (roleName === 'admin' || roleName === 'Admin') {
+        // Admin can see all clients - no filtering needed
       } else if (roleName === 'leader' || roleName === 'Leader') {
+        // Leader can see his and his clients' data
         if (userSession.clientId) {
           const leaderClients = clients.filter(c => c.referenceId === userSession.clientId || c.clientId === userSession.clientId);
           clients = leaderClients;
         }
+      } else if (roleName === 'manager' || roleName === 'Manager') {
+        // Manager can see his and his clients' data
+        if (userSession.clientId) {
+          const managerClients = clients.filter(c => c.referenceId === userSession.clientId || c.clientId === userSession.clientId);
+          clients = managerClients;
+        }
       } else if (roleName === 'client' || roleName === 'Client') {
+        // Client can only see their own data
         if (userSession.clientId) {
           clients = clients.filter(c => c.clientId === userSession.clientId);
         } else {
@@ -1770,12 +1795,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let clients = await storage.getAllMstClients();
       const roleName = userSession.roleName || userSession.role || 'client';
       if (roleName === 'admin' || roleName === 'Admin') {
+        // Admin can see all clients - no filtering needed
       } else if (roleName === 'leader' || roleName === 'Leader') {
+        // Leader can see his and his clients' data
         if (userSession.clientId) {
           const leaderClients = clients.filter(c => c.referenceId === userSession.clientId || c.clientId === userSession.clientId);
           clients = leaderClients;
         }
+      } else if (roleName === 'manager' || roleName === 'Manager') {
+        // Manager can see his and his clients' data
+        if (userSession.clientId) {
+          const managerClients = clients.filter(c => c.referenceId === userSession.clientId || c.clientId === userSession.clientId);
+          clients = managerClients;
+        }
       } else if (roleName === 'client' || roleName === 'Client') {
+        // Client can only see their own data
         if (userSession.clientId) {
           clients = clients.filter(c => c.clientId === userSession.clientId);
         } else {
@@ -1812,12 +1846,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (roleName === 'admin' || roleName === 'Admin') {
         console.log('Admin access - showing all clients');
       } else if (roleName === 'leader' || roleName === 'Leader') {
+        // Leader can see his and his clients' data
         if (userSession.clientId) {
           const leaderClients = clients.filter(c => c.referenceId === userSession.clientId || c.clientId === userSession.clientId);
           clients = leaderClients;
           console.log('Leader access - filtered clients:', clients.length);
         }
+      } else if (roleName === 'manager' || roleName === 'Manager') {
+        // Manager can see his and his clients' data
+        if (userSession.clientId) {
+          const managerClients = clients.filter(c => c.referenceId === userSession.clientId || c.clientId === userSession.clientId);
+          clients = managerClients;
+          console.log('Manager access - filtered clients:', clients.length);
+        }
       } else if (roleName === 'client' || roleName === 'Client') {
+        // Client can only see their own data
         if (userSession.clientId) {
           clients = clients.filter(c => c.clientId === userSession.clientId);
           console.log('Client access - filtered to own client:', clients.length);
@@ -1856,12 +1899,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let clients = await storage.getAllMstClients();
       const roleName = userSession.roleName || userSession.role || 'client';
       if (roleName === 'admin' || roleName === 'Admin') {
+        // Admin can see all clients - no filtering needed
       } else if (roleName === 'leader' || roleName === 'Leader') {
+        // Leader can see his and his clients' data
         if (userSession.clientId) {
           const leaderClients = clients.filter(c => c.referenceId === userSession.clientId || c.clientId === userSession.clientId);
           clients = leaderClients;
         }
+      } else if (roleName === 'manager' || roleName === 'Manager') {
+        // Manager can see his and his clients' data
+        if (userSession.clientId) {
+          const managerClients = clients.filter(c => c.referenceId === userSession.clientId || c.clientId === userSession.clientId);
+          clients = managerClients;
+        }
       } else if (roleName === 'client' || roleName === 'Client') {
+        // Client can only see their own data
         if (userSession.clientId) {
           clients = clients.filter(c => c.clientId === userSession.clientId);
         } else {
@@ -1929,9 +1981,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = clientCreationSchema.parse(req.body);
       
       // Check if user with email already exists
-      const existingUserByEmail = await storage.getMstUserByEmail(data.email);
-      if (existingUserByEmail) {
-        return res.status(400).json({ error: 'User with this email already exists' });
+      if (data.email) {
+        const existingUserByEmail = await storage.getMstUserByEmail(data.email);
+        if (existingUserByEmail) {
+          return res.status(400).json({ error: 'User with this email already exists' });
+        }
       }
       
       // Check if user with mobile already exists (if mobile provided)
@@ -2005,7 +2059,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.createMstUser(userData);
       
       // Send welcome email with temporary password
-      const emailSent = user.email ? await sendWelcomeEmail(
+      const emailSent = (user.email && user.userName) ? await sendWelcomeEmail(
         user.email,
         user.userName,
         temporaryPassword
@@ -3081,9 +3135,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           results.success++;
           console.log(`Successfully processed client: ${clientData.client_code}`);
         } catch (error) {
-          console.error(`Error processing client ${rawClientData.client_code || 'UNKNOWN'}:`, error);
+          console.error(`Error processing client ${clientData.client_code || 'UNKNOWN'}:`, error);
           results.errors.push({ 
-            client: rawClientData, 
+            client: clientData, 
             error: error instanceof Error ? error.message : 'Unknown error' 
           });
         }
@@ -3175,16 +3229,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       for (const result of validationResults) {
         if (!result.valid) {
-          results.errors.push({ client: result.client, error: result.errors });
+          results.errors.push({ client: result.client, error: result.errors || 'Validation failed' });
           continue;
         }
         
         const clientData = result.client;
         try {
 
-          // Check if client exists by code
+          // Check if client code already exists
           console.log('Checking for existing client with code:', clientData.code);
-          const existingClient = await storage.getMstClientByCode(clientData.code);
+          const existingClient = clientData.code ? await storage.getMstClientByCode(clientData.code) : null;
           if (existingClient) {
             console.log('Client already exists, skipping:', clientData.code);
             results.skipped++;
@@ -3471,8 +3525,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Apply field name normalization to ensure we have the right field names
           const normalizedTxn = {
-            clientCode: txnData['Client Code'] || txnData.clientCode || txnData.client_code || txnData['ClientCode'],
-            transactionType: txnData['Transaction Type'] || txnData.transactionType || txnData.transaction_type || txnData.indicatorName || txnData['TransactionType'],
+            clientCode: txnData['Client Code'] || txnData.clientCode || txnData.client_code || txnData['ClientCode'] || '',
+            transactionType: txnData['Transaction Type'] || txnData.transactionType || txnData.transaction_type || txnData.indicatorName || txnData['TransactionType'] || '',
             amount: txnData['Transaction Amount'] || txnData.amount || txnData.transaction_amount || txnData['TransactionAmount'],
             transactionDate: txnData['Transaction Date'] || txnData.transactionDate || txnData.transaction_date || txnData['TransactionDate'],
             remark: txnData['Narration'] || txnData.remark || txnData.narration || txnData.description || '',
@@ -3515,7 +3569,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Find client by code
           console.log('Looking for client with code:', normalizedTxn.clientCode);
-          const client = await storage.getMstClientByCode(normalizedTxn.clientCode);
+          const client = await storage.getMstClientByCode(normalizedTxn.clientCode.toString());
           if (!client) {
             console.log('Client not found in database for code:', normalizedTxn.clientCode);
             results.errors.push({ transaction: txnData, error: `Client with code ${normalizedTxn.clientCode} not found` });
