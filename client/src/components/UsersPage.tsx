@@ -13,6 +13,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Users, Plus, UserCheck, Loader2, Edit, Search } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 
+// Validation functions
+const validateEmail = (email: string): boolean => {
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+  return emailRegex.test(email.trim());
+};
+
+const validateMobile = (mobile: string): boolean => {
+  const mobileRegex = /^[6-9]\d{9}$/;
+  const cleanMobile = mobile.replace(/[\s\-\(\)]/g, '').replace(/^\+91/, '');
+  return mobileRegex.test(cleanMobile);
+};
+
 interface User {
   id: string;
   email: string;
@@ -32,6 +44,7 @@ export function UsersPage() {
   const [password, setPassword] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [errors, setErrors] = useState<{email?: string; mobile?: string}>({});
   const recordsPerPage = 10;
 
   // Fetch users from API
@@ -148,6 +161,22 @@ export function UsersPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form
+    const newErrors: {email?: string; mobile?: string} = {};
+    
+    if (!formData.email || !validateEmail(formData.email)) {
+      newErrors.email = 'Valid email is required';
+    }
+    
+    if (formData.mobile && !validateMobile(formData.mobile)) {
+      newErrors.mobile = 'Mobile must be 10 digits starting with 6-9';
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
 
     const userData = {
       ...formData,
@@ -164,6 +193,7 @@ export function UsersPage() {
   const resetForm = () => {
     setFormData({});
     setPassword("");
+    setErrors({});
     setIsEditing(false);
     setIsModalOpen(false);
   };
@@ -226,9 +256,19 @@ export function UsersPage() {
                   id="userEmail"
                   type="email"
                   value={formData.email || ""}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value });
+                    if (errors.email) setErrors({ ...errors, email: undefined });
+                  }}
+                  onBlur={() => {
+                    if (formData.email && !validateEmail(formData.email)) {
+                      setErrors({ ...errors, email: 'Invalid email format' });
+                    }
+                  }}
+                  className={errors.email ? "border-red-500" : ""}
                   required
                 />
+                {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
               </div>
 
               <div className="space-y-2">
@@ -236,8 +276,21 @@ export function UsersPage() {
                 <Input
                   id="userMobile"
                   value={formData.mobile || ""}
-                  onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    setFormData({ ...formData, mobile: value });
+                    if (errors.mobile) setErrors({ ...errors, mobile: undefined });
+                  }}
+                  onBlur={() => {
+                    if (formData.mobile && !validateMobile(formData.mobile)) {
+                      setErrors({ ...errors, mobile: 'Mobile must be 10 digits starting with 6-9' });
+                    }
+                  }}
+                  className={errors.mobile ? "border-red-500" : ""}
+                  placeholder="10 digits starting with 6-9"
+                  maxLength={10}
                 />
+                {errors.mobile && <p className="text-sm text-red-500">{errors.mobile}</p>}
               </div>
 
               <div className="space-y-2">
