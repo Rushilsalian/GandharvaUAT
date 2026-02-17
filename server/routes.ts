@@ -1419,6 +1419,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Check if email exists endpoint
+  app.get('/api/users/check-email', async (req, res) => {
+    try {
+      const { email } = req.query;
+      
+      if (!email || typeof email !== 'string') {
+        return res.status(400).json({ error: 'Email parameter is required' });
+      }
+      
+      console.log('Checking email existence for:', email);
+      
+      // Try to check email existence, fallback to false if database issues
+      try {
+        const existingUser = await storage.getMstUserByEmail(email);
+        console.log('Email check result:', { email, exists: !!existingUser });
+        res.json({ exists: !!existingUser });
+      } catch (dbError) {
+        console.error('Database error during email check:', dbError);
+        // Return false (email doesn't exist) as fallback to allow form submission
+        res.json({ exists: false });
+      }
+    } catch (error) {
+      console.error('Error checking email:', error);
+      // Return false as fallback to allow form submission
+      res.json({ exists: false });
+    }
+  });
+
+  // Check if mobile exists endpoint
+  app.get('/api/users/check-mobile', async (req, res) => {
+    try {
+      const { mobile } = req.query;
+      
+      if (!mobile || typeof mobile !== 'string') {
+        return res.status(400).json({ error: 'Mobile parameter is required' });
+      }
+      
+      console.log('Checking mobile existence for:', mobile);
+      
+      // Try to check mobile existence, fallback to false if database issues
+      try {
+        const existingUser = await storage.getMstUserByMobile(mobile);
+        console.log('Mobile check result:', { mobile, exists: !!existingUser });
+        res.json({ exists: !!existingUser });
+      } catch (dbError) {
+        console.error('Database error during mobile check:', dbError);
+        // Return false (mobile doesn't exist) as fallback to allow form submission
+        res.json({ exists: false });
+      }
+    } catch (error) {
+      console.error('Error checking mobile:', error);
+      // Return false as fallback to allow form submission
+      res.json({ exists: false });
+    }
+  });
+
   app.get('/api/users/:id', async (req, res) => {
     try {
       const userId = parseInt(req.params.id);

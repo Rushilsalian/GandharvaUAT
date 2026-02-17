@@ -20,9 +20,7 @@ const validateEmail = (email: string): boolean => {
 };
 
 const validateMobile = (mobile: string): boolean => {
-  const mobileRegex = /^[6-9]\d{9}$/;
-  const cleanMobile = mobile.replace(/[\s\-\(\)]/g, '').replace(/^\+91/, '');
-  return mobileRegex.test(cleanMobile);
+  return /^[6-9]\d{9}$/.test(mobile);
 };
 
 interface User {
@@ -49,6 +47,8 @@ export function UsersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [errors, setErrors] = useState<{email?: string; mobile?: string}>({});
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [isCheckingMobile, setIsCheckingMobile] = useState(false);
   const recordsPerPage = 10;
 
   // Fetch users from API
@@ -136,7 +136,12 @@ export function UsersPage() {
       resetForm();
     },
     onError: (error: Error) => {
-      alert(error.message);
+      // Check if error is about mobile or email and set appropriate field
+      if (error.message.toLowerCase().includes('mobile')) {
+        setErrors({ ...errors, mobile: error.message });
+      } else {
+        setErrors({ ...errors, email: error.message });
+      }
     }
   });
 
@@ -159,7 +164,12 @@ export function UsersPage() {
       resetForm();
     },
     onError: (error: Error) => {
-      alert(error.message);
+      // Check if error is about mobile or email and set appropriate field
+      if (error.message.toLowerCase().includes('mobile')) {
+        setErrors({ ...errors, mobile: error.message });
+      } else {
+        setErrors({ ...errors, email: error.message });
+      }
     }
   });
 
@@ -211,6 +221,80 @@ export function UsersPage() {
     setFormData(user);
     setIsEditing(true);
     setIsModalOpen(true);
+  };
+
+  // Check if email exists
+  const checkEmailExists = async (email: string) => {
+    try {
+      const response = await fetch(`/api/users/check-email?email=${encodeURIComponent(email)}`);
+      if (!response.ok) {
+        console.error('Email check failed:', response.status, response.statusText);
+        return false; // Assume email doesn't exist if check fails
+      }
+      const data = await response.json();
+      return data.exists;
+    } catch (error) {
+      console.error('Error checking email:', error);
+      return false; // Assume email doesn't exist if check fails
+    }
+  };
+
+  // Check if mobile exists
+  const checkMobileExists = async (mobile: string) => {
+    try {
+      const response = await fetch(`/api/users/check-mobile?mobile=${encodeURIComponent(mobile)}`);
+      if (!response.ok) {
+        console.error('Mobile check failed:', response.status, response.statusText);
+        return false;
+      }
+      const data = await response.json();
+      return data.exists;
+    } catch (error) {
+      console.error('Error checking mobile:', error);
+      return false;
+    }
+  };
+
+  const handleMobileBlur = async () => {
+    if (!formData.mobile) return;
+    
+    if (!validateMobile(formData.mobile)) {
+      setErrors({ ...errors, mobile: 'Mobile must be 10 digits starting with 6-9' });
+      return;
+    }
+
+    // Skip check if editing and mobile hasn't changed
+    if (isEditing && users.find((u: User) => u.id === formData.id)?.mobile === formData.mobile) {
+      return;
+    }
+
+    setIsCheckingMobile(true);
+    const exists = await checkMobileExists(formData.mobile);
+    setIsCheckingMobile(false);
+
+    if (exists) {
+      setErrors({ ...errors, mobile: 'Mobile number already exists' });
+    }
+  };
+
+  const handleEmailBlur = async () => {
+    if (!formData.email || !validateEmail(formData.email)) {
+      setErrors({ ...errors, email: 'Invalid email format' });
+      return;
+    }
+
+    // Skip check if editing and email hasn't changed
+    if (isEditing && users.find((u: User) => u.id === formData.id)?.email === formData.email) {
+      return;
+    }
+
+    setIsCheckingEmail(true);
+    const exists = await checkEmailExists(formData.email);
+    setIsCheckingEmail(false);
+
+    if (exists) {
+      setErrors({ ...errors, email: 'Email already exists' });
+    }
   };
 
   return (
@@ -269,14 +353,12 @@ export function UsersPage() {
                     setFormData({ ...formData, email: e.target.value });
                     if (errors.email) setErrors({ ...errors, email: undefined });
                   }}
-                  onBlur={() => {
-                    if (formData.email && !validateEmail(formData.email)) {
-                      setErrors({ ...errors, email: 'Invalid email format' });
-                    }
-                  }}
+                  onBlur={handleEmailBlur}
                   className={errors.email ? "border-red-500" : ""}
+                  disabled={isCheckingEmail}
                   required
                 />
+                {isCheckingEmail && <p className="text-sm text-blue-500">Checking email...</p>}
                 {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
               </div>
 
@@ -290,15 +372,13 @@ export function UsersPage() {
                     setFormData({ ...formData, mobile: value });
                     if (errors.mobile) setErrors({ ...errors, mobile: undefined });
                   }}
-                  onBlur={() => {
-                    if (formData.mobile && !validateMobile(formData.mobile)) {
-                      setErrors({ ...errors, mobile: 'Mobile must be 10 digits starting with 6-9' });
-                    }
-                  }}
+                  onBlur={handleMobileBlur}
                   className={errors.mobile ? "border-red-500" : ""}
+                  disabled={isCheckingMobile}
                   placeholder="10 digits starting with 6-9"
                   maxLength={10}
                 />
+                {isCheckingMobile && <p className="text-sm text-blue-500">Checking mobile...</p>}
                 {errors.mobile && <p className="text-sm text-red-500">{errors.mobile}</p>}
               </div>
 
