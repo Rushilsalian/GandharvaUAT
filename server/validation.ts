@@ -95,10 +95,34 @@ export const enhancedClientValidationSchema = z.object({
   pincode: z.number().optional().nullable(),
   branchId: z.number().optional().nullable(),
   referenceId: z.number().optional().nullable(),
-  openingInvestment: z.string().optional().nullable(),
-  openingWithdrawl: z.string().optional().nullable(),
-  openingPayout: z.string().optional().nullable(),
-  openingClosure: z.string().optional().nullable()
+  openingInvestment: z.union([
+    z.string(),
+    z.number()
+  ]).optional().nullable().transform(val => {
+    if (val === null || val === undefined || val === '') return null;
+    return val.toString();
+  }),
+  openingWithdrawl: z.union([
+    z.string(),
+    z.number()
+  ]).optional().nullable().transform(val => {
+    if (val === null || val === undefined || val === '') return null;
+    return val.toString();
+  }),
+  openingPayout: z.union([
+    z.string(),
+    z.number()
+  ]).optional().nullable().transform(val => {
+    if (val === null || val === undefined || val === '') return null;
+    return val.toString();
+  }),
+  openingClosure: z.union([
+    z.string(),
+    z.number()
+  ]).optional().nullable().transform(val => {
+    if (val === null || val === undefined || val === '') return null;
+    return val.toString();
+  })
 }).refine(
   (data) => data.email || data.mobile,
   {
@@ -123,7 +147,13 @@ export const bulkClientValidationSchema = z.object({
   pincode: z.string().optional().nullable(),
   branch: z.string().optional().nullable(),
   reference_code: z.string().optional().nullable(),
-  opening_investment: z.string().optional().nullable()
+  opening_investment: z.union([
+    z.string(),
+    z.number()
+  ]).optional().nullable().transform(val => {
+    if (val === null || val === undefined || val === '') return null;
+    return val.toString();
+  })
 }).refine(
   (data) => data.email || data.mobile,
   {
@@ -149,10 +179,34 @@ export const thirdPartyClientValidationSchema = z.object({
   branch: z.string().optional().nullable(),
   branchId: z.number().optional().nullable(),
   referenceId: z.number().optional().nullable(),
-  openingInvestment: z.string().optional().nullable(),
-  openingWithdrawl: z.string().optional().nullable(),
-  openingPayout: z.string().optional().nullable(),
-  openingClosure: z.string().optional().nullable()
+  openingInvestment: z.union([
+    z.string(),
+    z.number()
+  ]).optional().nullable().transform(val => {
+    if (val === null || val === undefined || val === '') return null;
+    return val.toString();
+  }),
+  openingWithdrawl: z.union([
+    z.string(),
+    z.number()
+  ]).optional().nullable().transform(val => {
+    if (val === null || val === undefined || val === '') return null;
+    return val.toString();
+  }),
+  openingPayout: z.union([
+    z.string(),
+    z.number()
+  ]).optional().nullable().transform(val => {
+    if (val === null || val === undefined || val === '') return null;
+    return val.toString();
+  }),
+  openingClosure: z.union([
+    z.string(),
+    z.number()
+  ]).optional().nullable().transform(val => {
+    if (val === null || val === undefined || val === '') return null;
+    return val.toString();
+  })
 }).refine(
   (data) => data.email || data.mobile,
   {
