@@ -1,22 +1,26 @@
 export const SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes
 
+export const updateLastActivity = (): void => {
+  sessionStorage.setItem('lastActivity', Date.now().toString());
+};
+
 export const isSessionExpired = (): boolean => {
-  const loginTime = sessionStorage.getItem('loginTime');
-  if (!loginTime) return true;
+  const lastActivity = sessionStorage.getItem('lastActivity');
+  if (!lastActivity) return true;
 
   const currentTime = Date.now();
-  const sessionAge = currentTime - parseInt(loginTime);
+  const inactiveTime = currentTime - parseInt(lastActivity);
   
-  return sessionAge > SESSION_TIMEOUT;
+  return inactiveTime > SESSION_TIMEOUT;
 };
 
 export const getSessionTimeRemaining = (): number => {
-  const loginTime = sessionStorage.getItem('loginTime');
-  if (!loginTime) return 0;
+  const lastActivity = sessionStorage.getItem('lastActivity');
+  if (!lastActivity) return 0;
 
   const currentTime = Date.now();
-  const sessionAge = currentTime - parseInt(loginTime);
-  const remaining = SESSION_TIMEOUT - sessionAge;
+  const inactiveTime = currentTime - parseInt(lastActivity);
+  const remaining = SESSION_TIMEOUT - inactiveTime;
   
   return Math.max(0, remaining);
 };
@@ -28,4 +32,5 @@ export const clearSessionData = (): void => {
   sessionStorage.removeItem('role');
   sessionStorage.removeItem('session');
   sessionStorage.removeItem('loginTime');
+  sessionStorage.removeItem('lastActivity');
 };
