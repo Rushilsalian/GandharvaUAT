@@ -1,12 +1,19 @@
 export const SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes
 
+export const initializeSession = (): void => {
+  sessionStorage.setItem('lastActivity', Date.now().toString());
+};
+
 export const updateLastActivity = (): void => {
   sessionStorage.setItem('lastActivity', Date.now().toString());
 };
 
 export const isSessionExpired = (): boolean => {
   const lastActivity = sessionStorage.getItem('lastActivity');
-  if (!lastActivity) return true;
+  const authToken = sessionStorage.getItem('authToken');
+  
+  if (!authToken) return true;
+  if (!lastActivity) return false; // Just logged in, not expired yet
 
   const currentTime = Date.now();
   const inactiveTime = currentTime - parseInt(lastActivity);
