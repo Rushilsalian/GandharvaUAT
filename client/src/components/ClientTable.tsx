@@ -51,6 +51,9 @@ export function ClientTable() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const recordsPerPage = 10;
+  
+  // Get user role - replace with your actual auth context
+  const userRoleId = 1; // This should come from your auth context
 
   const {
     data: syncedClients = [],
@@ -125,10 +128,13 @@ export function ClientTable() {
 
   const formatDate = (date: Date | null | string) => {
     if (!date) return "N/A";
-    return new Date(date).toLocaleDateString("en-IN", {
+    return new Date(date).toLocaleString("en-IN", {
       day: "2-digit",
       month: "short",
       year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Asia/Kolkata"
     });
   };
 
@@ -178,6 +184,9 @@ export function ClientTable() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[100px]">Actions</TableHead>
+                      {userRoleId === 1 && (
+                        <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Client Code</TableHead>
+                      )}
                       <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[150px]">Name</TableHead>
                       <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[200px]">Email</TableHead>
                       <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Mobile</TableHead>
@@ -200,6 +209,9 @@ export function ClientTable() {
                             <Edit className="h-4 w-4" />
                           </Button>
                         </TableCell>
+                        {userRoleId === 1 && (
+                          <TableCell>{client.code}</TableCell>
+                        )}
                         <TableCell>{client.name}</TableCell>
                         <TableCell className="text-muted-foreground">
                           {client.email || "N/A"}
