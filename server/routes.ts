@@ -1393,9 +1393,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             firstName = nameParts[0] || 'Unknown';
             lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
           }
-        } else {
-          // Fallback to userName if no client
-          const nameParts = user.userName?.split(' ') || ['Unknown'];
+        } else if (user.userName) {
+          // Use userName if no client, split it properly
+          const nameParts = user.userName.split(' ');
           firstName = nameParts[0] || 'Unknown';
           lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
         }
@@ -1636,7 +1636,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const roleId = role === 'admin' ? 1 : role === 'leader' ? 2 : 3;
       
       const updateData: any = {
-        userName: `${firstName} ${lastName}`,
+        userName: `${firstName}${lastName ? ` ${lastName}` : ''}`,
         email: email || null,
         mobile: mobile ? normalizeMobile(mobile) : null,
         roleId,
@@ -1653,6 +1653,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.updateMstUser(userId, updateData);
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
+      }
+      
+      // Also update client name if user has clientId
+      if (user.clientId) {
+        await storage.updateMstClient(user.clientId, {
+          name: updateData.userName,
+          modifiedById: 1,
+          modifiedByUser: 'system',
+          modifiedDate: new Date()
+        });
       }
       
       const { password: _, ...userWithoutPassword } = user;

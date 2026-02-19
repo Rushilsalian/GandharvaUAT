@@ -340,21 +340,11 @@ export function UsersPage() {
 
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="firstName">First Name *</Label>
+                <Label htmlFor="name">Name *</Label>
                 <Input
-                  id="firstName"
+                  id="name"
                   value={formData.firstName || ""}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name *</Label>
-                <Input
-                  id="lastName"
-                  value={formData.lastName || ""}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                   required
                 />
               </div>
@@ -530,7 +520,7 @@ export function UsersPage() {
                             </Button>
                           </TableCell>
                           <TableCell>
-                            <div className="truncate max-w-[140px]">
+                            <div className="truncate max-w-[180px]">
                               {user.firstName?.charAt(0).toUpperCase() + user.firstName?.slice(1)}{user.lastName && user.lastName.trim() ? ` ${user.lastName.charAt(0).toUpperCase() + user.lastName.slice(1)}` : ''}
                             </div>
                           </TableCell>

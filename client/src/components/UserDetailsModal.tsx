@@ -35,7 +35,6 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
   const [showPassword, setShowPassword] = useState(false);
   const [editData, setEditData] = useState<{
     firstName?: string;
-    lastName?: string;
     email?: string;
     mobile?: string;
     role?: string;
@@ -64,6 +63,10 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
         description: "User details updated successfully",
       });
       setIsEditing(false);
+      // Force a small delay before closing to ensure cache invalidation completes
+      setTimeout(() => {
+        onClose();
+      }, 100);
     },
     onError: (error: any) => {
       toast({
@@ -88,8 +91,7 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
 
   const startEditing = () => {
     setEditData({
-      firstName: user.firstName || '',
-      lastName: user.lastName || '',
+      firstName: `${user.firstName || ''}${user.lastName && user.lastName.trim() ? ` ${user.lastName}` : ''}`,
       email: user.email || '',
       mobile: user.mobile || '',
       role: user.role || '',
@@ -99,8 +101,13 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
   };
 
   const handleSave = () => {
+    const nameParts = editData.firstName?.trim().split(' ') || [];
     const updates = {
-      ...editData,
+      firstName: nameParts[0] || '',
+      lastName: nameParts.slice(1).join(' ') || '',
+      email: editData.email,
+      mobile: editData.mobile,
+      role: editData.role,
       password: editData.password ? hashPassword(editData.password) : undefined
     };
     updateMutation.mutate(updates);
@@ -128,7 +135,7 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              User Details - {user.firstName} {user.lastName}
+              User Details - {user.firstName}{user.lastName && user.lastName.trim() ? ` ${user.lastName}` : ''}
             </DialogTitle>
             <div className="flex items-center gap-2">
               {isEditing ? (
@@ -175,7 +182,7 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">First Name</Label>
+                <Label className="text-sm font-medium text-muted-foreground">Name</Label>
                 {isEditing ? (
                   <Input
                     value={editData.firstName || ''}
@@ -183,20 +190,7 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
                     className="mt-1"
                   />
                 ) : (
-                  <p className="text-sm">{user.firstName}</p>
-                )}
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Last Name</Label>
-                {isEditing ? (
-                  <Input
-                    value={editData.lastName || ''}
-                    onChange={(e) => setEditData((prev) => ({ ...prev, lastName: e.target.value }))}
-                    className="mt-1"
-                  />
-                ) : (
-                  <p className="text-sm">{user.lastName}</p>
+                  <p className="text-sm">{user.firstName}{user.lastName && user.lastName.trim() ? ` ${user.lastName}` : ''}</p>
                 )}
               </div>
 
