@@ -1381,7 +1381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json([]);
       }
       
-      const usersWithoutPasswords = users.map(({ password, ...user }) => {
+      const usersWithPasswords = users.map((user) => {
         let firstName = 'Unknown';
         let lastName = '';
         
@@ -1407,13 +1407,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           firstName: firstName,
           lastName: lastName,
           role: user.roleId === 1 ? 'admin' : user.roleId === 2 ? 'leader' : 'client',
+          password: user.password || null,
           branchId: user.clientId?.toString() || null,
           isActive: Boolean(user.isActive),
           createdAt: user.createdDate || null
         };
       });
       
-      res.json(usersWithoutPasswords);
+      res.json(usersWithPasswords);
     } catch (error) {
       console.error('Error fetching users:', error);
       res.json([]);

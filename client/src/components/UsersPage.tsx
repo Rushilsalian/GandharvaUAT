@@ -10,7 +10,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Users, Plus, UserCheck, Loader2, Edit, Search } from "lucide-react";
+import { Users, Plus, UserCheck, Loader2, Edit, Search, Eye, EyeOff, Lock } from "lucide-react";
+import { UserDetailsModal } from "./UserDetailsModal";
 import { queryClient } from "@/lib/queryClient";
 
 // Validation functions
@@ -30,6 +31,7 @@ interface User {
   firstName: string;
   lastName: string;
   role: string;
+  password?: string | null;
   branchId?: string | null;
   isActive?: boolean | null;
   createdAt: Date | null;
@@ -44,6 +46,9 @@ export function UsersPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<UserFormData>({});
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [errors, setErrors] = useState<{email?: string; mobile?: string}>({});
@@ -173,6 +178,17 @@ export function UsersPage() {
     }
   });
 
+  // Hash password function
+  const hashPassword = (password: string): string => {
+    let hash = 0;
+    for (let i = 0; i < password.length; i++) {
+      const char = password.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return Math.abs(hash).toString(16);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -196,10 +212,10 @@ export function UsersPage() {
     
     // Only include password if it's provided
     if (password) {
-      userData.password = password;
+      userData.password = hashPassword(password);
     } else if (!isEditing) {
       // For new users, set default password if none provided
-      userData.password = 'defaultpass123';
+      userData.password = hashPassword('defaultpass123');
     }
 
     if (isEditing && formData.id) {
@@ -212,15 +228,15 @@ export function UsersPage() {
   const resetForm = () => {
     setFormData({});
     setPassword("");
+    setShowPassword(false);
     setErrors({});
     setIsEditing(false);
     setIsModalOpen(false);
   };
 
   const handleEdit = (user: User) => {
-    setFormData(user);
-    setIsEditing(true);
-    setIsModalOpen(true);
+    setSelectedUser(user);
+    setIsDetailsModalOpen(true);
   };
 
   // Check if email exists
@@ -383,15 +399,34 @@ export function UsersPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="userPassword">Password {!isEditing && '*'}</Label>
-                <Input
-                  id="userPassword"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required={!isEditing}
-                  placeholder={isEditing ? "Leave blank to keep current password" : "Enter password"}
-                />
+                <Label htmlFor="userPassword" className="flex items-center gap-2">
+                  <Lock className="h-4 w-4" />
+                  Password {!isEditing && '*'}
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="userPassword"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required={!isEditing}
+                    placeholder={isEditing ? "Leave blank to keep current password" : "Enter password"}
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -476,8 +511,9 @@ export function UsersPage() {
                         <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[150px]">Name</TableHead>
                         <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[200px]">Email</TableHead>
                         <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Mobile</TableHead>
+                        <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[180px]">Password</TableHead>
                         <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[100px]">Role</TableHead>
-                        <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[130px]">Created Date</TableHead>
+                        <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[160px]">Created Date & Time</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -509,15 +545,38 @@ export function UsersPage() {
                             </div>
                           </TableCell>
                           <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-mono truncate max-w-[140px]">
+                                {showPassword ? (user.password || 'Not set') : '••••••••'}
+                              </span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={() => setShowPassword(!showPassword)}
+                              >
+                                {showPassword ? (
+                                  <EyeOff className="h-3 w-3 text-muted-foreground" />
+                                ) : (
+                                  <Eye className="h-3 w-3 text-muted-foreground" />
+                                )}
+                              </Button>
+                            </div>
+                          </TableCell>
+                          <TableCell>
                             <Badge variant={user.role === "admin" ? "default" : user.role === "leader" ? "secondary" : "outline"}  className="md:w-fit md:min-w-0 md:px-1.5 md:py-0.5" >
                               {user.role?.charAt(0).toUpperCase() + user.role?.slice(1)}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-muted-foreground">
-                            {user.createdAt ? new Date(user.createdAt).toLocaleDateString("en-IN", {
+                            {user.createdAt ? new Date(user.createdAt).toLocaleString("en-IN", {
                               day: "2-digit",
                               month: "short",
                               year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: true
                             }) : "N/A"}
                           </TableCell>
                         </TableRow>
@@ -579,6 +638,17 @@ export function UsersPage() {
           )}
         </CardContent>
       </Card>
+
+      {isDetailsModalOpen && selectedUser && (
+        <UserDetailsModal
+          user={selectedUser}
+          isOpen={isDetailsModalOpen}
+          onClose={() => {
+            setIsDetailsModalOpen(false);
+            setSelectedUser(null);
+          }}
+        />
+      )}
     </div>
   );
 }
