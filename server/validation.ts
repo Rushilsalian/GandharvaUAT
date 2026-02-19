@@ -132,13 +132,29 @@ export const enhancedClientValidationSchema = z.object({
 );
 
 /**
- * Bulk upload client validation schema
+ * Bulk upload client validation schema - allows client creation without email/mobile
  */
 export const bulkClientValidationSchema = z.object({
   client_code: z.string().min(1, 'Client code is required').max(50, 'Client code too long'),
   name: z.string().min(1, 'Client name is required').max(100, 'Client name too long'),
-  mobile: optionalMobileSchema,
-  email: optionalEmailSchema,
+  mobile: z.any().optional().nullable().transform((mobile) => {
+    if (!mobile || mobile === '' || mobile === 'N/A') return null;
+    try {
+      const normalized = normalizeMobile(mobile.toString());
+      return validateMobile(normalized) ? normalized : null;
+    } catch {
+      return null;
+    }
+  }),
+  email: z.any().optional().nullable().transform((email) => {
+    if (!email || email === '' || email === 'N/A' || email === '.') return null;
+    try {
+      const emailStr = email.toString().trim();
+      return validateEmail(emailStr) ? emailStr : null;
+    } catch {
+      return null;
+    }
+  }),
   dob: z.string().optional().nullable(),
   pan_no: z.string().optional().nullable(),
   aadhaar_no: z.string().optional().nullable(),
@@ -154,22 +170,32 @@ export const bulkClientValidationSchema = z.object({
     if (val === null || val === undefined || val === '') return null;
     return val.toString();
   })
-}).refine(
-  (data) => data.email || data.mobile,
-  {
-    message: "Either email or mobile number is required",
-    path: ["email"]
-  }
-);
+});
 
 /**
- * Third-party API client sync validation schema
+ * Third-party API client sync validation schema - allows client creation without email/mobile
  */
 export const thirdPartyClientValidationSchema = z.object({
   code: z.string().min(1, 'Client code is required').max(50, 'Client code too long'),
   name: z.string().min(1, 'Client name is required').max(100, 'Client name too long'),
-  mobile: optionalMobileSchema,
-  email: optionalEmailSchema,
+  mobile: z.any().optional().nullable().transform((mobile) => {
+    if (!mobile || mobile === '' || mobile === 'N/A') return null;
+    try {
+      const normalized = normalizeMobile(mobile.toString());
+      return validateMobile(normalized) ? normalized : null;
+    } catch {
+      return null;
+    }
+  }),
+  email: z.any().optional().nullable().transform((email) => {
+    if (!email || email === '' || email === 'N/A' || email === '.') return null;
+    try {
+      const emailStr = email.toString().trim();
+      return validateEmail(emailStr) ? emailStr : null;
+    } catch {
+      return null;
+    }
+  }),
   dob: z.string().optional().nullable(),
   panNo: z.string().optional().nullable(),
   aadhaarNo: z.string().optional().nullable(),
@@ -207,13 +233,7 @@ export const thirdPartyClientValidationSchema = z.object({
     if (val === null || val === undefined || val === '') return null;
     return val.toString();
   })
-}).refine(
-  (data) => data.email || data.mobile,
-  {
-    message: "Either email or mobile number is required",
-    path: ["email"]
-  }
-);
+});
 
 /**
  * User validation schema with email and mobile validation
@@ -273,4 +293,13 @@ export function validateClientBatch(clients: any[]): {
   }
 
   return { valid, invalid };
+}
+
+/**
+ * Checks if client has valid contact information (email or mobile)
+ */
+export function hasValidContactInfo(client: any): boolean {
+  const hasValidEmail = client.email && client.email !== null && client.email !== 'N/A' && client.email !== '.' && validateEmail(client.email);
+  const hasValidMobile = client.mobile && client.mobile !== null && client.mobile !== 'N/A' && validateMobile(client.mobile);
+  return hasValidEmail || hasValidMobile;
 }
