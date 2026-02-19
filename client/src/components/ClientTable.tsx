@@ -190,7 +190,7 @@ export function ClientTable() {
                       <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[150px]">Name</TableHead>
                       <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[200px]">Email</TableHead>
                       <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Mobile</TableHead>
-                      <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[130px]">Created Date</TableHead>
+                      <TableHead className="text-left p-2 font-medium whitespace-nowrap w-[130px]">Created Date & Time</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
