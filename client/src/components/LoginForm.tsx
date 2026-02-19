@@ -25,6 +25,31 @@ export function LoginForm({ onLogin }: LoginFormProps) {
     setIsLoading(true);
 
     try {
+      // Validation 1: Check username length
+      if (email.length < 10) {
+        setError("Username must be at least 10 characters long");
+        return;
+      }
+
+      // Validation 2: Check if username exists in mst_user
+      const userExistsResponse = await fetch('/api/check-user-exists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: email })
+      });
+      const userExistsData = await userExistsResponse.json();
+      
+      if (!userExistsData.exists) {
+        setError("Username not found in system");
+        return;
+      }
+
+      // Validation 3: Check if username is unique (not associated with multiple users)
+      if (userExistsData.count > 1) {
+        setError("Multiple accounts found with this username. Please contact Admin");
+        return;
+      }
+
       console.log("Login attempted with:", { email, password: "***" });
       await onLogin?.(email, password);
     } catch (err) {

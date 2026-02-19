@@ -1140,6 +1140,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Check user existence endpoint for login validation
+  app.post('/api/check-user-exists', async (req, res) => {
+    try {
+      const { username } = req.body;
+      
+      if (!username) {
+        return res.status(400).json({ error: 'Username is required' });
+      }
+      
+      // Check if username exists in mst_user table (by email or mobile)
+      let userCount = 0;
+      
+      // Check by email
+      if (validateEmail(username)) {
+        const usersByEmail = await storage.getAllMstUsers();
+        userCount = usersByEmail.filter(user => user.email === username).length;
+      }
+      
+      // Check by mobile if not found by email
+      if (userCount === 0 && validateMobile(username)) {
+        const normalizedMobile = normalizeMobile(username);
+        const usersByMobile = await storage.getAllMstUsers();
+        userCount = usersByMobile.filter(user => user.mobile === normalizedMobile).length;
+      }
+      
+      res.json({
+        exists: userCount > 0,
+        count: userCount
+      });
+    } catch (error) {
+      console.error('Check user exists error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   // Authentication routes
   app.post('/api/auth/login', async (req, res) => {
     const startTime = Date.now();
