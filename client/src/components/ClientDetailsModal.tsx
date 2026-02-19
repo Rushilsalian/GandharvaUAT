@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Mail, Phone, MapPin, CreditCard, FileText, Calendar, Edit2, Save, X } from "lucide-react";
+import { User, Mail, Phone, MapPin, CreditCard, FileText, Calendar, Edit2, Save, X, CheckCircle } from "lucide-react";
 import { useState } from "react";
 import * as React from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -40,6 +40,18 @@ interface Client {
   deletedById?: number | null;
   deletedByUser?: string | null;
   deletedDate?: string | null;
+  opening_investment?: number | null;
+  payout?: number | null;
+  closure?: number | null;
+  withdrawl?: number | null;
+  openingInvestment?: string | number | null;
+  openingPayout?: string | number | null;
+  openingClosure?: string | number | null;
+  openingWithdrawl?: string | number | null;
+  referenceClient?: {
+    code: string;
+    name: string;
+  } | null;
 }
 
 interface ClientDetailsModalProps {
@@ -59,6 +71,7 @@ export function ClientDetailsModal({ client, isOpen, onClose }: ClientDetailsMod
     city?: string;
     pincode?: string | number;
   }>({});
+  const [referenceClient, setReferenceClient] = useState<{code: string; name: string} | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -69,6 +82,24 @@ export function ClientDetailsModal({ client, isOpen, onClose }: ClientDetailsMod
       setEditData({});
     }
   }, [isOpen, client?.clientId]);
+
+  // Fetch reference client details
+  React.useEffect(() => {
+    const fetchReferenceClient = async () => {
+      if (client?.referenceId) {
+        try {
+          const response = await apiRequest('GET', `/api/mst/clients/${client.referenceId}`);
+          const refClient = await response.json();
+          setReferenceClient({ code: refClient.code, name: refClient.name });
+        } catch (error) {
+          setReferenceClient(null);
+        }
+      } else {
+        setReferenceClient(null);
+      }
+    };
+    fetchReferenceClient();
+  }, [client?.referenceId]);
 
   const updateMutation = useMutation({
     mutationFn: async (updates: any) => {
@@ -282,26 +313,26 @@ export function ClientDetailsModal({ client, isOpen, onClose }: ClientDetailsMod
               </div>
 
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Status</p>
-                <Badge className={`${getIsActiveStatus(client.isActive)
-                  ? 'text-green-800'
-                  : 'text-red-800'
-                  } bg-transparent border-none shadow-none badge-status text-start`}
-                  data-testid="badge-status"
-                >
-                  {getIsActiveStatus(client.isActive) ? 'Active' : 'Inactive'}
-                </Badge>
+                <p className="text-sm font-medium text-muted-foreground">Opening Investment</p>
+                <p className="text-sm" data-testid="text-opening-investment">{client.openingInvestment ? `₹${parseFloat(client.openingInvestment.toString()).toLocaleString()}` : 'N/A'}</p>
               </div>
 
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Created By</p>
-                <p className="text-sm" data-testid="text-created-by">{client.createdByUser || 'N/A'}</p>
+                <p className="text-sm font-medium text-muted-foreground">Opening Payout</p>
+                <p className="text-sm" data-testid="text-payout">{client.openingPayout ? `₹${parseFloat(client.openingPayout.toString()).toLocaleString()}` : 'N/A'}</p>
               </div>
 
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Created Date</p>
-                <p className="text-sm" data-testid="text-created-date">{formatDate(client.createdDate)}</p>
+                <p className="text-sm font-medium text-muted-foreground">Opening Closure</p>
+                <p className="text-sm" data-testid="text-closure">{client.openingClosure ? `₹${parseFloat(client.openingClosure.toString()).toLocaleString()}` : 'N/A'}</p>
               </div>
+
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Opening Withdrawal</p>
+                <p className="text-sm" data-testid="text-withdrawal">{client.openingWithdrawl ? `₹${parseFloat(client.openingWithdrawl.toString()).toLocaleString()}` : 'N/A'}</p>
+              </div>
+
+
             </CardContent>
           </Card>
 
@@ -320,17 +351,54 @@ export function ClientDetailsModal({ client, isOpen, onClose }: ClientDetailsMod
               </div>
 
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Reference ID</p>
-                <p className="text-sm" data-testid="text-reference-id">{client.referenceId || 'N/A'}</p>
+                <p className="text-sm font-medium text-muted-foreground">Reference Client</p>
+                <p className="text-sm" data-testid="text-reference-client">
+                  {referenceClient ? `${referenceClient.code} - ${referenceClient.name}` : (client.referenceId ? 'Loading...' : 'N/A')}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Status */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Status</p>
+                <Badge className={`${getIsActiveStatus(client.isActive)
+                  ? 'text-green-800'
+                  : 'text-red-800'
+                  } bg-transparent border-none shadow-none badge-status text-start`}
+                  data-testid="badge-status"
+                >
+                  {getIsActiveStatus(client.isActive) ? 'Active' : 'Inactive'}
+                </Badge>
               </div>
 
-              {client.modifiedDate && (
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Last Modified</p>
-                  <p className="text-sm" data-testid="text-modified-date">{formatDate(client.modifiedDate)}</p>
-                  <p className="text-xs text-muted-foreground">by {client.modifiedByUser}</p>
-                </div>
-              )}
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Created By</p>
+                <p className="text-sm" data-testid="text-created-by">{client.createdByUser || 'bulk-upload'}</p>
+              </div>
+
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Created Date</p>
+                <p className="text-sm" data-testid="text-created-date">{formatDate(client.createdDate)}</p>
+              </div>
+
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Modified By</p>
+                <p className="text-sm" data-testid="text-modified-by">{client.modifiedByUser || 'N/A'}</p>
+              </div>
+
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Modified Date</p>
+                <p className="text-sm" data-testid="text-modified-date">{client.modifiedDate ? formatDate(client.modifiedDate) : 'N/A'}</p>
+              </div>
             </CardContent>
           </Card>
         </div>
