@@ -3140,8 +3140,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Check if client exists by code
           const existingClient = await storage.getMstClientByCode(clientData.client_code);
           if (existingClient) {
-            console.log(`Client ${clientData.client_code} already exists, skipping`);
-            results.skipped++;
+            console.log(`Client ${clientData.client_code} already exists, updating data`);
+            
+            // Parse date of birth for update
+            let dob = null;
+            if (clientData.dob) {
+              try {
+                const dobStr = clientData.dob.toString();
+                if (dobStr.includes('-')) {
+                  const [day, month, year] = dobStr.split('-');
+                  dob = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                } else {
+                  dob = new Date(clientData.dob);
+                }
+                if (isNaN(dob.getTime())) {
+                  dob = null;
+                }
+              } catch {
+                dob = null;
+              }
+            }
+            
+            // Update client data but preserve opening_investment
+            const updateData = {
+              name: clientData.name,
+              mobile: clientData.mobile || null,
+              email: clientData.email || null,
+              dob: dob,
+              panNo: clientData.pan_no || null,
+              aadhaarNo: clientData.aadhaar_no || null,
+              branch: clientData.branch || null,
+              address: clientData.address || null,
+              city: clientData.city || null,
+              pincode: clientData.pincode && !isNaN(parseInt(clientData.pincode)) ? parseInt(clientData.pincode) : null,
+              referenceId: clientData.reference_code ? (await storage.getMstClientByCode(clientData.reference_code))?.clientId || null : null,
+              modifiedById: 1,
+              modifiedByUser: 'bulk-upload',
+              modifiedDate: new Date()
+              // Note: opening_investment is intentionally NOT included to preserve existing value
+            };
+            
+            await storage.updateMstClient(existingClient.clientId, updateData);
+            
+            // Also update associated user's mobile and email if user exists
+            const users = await storage.getAllMstUsers();
+            const associatedUser = users.find(u => u.clientId === existingClient.clientId);
+            if (associatedUser) {
+              const userUpdateData: any = {
+                modifiedById: 1,
+                modifiedByUser: 'bulk-upload',
+                modifiedDate: new Date()
+              };
+              
+              if (clientData.email) userUpdateData.email = clientData.email;
+              if (clientData.mobile) userUpdateData.mobile = clientData.mobile;
+              
+              await storage.updateMstUser(associatedUser.userId, userUpdateData);
+              console.log(`User updated for client ${clientData.client_code}`);
+            }
+            
+            console.log(`Client ${clientData.client_code} updated successfully`);
+            results.success++;
             continue;
           }
 
@@ -3386,8 +3445,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('Checking for existing client with code:', clientData.code);
           const existingClient = clientData.code ? await storage.getMstClientByCode(clientData.code) : null;
           if (existingClient) {
-            console.log('Client already exists, skipping:', clientData.code);
-            results.skipped++;
+            console.log('Client already exists, updating data:', clientData.code);
+            
+            // Update client data but preserve opening_investment
+            const updateData = {
+              name: clientData.name || 'Unknown',
+              mobile: clientData.mobile || null,
+              email: clientData.email || null,
+              dob: clientData.dob ? new Date(clientData.dob) : null,
+              panNo: clientData.panNo || null,
+              aadhaarNo: clientData.aadhaarNo || null,
+              branch: clientData.branch || null,
+              branchId: clientData.branchId || null,
+              address: clientData.address || null,
+              city: clientData.city || null,
+              pincode: clientData.pincode || null,
+              referenceId: clientData.referenceId || null,
+              modifiedById: 1,
+              modifiedByUser: 'sync-api',
+              modifiedDate: new Date()
+              // Note: opening_investment is intentionally NOT included to preserve existing value
+            };
+            
+            await storage.updateMstClient(existingClient.clientId, updateData);
+            
+            // Also update associated user's mobile and email if user exists
+            const users = await storage.getAllMstUsers();
+            const associatedUser = users.find(u => u.clientId === existingClient.clientId);
+            if (associatedUser) {
+              const userUpdateData: any = {
+                modifiedById: 1,
+                modifiedByUser: 'sync-api',
+                modifiedDate: new Date()
+              };
+              
+              if (clientData.email) userUpdateData.email = clientData.email;
+              if (clientData.mobile) userUpdateData.mobile = clientData.mobile;
+              
+              await storage.updateMstUser(associatedUser.userId, userUpdateData);
+              console.log(`User updated for client ${clientData.code}`);
+            }
+            
+            console.log(`Client ${clientData.code} updated successfully`);
+            results.success++;
             continue;
           }
           console.log('Client does not exist, creating new client:', clientData.code);
