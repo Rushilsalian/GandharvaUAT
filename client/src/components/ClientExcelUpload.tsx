@@ -268,6 +268,34 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
                 </AlertDescription>
               </Alert>
               
+              {/* Summary Stats */}
+              {uploadResults.summary && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {uploadResults.summary.created > 0 && (
+                    <div className="bg-green-50 p-3 rounded border border-green-200">
+                      <div className="text-green-800 font-medium">Created</div>
+                      <div className="text-green-600 text-lg">{uploadResults.summary.created}</div>
+                    </div>
+                  )}
+                  {uploadResults.summary.updated > 0 && (
+                    <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                      <div className="text-blue-800 font-medium">Updated</div>
+                      <div className="text-blue-600 text-lg">{uploadResults.summary.updated}</div>
+                    </div>
+                  )}
+                  {uploadResults.summary.failed > 0 && (
+                    <div className="bg-red-50 p-3 rounded border border-red-200">
+                      <div className="text-red-800 font-medium">Failed</div>
+                      <div className="text-red-600 text-lg">{uploadResults.summary.failed}</div>
+                    </div>
+                  )}
+                  <div className="bg-gray-50 p-3 rounded border border-gray-200">
+                    <div className="text-gray-800 font-medium">Total</div>
+                    <div className="text-gray-600 text-lg">{uploadResults.summary.totalRecords}</div>
+                  </div>
+                </div>
+              )}
+              
               {uploadResults.results?.errors?.length > 0 && (
                 <Card>
                   <CardHeader>

@@ -3084,6 +3084,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const results = {
         success: 0,
+        updated: 0,
+        created: 0,
         skipped: 0,
         errors: [] as Array<{ client: any; error: string }>
       };
@@ -3201,6 +3203,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             console.log(`Client ${clientData.client_code} updated successfully`);
             results.success++;
+            results.updated++;
             continue;
           }
 
@@ -3333,6 +3336,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           results.success++;
+          results.created++;
           console.log(`Successfully processed client: ${clientData.client_code}`);
         } catch (error) {
           console.error(`Error processing client ${clientData.client_code || 'UNKNOWN'}:`, error);
@@ -3344,9 +3348,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const success = results.errors.length === 0;
-      const message = success 
-        ? `Successfully processed ${results.success} client records` 
-        : `Processed ${results.success} clients with ${results.errors.length} errors`;
+      let message;
+      if (success) {
+        if (results.updated > 0 && results.created > 0) {
+          message = `Successfully processed ${results.success} client records (${results.created} created, ${results.updated} updated)`;
+        } else if (results.updated > 0) {
+          message = `Successfully updated ${results.updated} client records`;
+        } else if (results.created > 0) {
+          message = `Successfully created ${results.created} client records`;
+        } else {
+          message = `Successfully processed ${results.success} client records`;
+        }
+      } else {
+        message = `Processed ${results.success} clients (${results.created} created, ${results.updated} updated) with ${results.errors.length} errors`;
+      }
 
       res.json({
         success,
@@ -3364,6 +3379,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         summary: {
           totalRecords: data.length,
           successful: results.success,
+          created: results.created,
+          updated: results.updated,
           skipped: results.skipped,
           failed: results.errors.length,
           emailsSent: emailResults.sent,
@@ -3399,6 +3416,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const results = {
         success: 0,
+        updated: 0,
+        created: 0,
         skipped: 0,
         errors: [] as Array<{ client: any; error: string }>
       };
@@ -3488,6 +3507,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             console.log(`Client ${clientData.code} updated successfully`);
             results.success++;
+            results.updated++;
             continue;
           }
           console.log('Client does not exist, creating new client:', clientData.code);
@@ -3589,6 +3609,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           results.success++;
+          results.created++;
           if (userCredentials) {
             if (userCredentials.email) {
               results.errors.push({ 
@@ -3611,7 +3632,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({
-        message: 'Client sync completed',
+        message: results.updated > 0 && results.created > 0 
+          ? `Client sync completed: ${results.created} created, ${results.updated} updated`
+          : results.updated > 0 
+            ? `Client sync completed: ${results.updated} updated`
+            : results.created > 0
+              ? `Client sync completed: ${results.created} created`
+              : 'Client sync completed',
         results,
         timestamp: new Date().toISOString()
       });
