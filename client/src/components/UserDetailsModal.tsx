@@ -175,7 +175,7 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 mx-4">
                 <User className="h-4 w-4" />
                 Personal Information
               </CardTitle>
