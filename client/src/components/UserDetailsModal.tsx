@@ -132,9 +132,9 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mt-3">
             <DialogTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
+              {/* <User className="h-5 w-5" /> */}
               User Details - {user.firstName}{user.lastName && user.lastName.trim() ? ` ${user.lastName}` : ''}
             </DialogTitle>
             <div className="flex items-center gap-2">
@@ -146,7 +146,7 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
                     onClick={handleCancel}
                     disabled={updateMutation.isPending}
                   >
-                    <X className="h-4 w-4 mr-1" />
+                    <X className="h-4 w-4 mr-2" />
                     Cancel
                   </Button>
                   <Button
