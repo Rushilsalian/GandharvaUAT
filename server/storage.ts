@@ -53,7 +53,7 @@ import {
   portfolios,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { initializeMasterData } from "./init-master-data";
 
@@ -78,6 +78,7 @@ export interface IStorage {
 
   // Branches (new)
   getMstBranch(id: number): Promise<MstBranch | undefined>;
+  getMstBranchByName(name: string): Promise<MstBranch | undefined>;
   createMstBranch(branch: InsertMstBranch): Promise<MstBranch>;
   updateMstBranch(id: number, branch: Partial<InsertMstBranch>): Promise<MstBranch | undefined>;
   getAllMstBranches(): Promise<MstBranch[]>;
@@ -251,6 +252,11 @@ export class DatabaseStorage implements IStorage {
   // Branches (new)
   async getMstBranch(id: number): Promise<MstBranch | undefined> {
     const [branch] = await db.select().from(mstBranch).where(eq(mstBranch.branchId, id));
+    return branch || undefined;
+  }
+
+  async getMstBranchByName(name: string): Promise<MstBranch | undefined> {
+    const [branch] = await db.select().from(mstBranch).where(sql`LOWER(${mstBranch.name}) = LOWER(${name})`);
     return branch || undefined;
   }
 
@@ -992,6 +998,7 @@ export class MemStorage implements IStorage {
   async updateMstUser(id: number, user: Partial<InsertMstUser>): Promise<MstUser | undefined> { throw new Error('Not implemented in MemStorage'); }
   async getAllMstUsers(): Promise<MstUser[]> { throw new Error('Not implemented in MemStorage'); }
   async getMstBranch(id: number): Promise<MstBranch | undefined> { throw new Error('Not implemented in MemStorage'); }
+  async getMstBranchByName(name: string): Promise<MstBranch | undefined> { throw new Error('Not implemented in MemStorage'); }
   async createMstBranch(branch: InsertMstBranch): Promise<MstBranch> { throw new Error('Not implemented in MemStorage'); }
   async updateMstBranch(id: number, branch: Partial<InsertMstBranch>): Promise<MstBranch | undefined> { throw new Error('Not implemented in MemStorage'); }
   async getAllMstBranches(): Promise<MstBranch[]> { throw new Error('Not implemented in MemStorage'); }

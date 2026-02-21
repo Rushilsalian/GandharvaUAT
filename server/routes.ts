@@ -3037,6 +3037,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper function to handle branch creation/lookup
+  async function handleBranchForClient(branchName: string | null): Promise<number | null> {
+    if (!branchName || branchName.trim() === '') {
+      return null;
+    }
+    
+    const trimmedBranchName = branchName.trim();
+    
+    // Check if branch exists by name
+    const existingBranch = await storage.getMstBranchByName(trimmedBranchName);
+    
+    if (existingBranch) {
+      return existingBranch.branchId;
+    }
+    
+    // Create new branch
+    const newBranchData = {
+      name: trimmedBranchName,
+      address: null,
+      city: null,
+      pincode: null,
+      isActive: 1,
+      createdById: 1,
+      createdByUser: 'system',
+      createdDate: new Date(),
+      modifiedById: null,
+      modifiedByUser: null,
+      modifiedDate: null,
+      deletedById: null,
+      deletedByUser: null,
+      deletedDate: null
+    };
+    
+    const createdBranch = await storage.createMstBranch(newBranchData);
+    return createdBranch.branchId;
+  }
+
   // Bulk client upload endpoint (Excel/CSV) with enhanced error handling
   app.post('/api/clients/bulk-upload', (req, res, next) => {
     upload.single('file')(req, res, (err) => {
@@ -3163,6 +3200,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
             
+            // Handle branch - create if not exists, get branchId if exists
+            const branchId = await handleBranchForClient(clientData.branch);
+            
             // Update client data but preserve opening_investment
             const updateData = {
               name: clientData.name,
@@ -3172,6 +3212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               panNo: clientData.pan_no || null,
               aadhaarNo: clientData.aadhaar_no || null,
               branch: clientData.branch || null,
+              branchId: branchId,
               address: clientData.address || null,
               city: clientData.city || null,
               pincode: clientData.pincode && !isNaN(parseInt(clientData.pincode)) ? parseInt(clientData.pincode) : null,
@@ -3227,6 +3268,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
+          // Handle branch - create if not exists, get branchId if exists
+          const branchId = await handleBranchForClient(clientData.branch);
+
           // Create client record with validated and normalized data
           const newClient = {
             code: clientData.client_code,
@@ -3237,7 +3281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             panNo: clientData.pan_no || null,
             aadhaarNo: clientData.aadhaar_no || null,
             branch: clientData.branch || null,
-            branchId: null,
+            branchId: branchId,
             address: clientData.address || null,
             city: clientData.city || null,
             pincode: clientData.pincode && !isNaN(parseInt(clientData.pincode)) ? parseInt(clientData.pincode) : null,
@@ -3466,6 +3510,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (existingClient) {
             console.log('Client already exists, updating data:', clientData.code);
             
+            // Handle branch - create if not exists, get branchId if exists
+            const branchId = await handleBranchForClient(clientData.branch);
+            
             // Update client data but preserve opening_investment
             const updateData = {
               name: clientData.name || 'Unknown',
@@ -3475,7 +3522,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               panNo: clientData.panNo || null,
               aadhaarNo: clientData.aadhaarNo || null,
               branch: clientData.branch || null,
-              branchId: clientData.branchId || null,
+              branchId: branchId,
               address: clientData.address || null,
               city: clientData.city || null,
               pincode: clientData.pincode || null,
@@ -3512,6 +3559,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           console.log('Client does not exist, creating new client:', clientData.code);
 
+          // Handle branch - create if not exists, get branchId if exists
+          const branchId = await handleBranchForClient(clientData.branch);
+
           // Create client first with validated and normalized data
           const newClient = {
             code: clientData.code,
@@ -3522,7 +3572,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             panNo: clientData.panNo || null,
             aadhaarNo: clientData.aadhaarNo || null,
             branch: clientData.branch || null,
-            branchId: clientData.branchId || null,
+            branchId: branchId,
             address: clientData.address || null,
             city: clientData.city || null,
             pincode: clientData.pincode || null,
