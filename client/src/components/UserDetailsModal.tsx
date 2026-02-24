@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { User, Mail, Phone, UserCheck, Calendar, Edit2, Save, X, Eye, EyeOff, Lock } from "lucide-react";
 import { useState } from "react";
@@ -95,7 +96,7 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
       email: user.email || '',
       mobile: user.mobile || '',
       role: user.role || '',
-      password: ''
+      password: user.password || ''
     });
     setIsEditing(true);
   };
@@ -188,6 +189,7 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
                     value={editData.firstName || ''}
                     onChange={(e) => setEditData((prev) => ({ ...prev, firstName: e.target.value }))}
                     className="mt-1"
+                    readOnly
                   />
                 ) : (
                   <p className="text-sm">{user.firstName}{user.lastName && user.lastName.trim() ? ` ${user.lastName}` : ''}</p>
@@ -202,6 +204,7 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
                     value={editData.email || ''}
                     onChange={(e) => setEditData((prev) => ({ ...prev, email: e.target.value }))}
                     className="mt-1"
+                    readOnly
                   />
                 ) : (
                   <p className="text-sm">{user.email}</p>
@@ -215,6 +218,7 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
                     value={editData.mobile || ''}
                     onChange={(e) => setEditData((prev) => ({ ...prev, mobile: e.target.value }))}
                     className="mt-1"
+                    readOnly
                   />
                 ) : (
                   <p className="text-sm">{user.mobile || 'N/A'}</p>
@@ -234,11 +238,19 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Role</Label>
                 {isEditing ? (
-                  <Input
+                  <Select
                     value={editData.role || ''}
-                    onChange={(e) => setEditData((prev) => ({ ...prev, role: e.target.value }))}
-                    className="mt-1"
-                  />
+                    onValueChange={(value) => setEditData((prev) => ({ ...prev, role: value }))}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select user role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Administrator</SelectItem>
+                      <SelectItem value="leader">Leader</SelectItem>
+                      <SelectItem value="client">Client</SelectItem>
+                    </SelectContent>
+                  </Select>
                 ) : (
                   <Badge variant={user.role === "admin" ? "default" : user.role === "leader" ? "secondary" : "outline"}>
                     {user.role?.charAt(0).toUpperCase() + user.role?.slice(1)}
@@ -276,14 +288,14 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 mt-1">
-                    <p className="text-sm font-mono">
+                    <p className="text-sm font-mono break-all">
                       {showPassword ? (user.password || 'Not set') : '••••••••'}
                     </p>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="h-6 w-6 p-0"
+                      className="h-6 w-6 p-0 flex-shrink-0"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? (
