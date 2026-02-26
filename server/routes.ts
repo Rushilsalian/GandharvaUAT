@@ -3309,26 +3309,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const hasValidContact = hasValidContactInfo(clientData);
           console.log(`Client ${clientData.client_code} has valid contact info: ${hasValidContact} (email: ${!!clientData.email}, mobile: ${!!clientData.mobile})`);
 
-          // Create user only if valid email or mobile is available
-          let existingUser = null;
-          let shouldCreateUser = false;
+          // Create user for each client - allow duplicates
+          const shouldCreateUser = !!(clientData.email || clientData.mobile);
+          const userEmail = clientData.email;
+          const userMobile = clientData.mobile;
           
-          if (clientData.email) {
-            existingUser = await storage.getMstUserByEmail(clientData.email);
-            shouldCreateUser = true;
-          }
-          if (!existingUser && clientData.mobile) {
-            existingUser = await storage.getMstUserByMobile(clientData.mobile);
-            shouldCreateUser = true;
-          }
-          
-          if (shouldCreateUser && !existingUser) {
+          if (shouldCreateUser) {
             const password = 'Gandharva@123';
             const userData = {
               userName: clientData.name || clientData.client_code,
               password,
-              email: clientData.email || null,
-              mobile: clientData.mobile || null,
+              email: userEmail,
+              mobile: userMobile,
               roleId: 3, // Client role
               clientId: createdClient.clientId,
               isActive: 1,
@@ -3348,33 +3340,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const createdUser = await storage.createMstUser(userData);
             console.log(`User created successfully for ${clientData.client_code} (User ID: ${createdUser.userId})`);
             
-            // Handle credentials notification based on available contact method
-            if (clientData.email) {
-              // Try to send welcome email if email is provided
-              const emailSent = await sendWelcomeEmail(clientData.email, clientData.name || 'Client', password);
+            // Handle credentials notification
+            if (userEmail) {
+              const emailSent = await sendWelcomeEmail(userEmail, clientData.name || 'Client', password);
               
               if (emailSent) {
                 emailResults.sent++;
-                console.log(`Welcome email sent to ${clientData.email}`);
+                console.log(`Welcome email sent to ${userEmail}`);
               } else {
                 emailResults.failed++;
                 emailResults.failedEmails.push({
-                  email: clientData.email,
-                  credentials: `Login: ${clientData.email}, Password: ${password}`
+                  email: userEmail,
+                  credentials: `Login: ${userEmail}, Password: ${password}`
                 });
-                console.log(`Welcome email failed for ${clientData.email}`);
+                console.log(`Welcome email failed for ${userEmail}`);
               }
-            } else if (clientData.mobile) {
-              // For mobile-only users, store credentials for manual distribution
+            } else if (userMobile) {
               emailResults.failed++;
               emailResults.failedEmails.push({
-                email: clientData.mobile, // Using mobile field to store contact info
-                credentials: `Mobile: ${clientData.mobile}, Login: ${clientData.mobile}, Password: ${password}`
+                email: userMobile,
+                credentials: `Mobile: ${userMobile}, Login: ${userMobile}, Password: ${password}`
               });
-              console.log(`User created with mobile only: ${clientData.mobile}, credentials need manual distribution`);
+              console.log(`User created with mobile only: ${userMobile}, credentials need manual distribution`);
             }
-          } else if (shouldCreateUser && existingUser) {
-            console.log(`User already exists for ${clientData.client_code}, skipping user creation`);
           } else {
             console.log(`No valid email or mobile for ${clientData.client_code}, skipping user creation`);
           }
@@ -3600,28 +3588,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const hasValidContact = hasValidContactInfo(clientData);
           console.log(`Client ${clientData.code} has valid contact info: ${hasValidContact} (email: ${!!clientData.email}, mobile: ${!!clientData.mobile})`);
 
-          // Create user only if valid email or mobile is provided
+          // Create user for each client - handle duplicate contact info by making email/mobile null for duplicates
           let userCredentials = null;
           let shouldCreateUser = false;
           
           if (clientData.email || clientData.mobile) {
-            let existingUser = null;
+            shouldCreateUser = true;
+            let userEmail = clientData.email;
+            let userMobile = clientData.mobile;
+            
+            // Check for existing users with same email/mobile and nullify duplicates
             if (clientData.email) {
-              existingUser = await storage.getMstUserByEmail(clientData.email);
-              shouldCreateUser = true;
-            }
-            if (!existingUser && clientData.mobile) {
-              existingUser = await storage.getMstUserByMobile(clientData.mobile);
-              shouldCreateUser = true;
+              const existingUserByEmail = await storage.getMstUserByEmail(clientData.email);
+              if (existingUserByEmail) {
+                console.log(`Email ${clientData.email} already exists for another user, setting email to null for ${clientData.code}`);
+                userEmail = null; // Set email to null to avoid duplicate constraint
+              }
             }
             
-            if (shouldCreateUser && !existingUser) {
+            if (clientData.mobile) {
+              const existingUserByMobile = await storage.getMstUserByMobile(clientData.mobile);
+              if (existingUserByMobile) {
+                console.log(`Mobile ${clientData.mobile} already exists for another user, setting mobile to null for ${clientData.code}`);
+                userMobile = null; // Set mobile to null to avoid duplicate constraint
+              }
+            }
+            
+            if (shouldCreateUser) {
               const password = 'Gandharva@123';
               const userData = {
                 userName: clientData.name || clientData.code,
                 password,
-                email: clientData.email || null,
-                mobile: clientData.mobile || null,
+                email: userEmail,
+                mobile: userMobile,
                 roleId: 3, // Client role
                 clientId: createdClient.clientId,
                 isActive: 1,
@@ -3641,19 +3640,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
               await storage.createMstUser(userData);
               
               // Handle credentials notification based on available contact method
-              if (clientData.email) {
-                console.log('Attempting to send welcome email to:', clientData.email);
-                const emailSent = await sendWelcomeEmail(clientData.email, clientData.name || 'Client', password);
+              if (userEmail) {
+                console.log('Attempting to send welcome email to:', userEmail);
+                const emailSent = await sendWelcomeEmail(userEmail, clientData.name || 'Client', password);
                 console.log('Email sent result:', emailSent);
                 
                 if (!emailSent) {
                   console.log('Email failed, storing credentials for response');
-                  userCredentials = { email: clientData.email, password };
+                  userCredentials = { email: userEmail, password };
                 }
-              } else if (clientData.mobile) {
+              } else if (userMobile) {
                 // For mobile-only users, store credentials for manual distribution
                 console.log('Mobile-only user created, credentials need manual distribution');
-                userCredentials = { mobile: clientData.mobile, password };
+                userCredentials = { mobile: userMobile, password };
+              } else {
+                // User created but no valid contact info (both email and mobile were duplicates)
+                console.log('User created but no unique contact info available');
+                userCredentials = { code: clientData.code, password };
               }
             }
           }
@@ -3670,6 +3673,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               results.errors.push({ 
                 client: clientData, 
                 error: `Mobile-only user - Mobile: ${userCredentials.mobile}, Login: ${userCredentials.mobile}, Password: ${userCredentials.password}` 
+              });
+            } else if (userCredentials.code) {
+              results.errors.push({ 
+                client: clientData, 
+                error: `No unique contact info - Client: ${userCredentials.code}, Login: ${userCredentials.code}, Password: ${userCredentials.password}` 
               });
             }
           }
