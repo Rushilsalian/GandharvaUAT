@@ -1581,7 +1581,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const userData = {
         userName: `${firstName} ${lastName}`,
-        password: password || 'defaultpass123',
+        password: password || 'Gandharva@123',
         email: email || null,
         mobile: mobile ? normalizeMobile(mobile) : null,
         roleId,

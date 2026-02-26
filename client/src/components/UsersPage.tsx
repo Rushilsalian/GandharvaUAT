@@ -21,7 +21,7 @@ const validateEmail = (email: string): boolean => {
 };
 
 const validateMobile = (mobile: string): boolean => {
-  return /^[6-9]\d{9}$/.test(mobile);
+  return /^\d{10}$/.test(mobile);
 };
 
 interface User {
@@ -178,17 +178,6 @@ export function UsersPage() {
     }
   });
 
-  // Hash password function
-  const hashPassword = (password: string): string => {
-    let hash = 0;
-    for (let i = 0; i < password.length; i++) {
-      const char = password.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash;
-    }
-    return Math.abs(hash).toString(16);
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -200,7 +189,7 @@ export function UsersPage() {
     }
     
     if (formData.mobile && !validateMobile(formData.mobile)) {
-      newErrors.mobile = 'Mobile must be 10 digits starting with 6-9';
+      newErrors.mobile = 'Mobile must be 10 digits';
     }
     
     if (Object.keys(newErrors).length > 0) {
@@ -210,13 +199,11 @@ export function UsersPage() {
 
     const userData: UserFormData = { ...formData };
     
-    // Only include password if it's provided
+    // Only include password if it's provided (backend will handle hashing)
     if (password) {
-      userData.password = hashPassword(password);
-    } else if (!isEditing) {
-      // For new users, set default password if none provided
-      userData.password = hashPassword('defaultpass123');
+      userData.password = password;
     }
+    // Note: Backend will set default password if none provided for new users
 
     if (isEditing && formData.id) {
       updateUserMutation.mutate({ id: formData.id, ...userData });
@@ -275,7 +262,7 @@ export function UsersPage() {
     if (!formData.mobile) return;
     
     if (!validateMobile(formData.mobile)) {
-      setErrors({ ...errors, mobile: 'Mobile must be 10 digits starting with 6-9' });
+      setErrors({ ...errors, mobile: 'Mobile must be 10 digits' });
       return;
     }
 
@@ -381,7 +368,7 @@ export function UsersPage() {
                   onBlur={handleMobileBlur}
                   className={errors.mobile ? "border-red-500" : ""}
                   disabled={isCheckingMobile}
-                  placeholder="10 digits starting with 6-9"
+                  placeholder="10 digits"
                   maxLength={10}
                 />
                 {isCheckingMobile && <p className="text-sm text-blue-500">Checking mobile...</p>}
@@ -521,7 +508,12 @@ export function UsersPage() {
                           </TableCell>
                           <TableCell>
                             <div className="truncate max-w-[180px]">
-                              {user.firstName?.charAt(0).toUpperCase() + user.firstName?.slice(1)}{user.lastName && user.lastName.trim() ? ` ${user.lastName.charAt(0).toUpperCase() + user.lastName.slice(1)}` : ''}
+                              {(() => {
+                                const cleanLastName = user.lastName?.replace(/undefined/g, '').trim();
+                                const firstName = user.firstName ? user.firstName.charAt(0).toUpperCase() + user.firstName.slice(1) : '';
+                                const lastName = cleanLastName ? cleanLastName.charAt(0).toUpperCase() + cleanLastName.slice(1) : '';
+                                return `${firstName}${lastName ? ` ${lastName}` : ''}`;
+                              })()}
                             </div>
                           </TableCell>
                           <TableCell className="text-muted-foreground">

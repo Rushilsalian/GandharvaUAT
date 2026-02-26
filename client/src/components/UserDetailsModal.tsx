@@ -80,23 +80,16 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
 
   if (!user) return null;
 
-  const hashPassword = (password: string): string => {
-    let hash = 0;
-    for (let i = 0; i < password.length; i++) {
-      const char = password.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash;
-    }
-    return Math.abs(hash).toString(16);
-  };
-
   const startEditing = () => {
     setEditData({
-      firstName: `${user.firstName || ''}${user.lastName && user.lastName.trim() ? ` ${user.lastName}` : ''}`,
+      firstName: `${user.firstName || ''}${(() => {
+        const cleanLastName = user.lastName?.replace(/undefined/g, '').trim();
+        return cleanLastName ? ` ${cleanLastName}` : '';
+      })()}`,
       email: user.email || '',
       mobile: user.mobile || '',
       role: user.role || '',
-      password: user.password || ''
+      password: '' // Start with empty password for editing
     });
     setIsEditing(true);
   };
@@ -109,8 +102,12 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
       email: editData.email,
       mobile: editData.mobile,
       role: editData.role,
-      password: editData.password ? hashPassword(editData.password) : undefined
+      password: editData.password || undefined // Send raw password, backend will handle hashing
     };
+    // Remove password from updates if it's empty (keep existing password)
+    if (!editData.password) {
+      delete updates.password;
+    }
     updateMutation.mutate(updates);
   };
 
@@ -136,7 +133,12 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
           <div className="flex items-center justify-between mt-3">
             <DialogTitle className="flex items-center gap-2">
               {/* <User className="h-5 w-5" /> */}
-              User Details - {user.firstName}{user.lastName && user.lastName.trim() ? ` ${user.lastName}` : ''}
+              User Details - {(() => {
+                const cleanLastName = user.lastName?.replace(/undefined/g, '').trim();
+                const firstName = user.firstName || '';
+                const lastName = cleanLastName || '';
+                return `${firstName}${lastName ? ` ${lastName}` : ''}`;
+              })()}
             </DialogTitle>
             <div className="flex items-center gap-2">
               {isEditing ? (
@@ -192,7 +194,12 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
                     readOnly
                   />
                 ) : (
-                  <p className="text-sm">{user.firstName}{user.lastName && user.lastName.trim() ? ` ${user.lastName}` : ''}</p>
+                  <p className="text-sm">{(() => {
+                    const cleanLastName = user.lastName?.replace(/undefined/g, '').trim();
+                    const firstName = user.firstName || '';
+                    const lastName = cleanLastName || '';
+                    return `${firstName}${lastName ? ` ${lastName}` : ''}`;
+                  })()}</p>
                 )}
               </div>
 
