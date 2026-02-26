@@ -36,6 +36,7 @@ interface TransactionFiltersProps {
 
 export function TransactionFilters({ clients = [], filters, onFiltersChange, onReset, hideClientFilter = false, excelUploadButton }: TransactionFiltersProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [clientSearch, setClientSearch] = useState("");
 
   const handleDateRangeChange = (dateRange: DateRange | undefined) => {
     onFiltersChange({ ...filters, dateRange });
@@ -58,6 +59,22 @@ export function TransactionFilters({ clients = [], filters, onFiltersChange, onR
     if (filters.description) count++;
     return count;
   };
+
+  // Sort clients alphabetically and filter by search
+  const sortedAndFilteredClients = clients
+    .sort((a, b) => {
+      const nameA = a.user ? `${a.user.firstName} ${a.user.lastName}` : a.clientCode;
+      const nameB = b.user ? `${b.user.firstName} ${b.user.lastName}` : b.clientCode;
+      return nameA.localeCompare(nameB);
+    })
+    .filter(client => {
+      if (!clientSearch) return true;
+      const searchTerm = clientSearch.toLowerCase();
+      const clientName = client.user 
+        ? `${client.user.firstName} ${client.user.lastName} ${client.clientCode}`.toLowerCase()
+        : client.clientCode.toLowerCase();
+      return clientName.includes(searchTerm);
+    });
 
   const selectedClient = clients.find(c => c.id === filters.clientId);
 
@@ -145,8 +162,18 @@ export function TransactionFilters({ clients = [], filters, onFiltersChange, onR
                     <SelectValue placeholder="Select client" />
                   </SelectTrigger>
                   <SelectContent>
+                    <div className="p-2 border-b">
+                      <Input
+                        placeholder="Search clients..."
+                        value={clientSearch}
+                        onChange={(e) => setClientSearch(e.target.value)}
+                        className="h-8"
+                        onKeyDown={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
                     <SelectItem value="all">All Clients</SelectItem>
-                    {clients.map((client) => (
+                    {sortedAndFilteredClients.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.user 
                           ? `${client.user.firstName} ${client.user.lastName} (${client.clientCode})`
