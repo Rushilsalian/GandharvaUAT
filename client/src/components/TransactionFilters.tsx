@@ -92,7 +92,7 @@ export function TransactionFilters({ clients = [], filters, onFiltersChange, onR
           <div className="flex items-center gap-4">
             {excelUploadButton}
             {getActiveFiltersCount() > 0 && (
-              <Button variant="outline" size="sm" onClick={onReset} data-testid="button-reset-filters" className="px-1 gap-0">
+              <Button variant="outline" size="sm" onClick={() => { onReset(); setClientSearch(""); }} data-testid="button-reset-filters" className="px-1 gap-0">
                 <X className="h-4 w-4 mr-1" />
                 Clear All
               </Button>
