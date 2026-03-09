@@ -345,6 +345,7 @@ export default function PayoutPage() {
                 <thead>
                   <tr className="border-b">
                     <th className="text-left p-2 font-medium whitespace-nowrap w-[80px]">Date</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[80px]">Client Code</th>
                     <th className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Client</th>
                     <th className="text-right p-2 font-medium whitespace-nowrap w-[120px]">Amount</th>
                     <th className="text-left p-2 font-medium whitespace-nowrap w-[280px]">Description</th>
@@ -355,6 +356,9 @@ export default function PayoutPage() {
                     <tr key={payout.id} className="border-b hover:bg-muted/50">
                       <td className="p-2 text-sm">
                         {format(new Date(payout.processedAt || payout.createdAt), 'MMM dd yyyy')}
+                      </td>
+                        <td className="p-2 text-sm">
+                        {payout.client?.clientCode || 'N/A'}
                       </td>
                       <td className="p-2 text-sm">
                         <div className="truncate">
