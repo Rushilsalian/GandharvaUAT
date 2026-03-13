@@ -192,14 +192,7 @@ export default function OffersPage() {
                             <img
                               src={offer.mediaUrl || offer.imageUrl}
                               alt={offer.title}
-                              className="h-full object-cover"
-                              style={{
-                                width: "400px",
-                                height: "400px",
-                                padding: "15px",
-                                margin: "0px auto",
-                                paddingTop: "0px",
-                              }}
+                              className="w-full h-full object-contain p-4"
                             />
                           )
                         ) : (
@@ -329,12 +322,7 @@ export default function OffersPage() {
                         <img
                           src={item.mediaUrl}
                           alt={item.title}
-                          className=" h-full object-cover"
-                          style={{
-                            width: "400px",
-                            height: "400px",
-                            margin: "0 auto",
-                          }}
+                          className="w-full h-full object-contain p-4"
                         />
                       )}
                     </div>
