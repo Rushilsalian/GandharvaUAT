@@ -10,7 +10,7 @@ interface Offer {
   title: string;
   description: string;
   imageUrl: string;
-  mediaType?: 'image' | 'video';
+  mediaType?: "image" | "video";
   mediaUrl?: string;
   linkUrl: string;
   validFrom: string;
@@ -25,7 +25,7 @@ interface ContentItem {
   title: string;
   description: string;
   content: string;
-  mediaType: 'image' | 'video' | 'text';
+  mediaType: "image" | "video" | "text";
   mediaUrl: string;
   thumbnailUrl: string;
   displayOrder: number;
@@ -61,32 +61,47 @@ export default function OffersPage() {
     try {
       setLoading(true);
       const [offersRes, contentRes] = await Promise.all([
-        fetch('/api/content/public/offers'),
-        fetch('/api/content/public/content')
+        fetch("/api/content/public/offers"),
+        fetch("/api/content/public/content"),
       ]);
 
       if (offersRes.ok) {
         const offersData = await offersRes.json();
-        console.log('Offers data received:', offersData);
-        console.log('LinkUrls in offers:', offersData.map((o: Offer) => ({ id: o.id, title: o.title, linkUrl: o.linkUrl })));
+        console.log("Offers data received:", offersData);
+        console.log(
+          "LinkUrls in offers:",
+          offersData.map((o: Offer) => ({
+            id: o.id,
+            title: o.title,
+            linkUrl: o.linkUrl,
+          })),
+        );
         setOffers(offersData);
       } else {
-        console.error('Offers fetch failed:', offersRes.status, offersRes.statusText);
+        console.error(
+          "Offers fetch failed:",
+          offersRes.status,
+          offersRes.statusText,
+        );
       }
 
       if (contentRes.ok) {
         const contentData = await contentRes.json();
-        console.log('Content data received:', contentData);
-        console.log('Setting all content items:', contentData);
+        console.log("Content data received:", contentData);
+        console.log("Setting all content items:", contentData);
         setContentItems(contentData);
       } else {
-        console.error('Content fetch failed:', contentRes.status, contentRes.statusText);
+        console.error(
+          "Content fetch failed:",
+          contentRes.status,
+          contentRes.statusText,
+        );
       }
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to fetch offers and content",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -112,11 +127,11 @@ export default function OffersPage() {
   };
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return '';
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
+    if (!dateString) return "";
+    return new Date(dateString).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
     });
   };
 
@@ -128,14 +143,23 @@ export default function OffersPage() {
     );
   }
 
-  console.log('Rendering - offers:', offers.length, 'contentItems:', contentItems.length);
+  console.log(
+    "Rendering - offers:",
+    offers.length,
+    "contentItems:",
+    contentItems.length,
+  );
 
   return (
     <div className="container mx-auto p-3 sm:p-6 space-y-6 sm:space-y-8">
       {/* Header */}
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-primary mb-2">Special Offers & Updates</h1>
-        <p className="text-muted-foreground">Discover our latest financial opportunities and market insights</p>
+        <h1 className="text-4xl font-bold text-primary mb-2">
+          Special Offers & Updates
+        </h1>
+        <p className="text-muted-foreground">
+          Discover our latest financial opportunities and market insights
+        </p>
       </div>
 
       {/* Main Offers Carousel */}
@@ -148,14 +172,14 @@ export default function OffersPage() {
                   <div
                     key={offer.id}
                     className={`absolute inset-0 transition-opacity duration-500 ${
-                      index === currentSlide ? 'opacity-100' : 'opacity-0'
+                      index === currentSlide ? "opacity-100" : "opacity-0"
                     }`}
                   >
                     <div className="flex flex-col md:flex-row h-full">
                       {/* Media Section */}
                       <div className="w-full md:w-1/2 relative h-48 md:h-full">
-                        {(offer.mediaUrl || offer.imageUrl) ? (
-                          offer.mediaType === 'video' && offer.mediaUrl ? (
+                        {offer.mediaUrl || offer.imageUrl ? (
+                          offer.mediaType === "video" && offer.mediaUrl ? (
                             <video
                               src={offer.mediaUrl}
                               className="w-full h-full object-cover"
@@ -168,7 +192,14 @@ export default function OffersPage() {
                             <img
                               src={offer.mediaUrl || offer.imageUrl}
                               alt={offer.title}
-                              className="w-full h-full object-cover"
+                              className="h-full object-cover"
+                              style={{
+                                width: "400px",
+                                height: "400px",
+                                padding: "15px",
+                                margin: "0px auto",
+                                paddingTop: "0px",
+                              }}
                             />
                           )
                         ) : (
@@ -183,31 +214,47 @@ export default function OffersPage() {
                       <div className="w-full md:w-1/2 p-4 sm:p-8 flex flex-col justify-center">
                         <div className="space-y-4">
                           <div className="flex items-center gap-2">
-                            <Badge variant={isOfferValid(offer) ? "default" : "secondary"}>
+                            <Badge
+                              variant={
+                                isOfferValid(offer) ? "default" : "secondary"
+                              }
+                            >
                               {isOfferValid(offer) ? "Active" : "Expired"}
                             </Badge>
                             {offer.validFrom && offer.validTo && (
                               <div className="flex items-center text-sm text-muted-foreground">
                                 <Calendar className="h-4 w-4 mr-1" />
-                                {formatDate(offer.validFrom)} - {formatDate(offer.validTo)}
+                                {formatDate(offer.validFrom)} -{" "}
+                                {formatDate(offer.validTo)}
                               </div>
                             )}
                           </div>
 
-                          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">{offer.title}</h2>
-                          
+                          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+                            {offer.title}
+                          </h2>
+
                           <p className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed">
                             {offer.description}
                           </p>
 
                           {offer.linkUrl && (
-                            <Button 
-                              size="lg" 
+                            <Button
+                              size="lg"
                               className="w-fit"
                               onClick={() => {
                                 const currentOffer = offers[currentSlide];
-                                console.log('Clicking offer:', currentOffer.id, 'linkUrl:', currentOffer.linkUrl);
-                                window.open(currentOffer.linkUrl, '_blank', 'noopener,noreferrer');
+                                console.log(
+                                  "Clicking offer:",
+                                  currentOffer.id,
+                                  "linkUrl:",
+                                  currentOffer.linkUrl,
+                                );
+                                window.open(
+                                  currentOffer.linkUrl,
+                                  "_blank",
+                                  "noopener,noreferrer",
+                                );
                               }}
                             >
                               Learn More
@@ -220,8 +267,6 @@ export default function OffersPage() {
                   </div>
                 ))}
 
-
-
                 {/* Slide Indicators */}
                 {offers.length > 1 && (
                   <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
@@ -229,7 +274,7 @@ export default function OffersPage() {
                       <button
                         key={index}
                         className={`w-3 h-3 rounded-full transition-colors ${
-                          index === currentSlide ? 'bg-white' : 'bg-white/50'
+                          index === currentSlide ? "bg-white" : "bg-white/50"
                         }`}
                         onClick={() => setCurrentSlide(index)}
                       />
@@ -261,14 +306,19 @@ export default function OffersPage() {
       {/* Additional Content Gallery */}
       {contentItems.length > 0 && (
         <div>
-          <h2 className="text-2xl font-bold mb-6">Market Insights & Updates ({contentItems.length} items)</h2>
+          <h2 className="text-2xl font-bold mb-6">
+            Market Insights & Updates ({contentItems.length} items)
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {contentItems.map((item) => (
-              <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+              <Card
+                key={item.id}
+                className="overflow-hidden hover:shadow-lg transition-shadow"
+              >
                 <CardContent className="p-0">
                   {item.mediaUrl && (
                     <div className="aspect-video relative">
-                      {item.mediaType === 'video' ? (
+                      {item.mediaType === "video" ? (
                         <video
                           src={item.mediaUrl}
                           className="w-full h-full object-cover"
@@ -279,7 +329,12 @@ export default function OffersPage() {
                         <img
                           src={item.mediaUrl}
                           alt={item.title}
-                          className="w-full h-full object-cover"
+                          className=" h-full object-cover"
+                          style={{
+                            width: "400px",
+                            height: "400px",
+                            margin: "0 auto",
+                          }}
                         />
                       )}
                     </div>
@@ -287,13 +342,16 @@ export default function OffersPage() {
                   <div className="p-4">
                     <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
                     {item.description && (
-                      <p className="text-muted-foreground text-sm mb-3">{item.description}</p>
+                      <p className="text-muted-foreground text-sm mb-3">
+                        {item.description}
+                      </p>
                     )}
                     {item.content && (
                       <p className="text-sm leading-relaxed">{item.content}</p>
                     )}
                     <div className="mt-3 text-xs text-muted-foreground">
-                      Published: {formatDate(item.publishedAt || item.createdAt)}
+                      Published:{" "}
+                      {formatDate(item.publishedAt || item.createdAt)}
                     </div>
                   </div>
                 </CardContent>
@@ -308,7 +366,9 @@ export default function OffersPage() {
         <div className="text-center py-12">
           <div className="text-6xl mb-4">📢</div>
           <h2 className="text-2xl font-semibold mb-2">No Offers Available</h2>
-          <p className="text-muted-foreground">Check back soon for exciting financial opportunities and updates!</p>
+          <p className="text-muted-foreground">
+            Check back soon for exciting financial opportunities and updates!
+          </p>
         </div>
       )}
     </div>
