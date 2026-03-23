@@ -314,7 +314,7 @@ export default function OffersPage() {
                       {item.mediaType === "video" ? (
                         <video
                           src={item.mediaUrl}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain p-4"
                           controls
                           preload="metadata"
                         />
