@@ -182,7 +182,7 @@ export default function OffersPage() {
                           offer.mediaType === "video" && offer.mediaUrl ? (
                             <video
                               src={offer.mediaUrl}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-contain p-4"
                               controls
                               muted
                               autoPlay
