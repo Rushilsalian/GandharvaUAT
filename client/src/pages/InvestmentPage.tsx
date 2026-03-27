@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState, useMemo ,useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -141,6 +141,8 @@ export default function InvestmentPage() {
     });
   }, [investments, filters]);
 
+
+
   // Pagination
   const {
     currentPage,
@@ -153,6 +155,12 @@ export default function InvestmentPage() {
     endIndex,
     totalItems
   } = usePagination({ data: filteredInvestments, itemsPerPage: 10 });
+
+    useEffect(() => {
+  if (currentPage > totalPages && totalPages > 0) {
+    goToPage(1); // or totalPages (both fine)
+  }
+}, [filteredInvestments.length, totalPages, currentPage]);
 
   // Calculate opening investment total based on role
   const openingInvestmentTotal = useMemo(() => {

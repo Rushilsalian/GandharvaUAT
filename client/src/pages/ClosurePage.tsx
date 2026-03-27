@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DollarSign, Users, FileText, Download, Upload } from "lucide-react";
@@ -142,6 +142,12 @@ export default function ClosurePage() {
     endIndex,
     totalItems
   } = usePagination({ data: filteredClosures, itemsPerPage: 10 });
+
+  useEffect(() => {
+  if (currentPage > totalPages && totalPages > 0) {
+    goToPage(1); // or totalPages
+  }
+}, [filteredClosures.length, totalPages, currentPage]);
 
   const stats = {
     totalClosures: filteredClosures.length,

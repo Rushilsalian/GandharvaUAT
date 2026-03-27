@@ -43,8 +43,18 @@ export function TransactionFilters({ clients = [], filters, onFiltersChange, onR
   };
 
   const handleClientChange = (clientId: string) => {
-    onFiltersChange({ ...filters, clientId: clientId === "all" ? undefined : clientId });
-  };
+  onFiltersChange(prev => {
+    const updated = { ...prev };
+
+    if (clientId === "all") {
+      delete updated.clientId;   // 🔥 force remove
+    } else {
+      updated.clientId = clientId;
+    }
+
+    return updated;
+  });
+};
 
   const handleDescriptionChange = (description: string) => {
     onFiltersChange({ ...filters, description: description.trim() || undefined });
@@ -92,7 +102,8 @@ export function TransactionFilters({ clients = [], filters, onFiltersChange, onR
           <div className="flex items-center gap-4">
             {excelUploadButton}
             {getActiveFiltersCount() > 0 && (
-              <Button variant="outline" size="sm" onClick={() => { onReset(); setClientSearch(""); }} data-testid="button-reset-filters" className="px-1 gap-0">
+              <Button variant="outline" size="sm" 
+                onClick={() => { setClientSearch("");  onFiltersChange({dateRange: undefined, clientId: undefined,description: undefined});}} data-testid="button-reset-filters" className="px-1 gap-0">
                 <X className="h-4 w-4 mr-1" />
                 Clear All
               </Button>
@@ -155,7 +166,8 @@ export function TransactionFilters({ clients = [], filters, onFiltersChange, onR
               <div className="space-y-2">
                 <label className="text-sm font-medium">Client</label>
                 <Select
-                  value={filters.clientId || "all"}
+                  key={filters.clientId ?? "all"}
+                  value={filters.clientId ?? "all"}
                   onValueChange={handleClientChange}
                 >
                   <SelectTrigger data-testid="select-client">
@@ -213,15 +225,19 @@ export function TransactionFilters({ clients = [], filters, onFiltersChange, onR
                   />
                 </Badge>
               )}
-              {selectedClient && !hideClientFilter && (
-                <Badge variant="outline" className="flex items-center gap-1">
-                  Client: {selectedClient.user 
-                    ? `${selectedClient.user.firstName} ${selectedClient.user.lastName}`
-                    : selectedClient.clientCode
-                  }
+                {typeof filters.clientId === "string" && !hideClientFilter && (
+                    <Badge variant="outline" className="flex items-center gap-1">
+                  Client: {
+                  clients.find(c => c.id === filters.clientId)?.user
+                    ? `${clients.find(c => c.id === filters.clientId)?.user?.firstName} ${clients.find(c => c.id === filters.clientId)?.user?.lastName}`
+                    : clients.find(c => c.id === filters.clientId)?.clientCode
+                }
                   <X 
                     className="h-3 w-3 ml-1 cursor-pointer" 
-                    onClick={() => handleClientChange("all")}
+                    onClick={() => {
+                      setClientSearch("");
+                      handleClientChange("all");
+                    }}
                   />
                 </Badge>
               )}

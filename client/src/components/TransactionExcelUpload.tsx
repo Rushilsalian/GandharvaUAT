@@ -54,8 +54,10 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
   const [result, setResult] = useState<UploadResult | null>(null);
   const [recordStatuses, setRecordStatuses] = useState<RecordStatus[]>([]);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
-
+  const [totalRows, setTotalRows] = useState(0);
+  const [validatedRows, setValidatedRows] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cancelRef = useRef(false);
 
   const validateRow = (row: any, rowIndex: number): ValidationError[] => {
     const errors: ValidationError[] = [];
@@ -251,6 +253,7 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
   };
 
   const handleUpload = async () => {
+    cancelRef.current = false;
     if (!file) return;
 
     setUploading(true);
@@ -268,23 +271,39 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
         data = await parseExcelFile(file);
       }
       
+      setTotalRows(data.length);
+      setValidatedRows(0);
       // Validate data
       setProgress(40);
       const allErrors: ValidationError[] = [];
       const validRows: any[] = [];
       const recordStatuses: RecordStatus[] = [];
 
-      data.forEach((row, index) => {
-        const rowNumber = index + 2; // +2 for Excel row numbering (1-based + header)
-        console.log(`Validating row ${rowNumber}:`, row);
-        console.log(`Row keys:`, Object.keys(row as any));
+      for (let i = 0; i < data.length; i++) {
+        if (cancelRef.current) {
+          console.log('❌ Upload cancelled');
+          break;
+        }
+
+        const row = data[i];
+        const rowNumber = i + 2;
+
         const rowErrors = validateRow(row, rowNumber);
+
+        setValidatedRows(i + 1);
+
+        const percent = 40 + ((i + 1) / data.length) * 20;
+        setProgress(percent);
+
+        // keep your delay
+        await new Promise(res => setTimeout(res, 30));
+
         if (rowErrors.length > 0) {
           allErrors.push(...rowErrors);
           recordStatuses.push({
             row: rowNumber,
             clientCode: (row as any)['Client Code'] || 'Unknown',
-            amount: typeof (row as any)['Transaction Amount'] === 'number' ? (row as any)['Transaction Amount'] : parseFloat((row as any)['Transaction Amount']) || 0,
+            amount: parseFloat((row as any)['Transaction Amount']) || 0,
             status: 'error',
             message: rowErrors.map(e => e.message).join(', '),
             guiid: (row as any)['Transaction GUID']
@@ -294,14 +313,19 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
           recordStatuses.push({
             row: rowNumber,
             clientCode: (row as any)['Client Code'],
-            amount: typeof (row as any)['Transaction Amount'] === 'number' ? (row as any)['Transaction Amount'] : parseFloat((row as any)['Transaction Amount']),
+            amount: parseFloat((row as any)['Transaction Amount']),
             status: 'success',
             guiid: (row as any)['Transaction GUID']
           });
         }
-      });
+      }
 
       setRecordStatuses(recordStatuses);
+        if (cancelRef.current) {
+          console.log('❌ Upload cancelled after validation');
+          setUploading(false);
+          return;
+        }
 
       if (allErrors.length > 0) {
         setValidationErrors(allErrors);
@@ -435,11 +459,15 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
   };
 
   const resetUpload = () => {
+    cancelRef.current = true; // 🔴 STOP loop
+
+    setUploading(false);
     setFile(null);
     setResult(null);
     setValidationErrors([]);
     setRecordStatuses([]);
     setProgress(0);
+
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -545,10 +573,10 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
             <Progress value={progress} className="w-full" />
             <p className="text-sm text-center text-gray-600">
               {progress < 20 ? 'Preparing...' :
-               progress < 40 ? 'Reading file...' :
-               progress < 60 ? 'Validating data...' :
-               progress < 80 ? 'Processing...' :
-               'Uploading...'}
+              progress < 40 ? 'Reading file...' :
+              progress <= 60 ? `Validating ${validatedRows} / ${totalRows} rows...` :
+              progress < 80 ? 'Processing...' :
+              'Uploading...'}
             </p>
           </div>
         )}

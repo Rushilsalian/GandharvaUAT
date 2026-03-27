@@ -54,8 +54,10 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
   const [result, setResult] = useState<UploadResult | null>(null);
   const [recordStatuses, setRecordStatuses] = useState<RecordStatus[]>([]);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
-
+  const [totalRows, setTotalRows] = useState(0);
+  const [validatedRows, setValidatedRows] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cancelRef = useRef(false);
 
   const validateRow = async (row: any, rowIndex: number): Promise<ValidationError[]> => {
     const errors: ValidationError[] = [];
@@ -227,12 +229,14 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
   };
 
   const handleUpload = async () => {
+    cancelRef.current = false;
     console.log('=== HANDLE UPLOAD STARTED ===');
     if (!file) return;
 
     setUploading(true);
     setProgress(0);
     setValidationErrors([]);
+ 
 
     try {
       console.log('=== STARTING FILE PARSING ===');
@@ -247,6 +251,8 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
         console.log('Parsing Excel file...');
         data = await parseExcelFile(file);
       }
+      setTotalRows(data.length);
+      setValidatedRows(0);
       
       console.log('=== FILE PARSED SUCCESSFULLY ===');
       console.log('Parsed data length:', data.length);
@@ -260,42 +266,51 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
       const recordStatuses: RecordStatus[] = [];
 
       for (let i = 0; i < data.length; i++) {
+
+        // 🔴 STOP if user clicked Remove
+        if (cancelRef.current) {
+          console.log('❌ Upload cancelled');
+          break;
+        }
+
         const row = data[i];
-        const rowNumber = i + 2; // +2 for Excel row numbering (1-based + header)
-        console.log(`Validating row ${rowNumber}:`, row);
-        
-        try {
-          const rowErrors = await validateRow(row, rowNumber);
-          console.log(`Row ${rowNumber} validation result:`, rowErrors.length > 0 ? 'ERRORS' : 'SUCCESS');
-          
-          if (rowErrors.length > 0) {
-            console.log(`Row ${rowNumber} errors:`, rowErrors);
-            allErrors.push(...rowErrors);
-            recordStatuses.push({
-              row: rowNumber,
-              clientCode: row['Client Code'] || 'Unknown',
-              amount: typeof row['Transaction Amount'] === 'number' ? row['Transaction Amount'] : parseFloat(row['Transaction Amount']) || 0,
-              status: 'error',
-              message: rowErrors.map(e => e.message).join(', '),
-              guiid: row['Transaction GUID']
-            });
-          } else {
-            validRows.push({ ...row, originalRowNumber: rowNumber });
-            recordStatuses.push({
-              row: rowNumber,
-              clientCode: row['Client Code'],
-              amount: typeof row['Transaction Amount'] === 'number' ? row['Transaction Amount'] : parseFloat(row['Transaction Amount']),
-              status: 'success',
-              guiid: row['Transaction GUID']
-            });
-          }
-        } catch (validationError) {
-          console.error(`Row ${rowNumber} validation failed:`, validationError);
-          allErrors.push({ row: rowNumber, field: 'general', message: validationError instanceof Error ? validationError.message : 'Validation failed' });
+        const rowNumber = i + 2;
+
+        const rowErrors = await validateRow(row, rowNumber);
+
+        // ✅ update validated count
+        setValidatedRows(i + 1);
+
+        // ✅ dynamic progress (40 → 60 range)
+        const percent = 40 + ((i + 1) / data.length) * 20;
+        setProgress(percent);
+
+        if (rowErrors.length > 0) {
+          allErrors.push(...rowErrors);
+          recordStatuses.push({
+            row: rowNumber,
+            clientCode: row['Client Code'] || 'Unknown',
+            amount: parseFloat(row['Transaction Amount']) || 0,
+            status: 'error',
+            message: rowErrors.map(e => e.message).join(', '),
+          });
+        } else {
+          validRows.push({ ...row, originalRowNumber: rowNumber });
+          recordStatuses.push({
+            row: rowNumber,
+            clientCode: row['Client Code'],
+            amount: parseFloat(row['Transaction Amount']),
+            status: 'success',
+          });
         }
       }
 
       setRecordStatuses(recordStatuses);
+      if (cancelRef.current) {
+      console.log('❌ Upload cancelled after validation');
+      setUploading(false);
+      return;
+    }
 
       console.log('=== VALIDATION LOOP COMPLETED ===');
       console.log('Total errors found:', allErrors.length);
@@ -433,16 +448,22 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
     }
   };
 
-  const resetUpload = () => {
-    setFile(null);
-    setResult(null);
-    setValidationErrors([]);
-    setRecordStatuses([]);
-    setProgress(0);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
+    const resetUpload = () => {
+
+      // 🔴 ADD THIS (VERY IMPORTANT)
+      cancelRef.current = true;
+
+      setUploading(false); // stop UI immediately
+      setFile(null);
+      setResult(null);
+      setValidationErrors([]);
+      setRecordStatuses([]);
+      setProgress(0);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    };
 
   const downloadSample = (format: 'excel' | 'json') => {
     const sampleData = [
@@ -535,12 +556,12 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
           <div className="space-y-2">
             <Progress value={progress} className="w-full" />
             <p className="text-sm text-center text-gray-600">
-              {progress < 20 ? 'Preparing...' :
-               progress < 40 ? 'Reading file...' :
-               progress < 60 ? 'Validating data...' :
-               progress < 80 ? 'Processing...' :
-               'Uploading...'}
-            </p>
+            {progress < 20 ? 'Preparing...' :
+            progress < 40 ? 'Reading file...' :
+            progress < 60 ? `Validating ${validatedRows} / ${totalRows} rows...` :
+            progress < 80 ? 'Processing...' :
+            'Uploading...'}
+          </p>
           </div>
         )}
 

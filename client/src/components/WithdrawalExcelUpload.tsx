@@ -48,6 +48,9 @@ export function WithdrawalExcelUpload({ onUploadComplete }: WithdrawalExcelUploa
   const [recordStatuses, setRecordStatuses] = useState<RecordStatus[]>([]);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [totalRows, setTotalRows] = useState(0);
+  const [validatedRows, setValidatedRows] = useState(0);
+
 
   const validateRow = async (row: any, rowIndex: number): Promise<ValidationError[]> => {
     const errors: ValidationError[] = [];
@@ -245,7 +248,8 @@ export function WithdrawalExcelUpload({ onUploadComplete }: WithdrawalExcelUploa
       }
       
       console.log('Parsed data:', data);
-      
+      setTotalRows(data.length);
+      setValidatedRows(0);
       // Validate data
       setProgress(40);
       const allErrors: ValidationError[] = [];
@@ -254,11 +258,17 @@ export function WithdrawalExcelUpload({ onUploadComplete }: WithdrawalExcelUploa
 
       for (let i = 0; i < data.length; i++) {
         const row = data[i];
-        const rowNumber = i + 2; // +2 for Excel row numbering (1-based + header)
-        console.log(`Validating row ${rowNumber}:`, row);
+        const rowNumber = i + 2;
+
         const rowErrors = await validateRow(row, rowNumber);
-        console.log(`Row ${rowNumber} errors:`, rowErrors);
-        
+
+        // ✅ ADD THIS (counter)
+        setValidatedRows(i + 1);
+
+        // ✅ ADD THIS (progress sync 40 → 60)
+        const percent = 40 + ((i + 1) / data.length) * 20;
+        setProgress(percent);
+
         if (rowErrors.length > 0) {
           allErrors.push(...rowErrors);
           recordStatuses.push({
@@ -478,7 +488,7 @@ export function WithdrawalExcelUpload({ onUploadComplete }: WithdrawalExcelUploa
             <p className="text-sm text-center text-gray-600">
               {progress < 20 ? 'Preparing...' :
                progress < 40 ? 'Reading file...' :
-               progress < 60 ? 'Validating data...' :
+                progress <= 60 ? `Validating ${validatedRows} / ${totalRows} rows...`:
                progress < 80 ? 'Processing...' :
                'Uploading...'}
             </p>

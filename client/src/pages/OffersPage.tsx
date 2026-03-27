@@ -47,15 +47,20 @@ export default function OffersPage() {
   }, []);
 
   useEffect(() => {
-    // Auto-scroll offers every 5 seconds
-    if (offers.length > 1) {
-      const interval = setInterval(() => {
-        setCurrentSlide((prev) => (prev + 1) % offers.length);
-      }, 5000);
+  if (offers.length === 0) return;
 
-      return () => clearInterval(interval);
-    }
-  }, [offers.length]);
+  const currentOffer = offers[currentSlide];
+
+  // ⏱️ decide timing
+  const delay =
+    currentOffer?.mediaType === "video" ? 10000 : 5000;
+
+  const timer = setTimeout(() => {
+    setCurrentSlide((prev) => (prev + 1) % offers.length);
+  }, delay);
+
+  return () => clearTimeout(timer);
+  }, [currentSlide, offers]);
 
   const fetchData = async () => {
     try {
@@ -181,6 +186,7 @@ export default function OffersPage() {
                         {offer.mediaUrl || offer.imageUrl ? (
                           offer.mediaType === "video" && offer.mediaUrl ? (
                             <video
+                              key={currentSlide}
                               src={offer.mediaUrl}
                               className="w-full h-full object-contain p-4"
                               controls

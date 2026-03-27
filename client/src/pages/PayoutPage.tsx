@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DollarSign, Users, FileText, Download, Upload } from "lucide-react";
@@ -158,6 +158,12 @@ export default function PayoutPage() {
     totalItems
   } = usePagination({ data: filteredPayouts, itemsPerPage: 10 });
 
+  useEffect(() => {
+  if (currentPage > totalPages && totalPages > 0) {
+    goToPage(1); // or totalPages
+  }
+}, [filteredPayouts.length, totalPages, currentPage]);
+
   // Calculate opening payout total based on role
   const openingPayoutTotal = useMemo(() => {
     return openingPayouts.reduce((sum: number, client: any) => sum + Number(client.opening_payout || 0), 0);
@@ -172,9 +178,11 @@ export default function PayoutPage() {
     openingPayout: openingPayoutTotal
   };
 
-  const handleFiltersChange = (newFilters: FilterState) => {
-    setFilters(newFilters);
-  };
+  const handleFiltersChange = (newFilters: FilterState | ((prev: FilterState) => FilterState)) => {
+  setFilters(prev =>
+    typeof newFilters === "function" ? newFilters(prev) : newFilters
+  );
+};
 
   const handleResetFilters = () => {
     setFilters({});
