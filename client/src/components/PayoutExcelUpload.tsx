@@ -337,23 +337,27 @@ export function PayoutExcelUpload({ onUploadComplete }: PayoutExcelUploadProps) 
           </div>
         )}
 
-        {/* Validation Errors */}
+         {/* Validation Errors */}
         {validationErrors.length > 0 && (
-          <Alert variant="destructive">
-            <XCircle className="h-4 w-4" />
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Validation Errors Found:</strong>
-              <div className="mt-2 max-h-40 overflow-y-auto">
-                {validationErrors.slice(0, 10).map((error, index) => (
-                  <div key={index} className="text-sm">
-                    Row {error.row}, {error.field}: {error.message}
-                  </div>
-                ))}
-                {validationErrors.length > 10 && (
-                  <div className="text-sm font-medium">
-                    ... and {validationErrors.length - 10} more errors
-                  </div>
-                )}
+              <div className="space-y-2">
+                
+                {/* Header with count */}
+                <p className="font-medium">
+                  Validation Errors Found ({validationErrors.length})
+                </p>
+
+                {/* Scrollable list */}
+                <div className="max-h-60 overflow-y-auto space-y-1 border rounded-md p-2 bg-gray-50">
+                  {validationErrors.map((error, index) => (
+                    <p key={index} className="text-sm text-black-600">
+                      Row {error.row}: {error.message}
+                    </p>
+                  ))}
+                </div>
+
               </div>
             </AlertDescription>
           </Alert>

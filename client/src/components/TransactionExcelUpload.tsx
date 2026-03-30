@@ -581,25 +581,27 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
           </div>
         )}
 
-        {/* Validation Errors */}
+         {/* Validation Errors */}
         {validationErrors.length > 0 && (
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
               <div className="space-y-2">
-                <p className="font-medium">Validation Errors Found:</p>
-                <div className="max-h-40 overflow-y-auto space-y-1">
-                  {validationErrors.slice(0, 10).map((error, index) => (
-                    <p key={index} className="text-sm">
+                
+                {/* Header with count */}
+                <p className="font-medium">
+                  Validation Errors Found ({validationErrors.length})
+                </p>
+
+                {/* Scrollable list */}
+                <div className="max-h-60 overflow-y-auto space-y-1 border rounded-md p-2 bg-gray-50">
+                  {validationErrors.map((error, index) => (
+                    <p key={index} className="text-sm text-black-600">
                       Row {error.row}: {error.message}
                     </p>
                   ))}
-                  {validationErrors.length > 10 && (
-                    <p className="text-sm font-medium">
-                      ... and {validationErrors.length - 10} more errors
-                    </p>
-                  )}
                 </div>
+
               </div>
             </AlertDescription>
           </Alert>
@@ -638,7 +640,7 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
           </Alert>
         )}
 
-        {/* Record Status Table - Always show when there are records */}
+        {/* Record Status Table - Always show when there are records
         {(recordStatuses.length > 0 || (result && result.records && result.records.length > 0)) && (
           <Card>
             <CardHeader>
@@ -691,7 +693,7 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
               </div>
             </CardContent>
           </Card>
-        )}
+        )} */}
       </CardContent>
     </Card>
   );
