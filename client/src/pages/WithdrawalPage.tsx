@@ -3,13 +3,16 @@ import { useState, useMemo,useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DollarSign, Users, FileText, Download, Upload } from "lucide-react";
-import { format, isWithinInterval } from "date-fns";
+import { format, isWithinInterval, startOfMonth } from "date-fns";
 import { TransactionFilters } from "@/components/TransactionFilters";
 import { TransactionExcelUpload } from "@/components/TransactionExcelUpload";
 import { PaginationControls } from "@/components/PaginationControls";
 import { usePagination } from "@/hooks/usePagination";
 import { DateRange } from "react-day-picker";
 import { useAuth } from "@/contexts/AuthContext";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-react";
 
 const formatIndianCurrency = (amount: number): string => {
   return amount.toLocaleString('en-IN');
@@ -41,10 +44,28 @@ interface FilterState {
 
 export default function WithdrawalPage() {
   const { session, token } = useAuth();
-  const [filters, setFilters] = useState<FilterState>({});
+  const [filters, setFilters] = useState<FilterState>({
+    dateRange: {
+      from: startOfMonth(new Date()),
+      to: new Date(),
+    },
+  });
+  const [isManualDate, setIsManualDate] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
   const queryClient = useQueryClient();
+  useEffect(() => {
+  if (isManualDate) return;
 
+  const today = new Date();
+
+  setFilters((prev) => ({
+    ...prev,
+    dateRange: {
+      from: startOfMonth(today),
+      to: today,
+    },
+  }));
+}, [isManualDate]);
   const { data: withdrawals = [], isLoading, error } = useQuery({
     queryKey: ['/api/transactions', { type: 'withdrawal' }],
     queryFn: async () => {
@@ -169,8 +190,17 @@ export default function WithdrawalPage() {
   };
 
   const handleResetFilters = () => {
-    setFilters({});
-  };
+  const today = new Date();
+
+  setIsManualDate(false);  
+
+  setFilters({
+    dateRange: {
+      from: startOfMonth(today),
+      to: today,
+    },
+  });
+};
 
   const handleUploadComplete = () => {
     queryClient.invalidateQueries({ queryKey: ['/api/transactions', { type: 'withdrawal' }] });
@@ -322,10 +352,64 @@ export default function WithdrawalPage() {
               Showing {filteredWithdrawals.length} of {withdrawals.length} withdrawal transactions
             </CardDescription>
           </div>
-          <Button onClick={handleExport} disabled={filteredWithdrawals.length === 0} className="w-full sm:w-auto">
-            <Download className="h-4 w-4 mr-2" />
-            Export Excel
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center w-full sm:w-auto">
+
+  {/* DATE RANGE */}
+  <div className="w-full sm:w-auto">
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className="w-full sm:w-[250px] justify-start text-left font-normal"
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {filters.dateRange?.from ? (
+            filters.dateRange.to ? (
+              <>
+                {format(filters.dateRange.from, "LLL dd, y")} -{" "}
+                {format(filters.dateRange.to, "LLL dd, y")}
+              </>
+            ) : (
+              format(filters.dateRange.from, "LLL dd, y")
+            )
+          ) : (
+            <span>Pick a date range</span>
+          )}
+        </Button>
+      </PopoverTrigger>
+
+      <PopoverContent className="w-auto p-0" align="end">
+        <Calendar
+          mode="range"
+          selected={filters.dateRange}
+          defaultMonth={filters.dateRange?.from}
+          onSelect={(range) => {
+            if (!range) return;
+
+            setIsManualDate(true);
+
+            setFilters((prev) => ({
+              ...prev,
+              dateRange: range,
+            }));
+          }}
+          numberOfMonths={2}
+        />
+      </PopoverContent>
+    </Popover>
+  </div>
+
+  {/* EXPORT BUTTON */}
+  <Button
+    onClick={handleExport}
+    disabled={filteredWithdrawals.length === 0}
+    className="w-full sm:w-auto"
+  >
+    <Download className="h-4 w-4 mr-2" />
+    Export Excel
+  </Button>
+
+</div>
         </CardHeader>
         <CardContent>
           {isLoading ? (

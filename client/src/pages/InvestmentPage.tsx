@@ -4,14 +4,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, DollarSign, Users, FileText, Eye, Download, Upload } from "lucide-react";
-import { format, isWithinInterval } from "date-fns";
+import { format, isWithinInterval,startOfMonth } from "date-fns";
 import { TransactionFilters } from "@/components/TransactionFilters";
 import { InvestmentExcelUpload } from "@/components/InvestmentExcelUpload";
 import { PaginationControls } from "@/components/PaginationControls";
 import { usePagination } from "@/hooks/usePagination";
 import { DateRange } from "react-day-picker";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-
+ 
 // Utility function to format numbers in Indian lakh format
 const formatIndianCurrency = (amount: number): string => {
   return amount.toLocaleString('en-IN');
@@ -45,9 +48,30 @@ interface FilterState {
 export default function InvestmentPage() {
   const { session, token } = useAuth();
   // Filter state
-  const [filters, setFilters] = useState<FilterState>({});
+  const [filters, setFilters] = useState<FilterState>({
+  dateRange: {
+    from: startOfMonth(new Date()),
+    to: new Date(),
+  },
+});
   const [showUpload, setShowUpload] = useState(false);
   const queryClient = useQueryClient();
+  const [isManualDate, setIsManualDate] = useState(false);
+
+ useEffect(() => {
+  if (isManualDate) return; // 🔥 DO NOT override user selection
+
+  const today = new Date();
+
+  setFilters((prev) => ({
+    ...prev,
+    dateRange: {
+      from: startOfMonth(today),
+      to: today,
+    },
+  }));
+}, [isManualDate]);
+
 
   // Fetch investment transactions only
   const { data: investments = [], isLoading, error } = useQuery({
@@ -182,8 +206,15 @@ export default function InvestmentPage() {
   };
 
   const handleResetFilters = () => {
-    setFilters({});
-  };
+  const today = new Date();
+
+  setFilters({
+    dateRange: {
+      from: startOfMonth(today),
+      to: today,
+    },
+  });
+};
 
   const handleUploadComplete = () => {
     console.log('=== UPLOAD COMPLETE CALLBACK TRIGGERED ===');
@@ -336,15 +367,71 @@ export default function InvestmentPage() {
       <Card>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full">
           <div>
-            <CardTitle>Investment Transactions</CardTitle>
-            <CardDescription>
-              Showing {filteredInvestments.length} of {investments.length} investment transactions
-            </CardDescription>
-          </div>
-          <Button onClick={handleExport} disabled={filteredInvestments.length === 0} className="w-full sm:w-auto">
-            <Download className="h-4 w-4 mr-2" />
-            Export Excel
-          </Button>
+  <CardTitle>Investment Transactions</CardTitle>
+  <CardDescription>
+    Showing {filteredInvestments.length} of {investments.length} investment transactions
+  </CardDescription>
+</div>
+
+<div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center w-full sm:w-auto">
+
+  {/* DATE RANGE PICKER */}
+  <div className="w-full sm:w-auto">
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className="w-full sm:w-[250px] justify-start text-left font-normal"
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {filters.dateRange?.from ? (
+            filters.dateRange.to ? (
+              <>
+                {format(filters.dateRange.from, "LLL dd, y")} -{" "}
+                {format(filters.dateRange.to, "LLL dd, y")}
+              </>
+            ) : (
+              format(filters.dateRange.from, "LLL dd, y")
+            )
+          ) : (
+            <span>Pick a date range</span>
+          )}
+        </Button>
+      </PopoverTrigger>
+
+      <PopoverContent className="w-auto p-0" align="end">
+        <Calendar
+          initialFocus
+          mode="range"
+          defaultMonth={filters.dateRange?.from}
+          selected={filters.dateRange}
+          onSelect={(range) => {
+          if (!range) return;
+
+          setIsManualDate(true);  
+
+          setFilters((prev) => ({
+            ...prev,
+            dateRange: range,
+          }));
+        }}
+          numberOfMonths={2}
+        />
+      </PopoverContent>
+    </Popover>
+  </div>
+
+  {/* EXPORT BUTTON */}
+  <Button
+    onClick={handleExport}
+    disabled={filteredInvestments.length === 0}
+    className="w-full sm:w-auto"
+  >
+    <Download className="h-4 w-4 mr-2" />
+    Export Excel
+  </Button>
+
+</div>
         </CardHeader>
         <CardContent>
           {isLoading ? (

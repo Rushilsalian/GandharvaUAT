@@ -64,7 +64,7 @@ export function TransactionFilters({ clients = [], filters, onFiltersChange, onR
 
   const getActiveFiltersCount = () => {
     let count = 0;
-    if (filters.dateRange?.from || filters.dateRange?.to) count++;
+    // if (filters.dateRange?.from || filters.dateRange?.to) count++;
     if (filters.clientId && !hideClientFilter) count++;
     if (filters.description) count++;
     return count;
@@ -103,7 +103,14 @@ export function TransactionFilters({ clients = [], filters, onFiltersChange, onR
             {excelUploadButton}
             {getActiveFiltersCount() > 0 && (
               <Button variant="outline" size="sm" 
-                onClick={() => { setClientSearch("");  onFiltersChange({dateRange: undefined, clientId: undefined,description: undefined});}} data-testid="button-reset-filters" className="px-1 gap-0">
+                onClick={() => { 
+                setClientSearch("");  
+                onFiltersChange({
+                  ...filters, // 🔥 KEEP EXISTING (dateRange stays)
+                  clientId: undefined,
+                  description: undefined
+                });
+              }} data-testid="button-reset-filters" className="px-1 gap-0">
                 <X className="h-4 w-4 mr-1" />
                 Clear All
               </Button>
@@ -123,7 +130,7 @@ export function TransactionFilters({ clients = [], filters, onFiltersChange, onR
       {isOpen && (
         <CardContent>
           <div className={`grid grid-cols-1 md:grid-cols-2 ${hideClientFilter ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-4`}>
-            {/* Date Range Filter */}
+            {/* Date Range Filter
             <div className="space-y-2">
               <label className="text-sm font-medium">Date Range</label>
               <Popover>
@@ -159,7 +166,7 @@ export function TransactionFilters({ clients = [], filters, onFiltersChange, onR
                   />
                 </PopoverContent>
               </Popover>
-            </div>
+            </div> */}
 
             {/* Client Filter - Hidden for client users */}
             {!hideClientFilter && (
@@ -215,7 +222,7 @@ export function TransactionFilters({ clients = [], filters, onFiltersChange, onR
           {/* Active Filters Display */}
           {getActiveFiltersCount() > 0 && (
             <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
-              {filters.dateRange?.from && (
+              {/* {filters.dateRange?.from && (
                 <Badge variant="outline" className="flex items-center gap-1">
                   Date: {format(filters.dateRange.from, "MMM dd")}
                   {filters.dateRange.to && ` - ${format(filters.dateRange.to, "MMM dd")}`}
@@ -224,7 +231,7 @@ export function TransactionFilters({ clients = [], filters, onFiltersChange, onR
                     onClick={() => handleDateRangeChange(undefined)}
                   />
                 </Badge>
-              )}
+              )} */}
                 {typeof filters.clientId === "string" && !hideClientFilter && (
                     <Badge variant="outline" className="flex items-center gap-1">
                   Client: {
