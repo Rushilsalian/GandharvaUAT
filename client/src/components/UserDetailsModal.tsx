@@ -33,7 +33,7 @@ interface UserDetailsModalProps {
 
 export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordMap, setShowPasswordMap] = useState<Record<string, boolean>>({});
   const [editData, setEditData] = useState<{
     firstName?: string;
     email?: string;
@@ -48,7 +48,7 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
     if (!isOpen) {
       setIsEditing(false);
       setEditData({});
-      setShowPassword(false);
+      setShowPasswordMap({});
     }
   }, [isOpen, user?.id]);
 
@@ -114,7 +114,7 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
   const handleCancel = () => {
     setEditData({});
     setIsEditing(false);
-    setShowPassword(false);
+    setShowPasswordMap({});
   };
 
   const formatDate = (date: Date | null | string) => {
@@ -273,7 +273,7 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
                 {isEditing ? (
                   <div className="relative mt-1">
                     <Input
-                      type={showPassword ? "text" : "password"}
+                      type={showPasswordMap[user.id] ? "text" : "password"}
                       value={editData.password || ''}
                       onChange={(e) => setEditData((prev) => ({ ...prev, password: e.target.value }))}
                       className="pr-10"
@@ -284,28 +284,29 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
                       variant="ghost"
                       size="sm"
                       className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
+                     onClick={() =>setShowPasswordMap((prev) => ({...prev,[user.id]: !prev[user.id],}))}
                     >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4 text-muted-foreground" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-muted-foreground" />
-                      )}
+                      {showPasswordMap[user.id] ? (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    )}
                     </Button>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 mt-1">
                     <p className="text-sm font-mono break-all">
-                      {showPassword ? (user.password || 'Not set') : '••••••••'}
-                    </p>
+                      {showPasswordMap[user.id] ? (user.password || 'Not set') : '••••••••'}     
+                  </p>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 p-0 flex-shrink-0"
-                      onClick={() => setShowPassword(!showPassword)}
+                      onClick={() => setShowPasswordMap((prev) => ({...prev,[user.id]: !prev[user.id],}))
+}
                     >
-                      {showPassword ? (
+                      {showPasswordMap[user.id] ? (
                         <EyeOff className="h-3 w-3 text-muted-foreground" />
                       ) : (
                         <Eye className="h-3 w-3 text-muted-foreground" />

@@ -23,6 +23,7 @@ interface FilterState {
   dateRange?: DateRange;
   clientId?: string;
   description?: string;
+
 }
 
 interface TransactionFiltersProps {
@@ -38,9 +39,12 @@ export function TransactionFilters({ clients = [], filters, onFiltersChange, onR
   const [isOpen, setIsOpen] = useState(false);
   const [clientSearch, setClientSearch] = useState("");
 
-  const handleDateRangeChange = (dateRange: DateRange | undefined) => {
-    onFiltersChange({ ...filters, dateRange });
-  };
+const handleDateRangeChange = (dateRange: DateRange | undefined) => {
+  onFiltersChange({
+    ...filters,
+    dateRange
+  });
+};
 
   const handleClientChange = (clientId: string) => {
   onFiltersChange(prev => {
@@ -64,7 +68,7 @@ export function TransactionFilters({ clients = [], filters, onFiltersChange, onR
 
   const getActiveFiltersCount = () => {
     let count = 0;
-    // if (filters.dateRange?.from || filters.dateRange?.to) count++;
+   // if (filters.dateRange?.from || filters.dateRange?.to) count++;
     if (filters.clientId && !hideClientFilter) count++;
     if (filters.description) count++;
     return count;
@@ -130,7 +134,7 @@ export function TransactionFilters({ clients = [], filters, onFiltersChange, onR
       {isOpen && (
         <CardContent>
           <div className={`grid grid-cols-1 md:grid-cols-2 ${hideClientFilter ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-4`}>
-            {/* Date Range Filter
+            {/* Date Range Filter */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Date Range</label>
               <Popover>
@@ -138,7 +142,6 @@ export function TransactionFilters({ clients = [], filters, onFiltersChange, onR
                   <Button
                     variant="outline"
                     className="w-full justify-start text-left font-normal"
-                    data-testid="button-date-range"
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {filters.dateRange?.from ? (
@@ -155,18 +158,28 @@ export function TransactionFilters({ clients = [], filters, onFiltersChange, onR
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    initialFocus
-                    mode="range"
-                    defaultMonth={filters.dateRange?.from}
-                    selected={filters.dateRange}
-                    onSelect={handleDateRangeChange}
-                    numberOfMonths={2}
-                  />
-                </PopoverContent>
+
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="range"
+                  selected={filters.dateRange}
+                  onSelect={handleDateRangeChange}
+                  numberOfMonths={2}
+                />
+
+                <div className="p-2 border-t flex justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDateRangeChange(undefined)}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </PopoverContent>
+
               </Popover>
-            </div> */}
+            </div>
 
             {/* Client Filter - Hidden for client users */}
             {!hideClientFilter && (
@@ -223,15 +236,15 @@ export function TransactionFilters({ clients = [], filters, onFiltersChange, onR
           {getActiveFiltersCount() > 0 && (
             <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
               {/* {filters.dateRange?.from && (
-                <Badge variant="outline" className="flex items-center gap-1">
-                  Date: {format(filters.dateRange.from, "MMM dd")}
-                  {filters.dateRange.to && ` - ${format(filters.dateRange.to, "MMM dd")}`}
-                  <X 
-                    className="h-3 w-3 ml-1 cursor-pointer" 
-                    onClick={() => handleDateRangeChange(undefined)}
-                  />
-                </Badge>
-              )} */}
+  <Badge variant="outline" className="flex items-center gap-1">
+    Date: {format(filters.dateRange.from, "MMM dd")}
+    {filters.dateRange.to && ` - ${format(filters.dateRange.to, "MMM dd")}`}
+    <X 
+      className="h-3 w-3 ml-1 cursor-pointer" 
+      onClick={() => handleDateRangeChange(undefined)}
+    />
+  </Badge>
+)} */}
                 {typeof filters.clientId === "string" && !hideClientFilter && (
                     <Badge variant="outline" className="flex items-center gap-1">
                   Client: {

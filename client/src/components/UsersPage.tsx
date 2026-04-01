@@ -47,6 +47,7 @@ export function UsersPage() {
   const [formData, setFormData] = useState<UserFormData>({});
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [visibleUserId, setVisibleUserId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -395,13 +396,12 @@ export function UsersPage() {
                     variant="ghost"
                     size="sm"
                     className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
+                    onClick={() => setShowPassword(!showPassword)}                  >
                     {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                    )}
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
                   </Button>
                 </div>
               </div>
@@ -529,14 +529,14 @@ export function UsersPage() {
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-mono truncate max-w-[140px]">
-                                {showPassword ? (user.password || 'Not set') : '••••••••'}
+                                {visibleUserId === user.id ? (user.password || 'Not set') : '••••••••'}
                               </span>
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
                                 className="h-6 w-6 p-0"
-                                onClick={() => setShowPassword(!showPassword)}
+                                onClick={() => setVisibleUserId(prev => prev === user.id ? null : user.id)}
                               >
                                 {showPassword ? (
                                   <EyeOff className="h-3 w-3 text-muted-foreground" />

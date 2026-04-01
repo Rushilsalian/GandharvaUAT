@@ -187,8 +187,12 @@ export default function ClosurePage() {
   };
 
   const handleFiltersChange = (newFilters: FilterState) => {
-    setFilters(newFilters);
-  };
+  if (newFilters.dateRange) {
+    setIsManualDate(true); // 🔥 SAME as old logic
+  }
+
+  setFilters(newFilters);
+};
 
     const handleResetFilters = () => {
     const today = new Date();
@@ -354,7 +358,7 @@ export default function ClosurePage() {
           </div>
           <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center w-full sm:w-auto">
 
-  {/* DATE RANGE */}
+  {/* DATE RANGE
   <div className="w-full sm:w-auto">
     <Popover>
       <PopoverTrigger asChild>
@@ -397,7 +401,7 @@ export default function ClosurePage() {
         />
       </PopoverContent>
     </Popover>
-  </div>
+  </div> */}
 
   {/* EXPORT BUTTON */}
   <Button

@@ -202,9 +202,17 @@ export default function PayoutPage() {
   };
 
   const handleFiltersChange = (newFilters: FilterState | ((prev: FilterState) => FilterState)) => {
-  setFilters(prev =>
-    typeof newFilters === "function" ? newFilters(prev) : newFilters
-  );
+  setFilters((prev) => {
+    const updated =
+      typeof newFilters === "function" ? newFilters(prev) : newFilters;
+
+    // 🔥 SAME LOGIC AS OTHER PAGES
+    if (updated.dateRange) {
+      setIsManualDate(true);
+    }
+
+    return updated;
+  });
 };
 
     const handleResetFilters = () => {
@@ -371,7 +379,7 @@ export default function PayoutPage() {
           </div>
           <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center w-full sm:w-auto">
 
-  {/* DATE RANGE */}
+  {/* DATE RANGE
   <div className="w-full sm:w-auto">
     <Popover>
       <PopoverTrigger asChild>
@@ -414,7 +422,7 @@ export default function PayoutPage() {
         />
       </PopoverContent>
     </Popover>
-  </div>
+  </div> */}
 
   {/* EXPORT BUTTON */}
   <Button

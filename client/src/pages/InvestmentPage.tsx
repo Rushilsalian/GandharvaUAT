@@ -202,8 +202,12 @@ export default function InvestmentPage() {
   };
 
   const handleFiltersChange = (newFilters: FilterState) => {
-    setFilters(newFilters);
-  };
+  if (newFilters.dateRange) {
+    setIsManualDate(true); // 🔥 IMPORTANT FIX
+  }
+
+  setFilters(newFilters);
+};
 
   const handleResetFilters = () => {
   const today = new Date();
@@ -375,7 +379,7 @@ export default function InvestmentPage() {
 
 <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center w-full sm:w-auto">
 
-  {/* DATE RANGE PICKER */}
+  {/* DATE RANGE PICKER
   <div className="w-full sm:w-auto">
     <Popover>
       <PopoverTrigger asChild>
@@ -419,7 +423,7 @@ export default function InvestmentPage() {
         />
       </PopoverContent>
     </Popover>
-  </div>
+  </div> */}
 
   {/* EXPORT BUTTON */}
   <Button
