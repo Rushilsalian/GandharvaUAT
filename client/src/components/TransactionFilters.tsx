@@ -183,7 +183,7 @@ export function TransactionFilters({
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 flex-wrap">
+          <CardTitle className="flex items-baseline gap-2">
               <Filter className="h-4 w-4" />
             Filters
             {getActiveFiltersCount() > 0 && (
@@ -191,7 +191,7 @@ export function TransactionFilters({
             )}
             {/* 🔥 FILTER BADGES HERE */}
             {!isDefaultDateRange() && filters.dateRange?.from && (
-             <Badge variant="outline"className="flex items-center gap-1 whitespace-nowrap">
+             <Badge variant="outline"className="flex items-center gap-1 whitespace-nowrap mt-[5px]">
                 {format(filters.dateRange.from, "MMM dd")}
                 {filters.dateRange.to &&
                   ` - ${format(filters.dateRange.to, "MMM dd")}`}
@@ -202,7 +202,7 @@ export function TransactionFilters({
               </Badge>
             )}
             {typeof filters.clientId === "string" && !hideClientFilter && (
-              <Badge variant="outline"className="flex items-center gap-1 whitespace-nowrap">
+              <Badge variant="outline"className="flex items-center gap-1 whitespace-nowrap mt-[5px]">
                 {clients.find((c) => c.id === filters.clientId)?.user
                   ? `${
                       clients.find((c) => c.id === filters.clientId)?.user
@@ -219,7 +219,7 @@ export function TransactionFilters({
               </Badge>
             )}
             {filters.description && (
-              <Badge variant="outline"className="flex items-center gap-1 whitespace-nowrap">
+              <Badge variant="outline"className="flex items-center gap-1 whitespace-nowrap mt-[5px]">
                 "{filters.description}"
                 <X
                   className="h-3 w-3 ml-1 cursor-pointer"
