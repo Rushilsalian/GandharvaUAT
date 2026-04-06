@@ -3451,12 +3451,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updated: 0,
         created: 0,
         skipped: 0,
+        skippedItems: [] as Array<{ client: any; reason: string }>,
         errors: [] as Array<{ client: any; error: string }>
       };
 
       // Process all client records directly without strict validation failures
       // Validation will clean invalid data but won't prevent client creation
-      const processedClients = [];
+      const processedClients: any[] = [];
       for (const clientData of clients) {
         try {
           const validatedClient = thirdPartyClientValidationSchema.parse(clientData);
@@ -3689,15 +3690,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      results.skipped = results.skippedItems.length;
       res.json({
-        message: results.updated > 0 && results.created > 0 
-          ? `Client sync completed: ${results.created} created, ${results.updated} updated`
-          : results.updated > 0 
-            ? `Client sync completed: ${results.updated} updated`
+        message: results.updated > 0 && results.created > 0
+          ? `Client sync completed: ${results.created} created, ${results.updated} updated${results.skipped > 0 ? `, ${results.skipped} skipped` : ''}`
+          : results.updated > 0
+            ? `Client sync completed: ${results.updated} updated${results.skipped > 0 ? `, ${results.skipped} skipped` : ''}`
             : results.created > 0
-              ? `Client sync completed: ${results.created} created`
+              ? `Client sync completed: ${results.created} created${results.skipped > 0 ? `, ${results.skipped} skipped` : ''}`
               : 'Client sync completed',
-        results,
+        results: {
+          ...results,
+          skippedItems: results.skippedItems
+        },
         timestamp: new Date().toISOString()
       });
     } catch (error) {
@@ -3778,6 +3783,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         created: 0,
         updated: 0,
         skipped: 0,
+        skippedItems: [] as Array<{ transaction: any; reason: string }>,
         errors: [] as Array<{ transaction: any; error: string }>
       };
 
@@ -3998,16 +4004,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      results.skipped = results.skippedItems.length;
       const syncStatus = results.skipped > 0 ? 'partially completed' : 'completed';
       res.json({
         message: results.updated > 0 && results.created > 0
-          ? `Transaction sync ${syncStatus}: ${results.created} created, ${results.updated} updated`
+          ? `Transaction sync ${syncStatus}: ${results.created} created, ${results.updated} updated${results.skipped > 0 ? `, ${results.skipped} skipped` : ''}`
           : results.updated > 0
-            ? `Transaction sync ${syncStatus}: ${results.updated} updated`
+            ? `Transaction sync ${syncStatus}: ${results.updated} updated${results.skipped > 0 ? `, ${results.skipped} skipped` : ''}`
             : results.created > 0
-              ? `Transaction sync ${syncStatus}: ${results.created} created`
+              ? `Transaction sync ${syncStatus}: ${results.created} created${results.skipped > 0 ? `, ${results.skipped} skipped` : ''}`
               : `Transaction sync ${syncStatus}`,
-        results,
+        results: {
+          ...results,
+          skippedItems: results.skippedItems
+        },
         timestamp: new Date().toISOString()
       });
 
