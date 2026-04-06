@@ -2,13 +2,24 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { CalendarIcon, Filter, X } from "lucide-react";
 import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
+import { CaptionProps } from "react-day-picker";
 
 interface Client {
   id: string;
@@ -23,7 +34,6 @@ interface FilterState {
   dateRange?: DateRange;
   clientId?: string;
   description?: string;
-
 }
 
 interface TransactionFiltersProps {
@@ -35,40 +45,113 @@ interface TransactionFiltersProps {
   excelUploadButton?: React.ReactNode; // Excel upload button to show before Show Filters
 }
 
-export function TransactionFilters({ clients = [], filters, onFiltersChange, onReset, hideClientFilter = false, excelUploadButton }: TransactionFiltersProps) {
+function CustomCaption({displayMonth,setMonth,}: CaptionProps & { setMonth: (date: Date) => void }) {
+  // Generate months list (±2 years range)
+  const months = Array.from({ length: 60 }, (_, i) => {
+    const date = new Date();
+    date.setMonth(date.getMonth() - 24 + i);
+    return date;
+  });
+
+  return (
+    <div className="flex justify-center mb-2">
+      <Select
+        value={`${displayMonth.getFullYear()}-${displayMonth.getMonth()}`}
+        onValueChange={(value) => {
+          const [year, month] = value.split("-").map(Number);
+          setMonth(new Date(year, month));
+        }}
+      >
+        <SelectTrigger className="w-[160px] h-8">
+          <SelectValue />
+        </SelectTrigger>
+
+        <SelectContent className="max-h-60 overflow-y-auto">
+          {months.map((date, i) => (
+            <SelectItem
+              key={i}
+              value={`${date.getFullYear()}-${date.getMonth()}`}
+            >
+              {format(date, "MMMM yyyy")}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+export function TransactionFilters({
+  clients = [],
+  filters,
+  onFiltersChange,
+  onReset,
+  hideClientFilter = false,
+  excelUploadButton,
+}: TransactionFiltersProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [clientSearch, setClientSearch] = useState("");
-
-const handleDateRangeChange = (dateRange: DateRange | undefined) => {
-  onFiltersChange({
-    ...filters,
-    dateRange
-  });
-};
-
-  const handleClientChange = (clientId: string) => {
-  onFiltersChange(prev => {
-    const updated = { ...prev };
-
-    if (clientId === "all") {
-      delete updated.clientId;   // 🔥 force remove
-    } else {
-      updated.clientId = clientId;
-    }
-
-    return updated;
-  });
-};
-
-  const handleDescriptionChange = (description: string) => {
-    onFiltersChange({ ...filters, description: description.trim() || undefined });
+  const [month, setMonth] = useState(new Date());
+  const years = Array.from(
+    { length: 10 },
+    (_, i) => new Date().getFullYear() - 5 + i
+  );
+  const handleDateRangeChange = (dateRange: DateRange | undefined) => {
+    onFiltersChange({
+      ...filters,
+      dateRange,
+    });
   };
 
+  const handleClientChange = (clientId: string) => {
+    onFiltersChange((prev) => {
+      const updated = { ...prev };
 
+      if (clientId === "all") {
+        delete updated.clientId; // 🔥 force remove
+      } else {
+        updated.clientId = clientId;
+      }
+
+      return updated;
+    });
+  };
+
+  const handleDescriptionChange = (description: string) => {
+    onFiltersChange({
+      ...filters,
+      description: description.trim() || undefined,
+    });
+  };
+
+  const getDefaultDateRange = (): DateRange => {
+    const today = new Date();
+
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    return {
+      from: startOfMonth,
+      to: today,
+    };
+  };
+
+  const isDefaultDateRange = () => {
+    if (!filters.dateRange?.from || !filters.dateRange?.to) return true;
+
+    const today = new Date();
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    const from = new Date(filters.dateRange.from);
+    const to = new Date(filters.dateRange.to);
+
+    return (
+      from.toDateString() === startOfMonth.toDateString() &&
+      to.toDateString() === today.toDateString()
+    );
+  };
 
   const getActiveFiltersCount = () => {
     let count = 0;
-   // if (filters.dateRange?.from || filters.dateRange?.to) count++;
+    if (!isDefaultDateRange()) count++;
     if (filters.clientId && !hideClientFilter) count++;
     if (filters.description) count++;
     return count;
@@ -77,44 +160,91 @@ const handleDateRangeChange = (dateRange: DateRange | undefined) => {
   // Sort clients alphabetically and filter by search
   const sortedAndFilteredClients = clients
     .sort((a, b) => {
-      const nameA = a.user ? `${a.user.firstName} ${a.user.lastName}` : a.clientCode;
-      const nameB = b.user ? `${b.user.firstName} ${b.user.lastName}` : b.clientCode;
+      const nameA = a.user
+        ? `${a.user.firstName} ${a.user.lastName}`
+        : a.clientCode;
+      const nameB = b.user
+        ? `${b.user.firstName} ${b.user.lastName}`
+        : b.clientCode;
       return nameA.localeCompare(nameB);
     })
-    .filter(client => {
+    .filter((client) => {
       if (!clientSearch) return true;
       const searchTerm = clientSearch.toLowerCase();
-      const clientName = client.user 
+      const clientName = client.user
         ? `${client.user.firstName} ${client.user.lastName} ${client.clientCode}`.toLowerCase()
         : client.clientCode.toLowerCase();
       return clientName.includes(searchTerm);
     });
 
-  const selectedClient = clients.find(c => c.id === filters.clientId);
+  const selectedClient = clients.find((c) => c.id === filters.clientId);
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-1">
+          <CardTitle className="flex items-center gap-2 flex-wrap">
             <Filter className="h-4 w-4" />
             Filters
             {getActiveFiltersCount() > 0 && (
-              <Badge variant="secondary" className="mr-2">{getActiveFiltersCount()}</Badge>
+              <Badge variant="secondary">{getActiveFiltersCount()}</Badge>
+            )}
+            {/* 🔥 FILTER BADGES HERE */}
+            {!isDefaultDateRange() && filters.dateRange?.from && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                {format(filters.dateRange.from, "MMM dd")}
+                {filters.dateRange.to &&
+                  ` - ${format(filters.dateRange.to, "MMM dd")}`}
+                <X
+                  className="h-3 w-3 ml-1 cursor-pointer"
+                  onClick={() => handleDateRangeChange(getDefaultDateRange())}
+                />
+              </Badge>
+            )}
+            {typeof filters.clientId === "string" && !hideClientFilter && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                {clients.find((c) => c.id === filters.clientId)?.user
+                  ? `${
+                      clients.find((c) => c.id === filters.clientId)?.user
+                        ?.firstName
+                    }`
+                  : clients.find((c) => c.id === filters.clientId)?.clientCode}
+                <X
+                  className="h-3 w-3 ml-1 cursor-pointer"
+                  onClick={() => {
+                    setClientSearch("");
+                    handleClientChange("all");
+                  }}
+                />
+              </Badge>
+            )}
+            {filters.description && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                "{filters.description}"
+                <X
+                  className="h-3 w-3 ml-1 cursor-pointer"
+                  onClick={() => handleDescriptionChange("")}
+                />
+              </Badge>
             )}
           </CardTitle>
           <div className="flex items-center gap-4">
             {excelUploadButton}
             {getActiveFiltersCount() > 0 && (
-              <Button variant="outline" size="sm" 
-                onClick={() => { 
-                setClientSearch("");  
-                onFiltersChange({
-                  ...filters, // 🔥 KEEP EXISTING (dateRange stays)
-                  clientId: undefined,
-                  description: undefined
-                });
-              }} data-testid="button-reset-filters" className="px-1 gap-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setClientSearch("");
+                  onFiltersChange({
+                    dateRange: getDefaultDateRange(), // 🔥 KEEP EXISTING (dateRange stays)
+                    clientId: undefined,
+                    description: undefined,
+                  });
+                }}
+                data-testid="button-reset-filters"
+                className="px-1 gap-0"
+              >
                 <X className="h-4 w-4 mr-1" />
                 Clear All
               </Button>
@@ -125,15 +255,19 @@ const handleDateRangeChange = (dateRange: DateRange | undefined) => {
               onClick={() => setIsOpen(!isOpen)}
               data-testid="button-toggle-filters"
             >
-              {isOpen ? 'Hide' : 'Show'} Filters
+              {isOpen ? "Hide" : "Show"} Filters
             </Button>
           </div>
         </div>
       </CardHeader>
-      
+
       {isOpen && (
         <CardContent>
-          <div className={`grid grid-cols-1 md:grid-cols-2 ${hideClientFilter ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-4`}>
+          <div
+            className={`grid grid-cols-1 md:grid-cols-2 ${
+              hideClientFilter ? "lg:grid-cols-3" : "lg:grid-cols-4"
+            } gap-4`}
+          >
             {/* Date Range Filter */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Date Range</label>
@@ -159,25 +293,21 @@ const handleDateRangeChange = (dateRange: DateRange | undefined) => {
                   </Button>
                 </PopoverTrigger>
 
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="range"
-                  selected={filters.dateRange}
-                  onSelect={handleDateRangeChange}
-                  numberOfMonths={2}
-                />
-
-                <div className="p-2 border-t flex justify-end">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDateRangeChange(undefined)}
-                  >
-                    Clear
-                  </Button>
-                </div>
-              </PopoverContent>
-
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="range"
+                    selected={filters.dateRange}
+                    onSelect={handleDateRangeChange}
+                    numberOfMonths={2}
+                    month={month}
+                    onMonthChange={setMonth}
+                    components={{
+                      Caption: (props) => (
+                        <CustomCaption {...props} setMonth={setMonth} />
+                      ),
+                    }}
+                  />
+                </PopoverContent>
               </Popover>
             </div>
 
@@ -207,10 +337,9 @@ const handleDateRangeChange = (dateRange: DateRange | undefined) => {
                     <SelectItem value="all">All Clients</SelectItem>
                     {sortedAndFilteredClients.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
-                        {client.user 
+                        {client.user
                           ? `${client.user.firstName} ${client.user.lastName} (${client.clientCode})`
-                          : client.clientCode
-                        }
+                          : client.clientCode}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -228,23 +357,21 @@ const handleDateRangeChange = (dateRange: DateRange | undefined) => {
                 data-testid="input-description"
               />
             </div>
-
-
           </div>
 
           {/* Active Filters Display */}
-          {getActiveFiltersCount() > 0 && (
+          {/* {getActiveFiltersCount() > 0 && (
             <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
-              {/* {filters.dateRange?.from && (
-  <Badge variant="outline" className="flex items-center gap-1">
-    Date: {format(filters.dateRange.from, "MMM dd")}
-    {filters.dateRange.to && ` - ${format(filters.dateRange.to, "MMM dd")}`}
-    <X 
-      className="h-3 w-3 ml-1 cursor-pointer" 
-      onClick={() => handleDateRangeChange(undefined)}
-    />
-  </Badge>
-)} */}
+                {!isDefaultDateRange() && filters.dateRange?.from && (
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    Date: {format(filters.dateRange.from, "MMM dd")}
+                    {filters.dateRange.to && ` - ${format(filters.dateRange.to, "MMM dd")}`}
+                    <X 
+                      className="h-3 w-3 ml-1 cursor-pointer" 
+                      onClick={() => handleDateRangeChange(getDefaultDateRange())}
+                    />
+                  </Badge>
+                )}  
                 {typeof filters.clientId === "string" && !hideClientFilter && (
                     <Badge variant="outline" className="flex items-center gap-1">
                   Client: {
@@ -272,7 +399,7 @@ const handleDateRangeChange = (dateRange: DateRange | undefined) => {
               )}
 
             </div>
-          )}
+          )} */}
         </CardContent>
       )}
     </Card>
