@@ -3775,6 +3775,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const results = {
         success: 0,
+        created: 0,
+        updated: 0,
         skipped: 0,
         errors: [] as Array<{ transaction: any; error: string }>
       };
@@ -3978,9 +3980,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
 
           console.log('Creating/updating transaction:', newTransaction);
+          const existingTxn = normalizedTxn.guiid ? await storage.getTransactionByGuid(normalizedTxn.guiid) : null;
           const createdTransaction = await storage.createOrUpdateTransactionByGuid(newTransaction);
           console.log('Transaction created/updated:', createdTransaction);
           results.success++;
+          if (existingTxn) {
+            results.updated++;
+          } else {
+            results.created++;
+          }
 
         } catch (error) {
           results.errors.push({ 
@@ -3990,8 +3998,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      const syncStatus = results.skipped > 0 ? 'partially completed' : 'completed';
       res.json({
-        message: req.file ? 'Excel transaction upload completed' : 'Transaction sync completed',
+        message: results.updated > 0 && results.created > 0
+          ? `Transaction sync ${syncStatus}: ${results.created} created, ${results.updated} updated`
+          : results.updated > 0
+            ? `Transaction sync ${syncStatus}: ${results.updated} updated`
+            : results.created > 0
+              ? `Transaction sync ${syncStatus}: ${results.created} created`
+              : `Transaction sync ${syncStatus}`,
         results,
         timestamp: new Date().toISOString()
       });
