@@ -423,7 +423,7 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
       // Update record statuses based on API response
       const apiErrors = uploadResult.results?.errors || [];
       const updatedRecordStatuses = recordStatuses.map(record => {
-        const apiError = apiErrors.find((err: any) => err.clientCode === record.clientCode);
+        const apiError = apiErrors.find((err: any) => err.row === record.row);
         if (apiError) {
           return { ...record, status: 'error' as const, message: apiError.message };
         }
@@ -640,52 +640,36 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
           </Alert>
         )}
 
-        {/* Record Status Table - Always show when there are records
-        {(recordStatuses.length > 0 || (result && result.records && result.records.length > 0)) && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Record Processing Status</CardTitle>
+        {/* Error Records Table */}
+        {result && result.records && result.records.filter(r => r.status === 'error').length > 0 && (
+          <Card className="border-red-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2 text-red-700">
+                <XCircle className="h-5 w-5" />
+                Failed Records ({result.records.filter(r => r.status === 'error').length})
+              </CardTitle>
               <CardDescription>
-                Detailed status for each record in the uploaded file
+                The following records failed to process. Please correct and re-upload.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="max-h-60 overflow-y-auto">
+              <div className="max-h-64 overflow-y-auto">
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-white border-b">
                     <tr>
                       <th className="text-left p-2">Row</th>
                       <th className="text-left p-2">Client Code</th>
                       <th className="text-left p-2">Amount</th>
-                      <th className="text-left p-2">Status</th>
-                      <th className="text-left p-2">Message</th>
+                      <th className="text-left p-2">Error</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {(result?.records || recordStatuses).map((record, index) => (
-                      <tr key={index} className="border-b hover:bg-gray-50">
+                    {result.records.filter(r => r.status === 'error').map((record, index) => (
+                      <tr key={index} className="border-b hover:bg-red-50">
                         <td className="p-2">{record.row}</td>
-                        <td className="p-2">{record.clientCode}</td>
+                        <td className="p-2 font-medium">{record.clientCode}</td>
                         <td className="p-2">₹{record.amount.toLocaleString()}</td>
-                        <td className="p-2">
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                            record.status === 'success' ? 'bg-green-100 text-green-800' :
-                            record.status === 'error' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {record.status === 'success' ? (
-                              <CheckCircle className="h-3 w-3" />
-                            ) : record.status === 'error' ? (
-                              <XCircle className="h-3 w-3" />
-                            ) : (
-                              <AlertCircle className="h-3 w-3" />
-                            )}
-                            {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
-                          </span>
-                        </td>
-                        <td className="p-2 text-gray-600">
-                          {record.message || (record.status === 'success' ? 'Successfully processed and uploaded' : '-')}
-                        </td>
+                        <td className="p-2 text-red-600">{record.message || '-'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -693,7 +677,7 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
               </div>
             </CardContent>
           </Card>
-        )} */}
+        )}
       </CardContent>
     </Card>
   );
