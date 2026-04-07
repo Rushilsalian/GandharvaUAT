@@ -566,18 +566,16 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
         )}
 
        {/* Validation Errors */}
-        {validationErrors.length > 0 && (
+        {/* {validationErrors.length > 0 && (
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
               <div className="space-y-2">
                 
-                {/* Header with count */}
                 <p className="font-medium">
                   Validation Errors Found ({validationErrors.length})
                 </p>
 
-                {/* Scrollable list */}
                 <div className="max-h-60 overflow-y-auto space-y-1 border rounded-md p-2 bg-gray-50">
                   {validationErrors.map((error, index) => (
                     <p key={index} className="text-sm text-black-600">
@@ -589,7 +587,7 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
               </div>
             </AlertDescription>
           </Alert>
-        )}
+        )} */}
 
         {/* Upload Result */}
         {result && (
