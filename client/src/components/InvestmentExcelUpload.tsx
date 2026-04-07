@@ -241,7 +241,7 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
     try {
       console.log('=== STARTING FILE PARSING ===');
       // Parse file based on type
-      setProgress(20);
+      setProgress(5);
       let data: any[];
       
       if (file.name.endsWith('.json')) {
@@ -259,7 +259,7 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
       console.log('First row sample:', data[0]);
       
       // Validate data
-      setProgress(40);
+      setProgress(10);
       console.log('=== STARTING VALIDATION ===');
       const allErrors: ValidationError[] = [];
       const validRows: any[] = [];
@@ -281,8 +281,8 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
         // ✅ update validated count
         setValidatedRows(i + 1);
 
-        // ✅ dynamic progress (40 → 60 range)
-        const percent = 40 + ((i + 1) / data.length) * 20;
+        // dynamic progress: 10 → 85 range based on records processed
+        const percent = 10 + ((i + 1) / data.length) * 75;
         setProgress(percent);
 
         if (rowErrors.length > 0) {
@@ -330,7 +330,7 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
       }
 
       // Prepare transactions for API
-      setProgress(60);
+      setProgress(87);
       
       console.log('=== VALIDATION COMPLETED SUCCESSFULLY ===');
       console.log('Valid rows to process:', validRows.length);
@@ -369,7 +369,7 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
       });
 
       // Upload to API
-      setProgress(80);
+      setProgress(93);
       
       console.log('=== STARTING API UPLOAD ===');
       console.log('Number of transactions to upload:', transactions.length);
@@ -556,10 +556,10 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
           <div className="space-y-2">
             <Progress value={progress} className="w-full" />
             <p className="text-sm text-center text-gray-600">
-            {progress < 20 ? 'Preparing...' :
-            progress < 40 ? 'Reading file...' :
-            progress < 60 ? `Validating ${validatedRows} / ${totalRows} rows...` :
-            progress < 80 ? 'Processing...' :
+            {progress < 5 ? 'Preparing...' :
+            progress < 10 ? 'Reading file...' :
+            progress < 86 ? `Validating ${validatedRows} / ${totalRows} rows...` :
+            progress < 93 ? 'Processing...' :
             'Uploading...'}
           </p>
           </div>

@@ -262,7 +262,7 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
 
     try {
       // Parse file based on type
-      setProgress(20);
+      setProgress(5);
       let data: TransactionRow[];
       
       if (file.name.endsWith('.json')) {
@@ -274,7 +274,7 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
       setTotalRows(data.length);
       setValidatedRows(0);
       // Validate data
-      setProgress(40);
+      setProgress(10);
       const allErrors: ValidationError[] = [];
       const validRows: any[] = [];
       const recordStatuses: RecordStatus[] = [];
@@ -292,7 +292,8 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
 
         setValidatedRows(i + 1);
 
-        const percent = 40 + ((i + 1) / data.length) * 20;
+        // dynamic progress: 10 → 85 range based on records processed
+        const percent = 10 + ((i + 1) / data.length) * 75;
         setProgress(percent);
 
         // keep your delay
@@ -339,7 +340,7 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
       }
 
       // Prepare transactions for API
-      setProgress(60);
+      setProgress(87);
       console.log('Valid rows to process:', validRows);
       
       const transactions = validRows.map(row => {
@@ -375,7 +376,7 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
       });
 
       // Upload to API
-      setProgress(80);
+      setProgress(93);
       
       let response: Response;
       
@@ -572,10 +573,10 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
           <div className="space-y-2">
             <Progress value={progress} className="w-full" />
             <p className="text-sm text-center text-gray-600">
-              {progress < 20 ? 'Preparing...' :
-              progress < 40 ? 'Reading file...' :
-              progress <= 60 ? `Validating ${validatedRows} / ${totalRows} rows...` :
-              progress < 80 ? 'Processing...' :
+              {progress < 5 ? 'Preparing...' :
+              progress < 10 ? 'Reading file...' :
+              progress < 86 ? `Validating ${validatedRows} / ${totalRows} rows...` :
+              progress < 93 ? 'Processing...' :
               'Uploading...'}
             </p>
           </div>
