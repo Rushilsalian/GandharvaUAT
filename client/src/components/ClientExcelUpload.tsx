@@ -261,7 +261,7 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
           {/* Results Display */}
           {uploadResults && (
             <div className="space-y-4">
-              <Alert className={uploadResults.results?.errors?.length > 0 ? "border-orange-200 bg-orange-50" : ""}>
+              <Alert className={(uploadResults.failures?.length > 0 || uploadResults.summary?.failed > 0) ? "border-orange-200 bg-orange-50" : ""}>
                 <CheckCircle className="h-4 w-4" />
                 <AlertDescription>
                   {uploadResults.message}
@@ -291,28 +291,28 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
                   )}
                   <div className="bg-gray-50 p-3 rounded border border-gray-200">
                     <div className="text-gray-800 font-medium">Total</div>
-                    <div className="text-gray-600 text-lg">{uploadResults.summary.totalRecords}</div>
+                    <div className="text-gray-600 text-lg">{uploadResults.summary.total ?? uploadResults.summary.totalRecords}</div>
                   </div>
                 </div>
               )}
               
-              {uploadResults.results?.errors?.length > 0 && (
+              {uploadResults.failures?.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-red-600 flex items-center gap-2">
                       <AlertCircle className="h-5 w-5" />
-                      Upload Errors ({uploadResults.results.errors.length})
+                      Processing Failures ({uploadResults.failures.length})
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="max-h-60 overflow-y-auto space-y-2">
-                      {uploadResults.results.errors.map((error: any, index: number) => (
+                      {uploadResults.failures.map((item: any, index: number) => (
                         <div key={index} className="p-3 bg-red-50 border border-red-200 rounded text-sm">
                           <div className="font-medium text-red-800">
-                            Row {index + 2}: {error.client?.client_code || 'Unknown'}
+                            {item.clientCode || 'Unknown'}
                           </div>
                           <div className="text-red-600 mt-1">
-                            {error.error}
+                            {item.reason}
                           </div>
                         </div>
                       ))}

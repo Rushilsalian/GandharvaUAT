@@ -3123,7 +3123,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: 0,
         updated: 0,
         created: 0,
-        skipped: 0,
+        failed: 0,
+        failures: [] as Array<{ clientCode: string; reason: string }>,
         errors: [] as Array<{ client: any; error: string }>
       };
 
@@ -3173,6 +3174,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Processing ${validClients.length} clients after validation...`);
 
       for (const clientData of validClients) {
+        // Fail rows with no client code (empty/invalid rows from the spreadsheet)
+        if (!clientData.client_code || clientData.client_code === 'UNKNOWN') {
+          results.failed++;
+          results.failures.push({ clientCode: clientData.client_code || '', reason: 'Missing or invalid client code' });
+          continue;
+        }
+
         try {
           console.log(`Processing validated client: ${clientData.client_code} - ${clientData.name}`);
 
@@ -3372,16 +3380,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Successfully processed client: ${clientData.client_code}`);
         } catch (error) {
           console.error(`Error processing client ${clientData.client_code || 'UNKNOWN'}:`, error);
-          results.errors.push({ 
-            client: clientData, 
-            error: error instanceof Error ? error.message : 'Unknown error' 
-          });
+          const errMsg = error instanceof Error ? error.message : 'Unknown error';
+          results.failed++;
+          results.failures.push({ clientCode: clientData.client_code || 'UNKNOWN', reason: errMsg });
+          results.errors.push({ client: clientData, error: errMsg });
         }
       }
 
-      const success = results.errors.length === 0;
+      const hasErrors = results.failed > 0;
+      const isPartial = hasErrors && results.success > 0;
       let message;
-      if (success) {
+      if (!hasErrors) {
         if (results.updated > 0 && results.created > 0) {
           message = `Successfully processed ${results.success} client records (${results.created} created, ${results.updated} updated)`;
         } else if (results.updated > 0) {
@@ -3391,34 +3400,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else {
           message = `Successfully processed ${results.success} client records`;
         }
+      } else if (isPartial) {
+        message = `Bulk upload completed successfully with partial insert: ${results.created} created, ${results.updated} updated, ${results.failed} failed`;
       } else {
-        message = `Processed ${results.success} clients (${results.created} created, ${results.updated} updated) with ${results.errors.length} errors`;
+        message = `Bulk upload failed: ${results.failed} record(s) could not be processed`;
       }
 
       res.json({
-        success,
+        success: !hasErrors,
         message,
-        processed: results.success + results.skipped + results.errors.length,
-        totalRecords: data.length,
-        results: {
-          ...results,
-          errors: results.errors // Return all errors, not limited
-        },
-        emailResults: {
-          ...emailResults,
-          mobileOnlyUsers: emailResults.failedEmails.filter(item => item.credentials.includes('Mobile:')).length
-        },
         summary: {
-          totalRecords: data.length,
-          successful: results.success,
+          total: data.length,
           created: results.created,
           updated: results.updated,
-          skipped: results.skipped,
-          failed: results.errors.length,
+          failed: results.failed,
           emailsSent: emailResults.sent,
           emailsFailed: emailResults.failed,
           mobileOnlyUsers: emailResults.failedEmails.filter(item => item.credentials.includes('Mobile:')).length,
           credentialsNeedManualDistribution: emailResults.failedEmails.length
+        },
+        failures: results.failures,
+        emailResults: {
+          ...emailResults,
+          mobileOnlyUsers: emailResults.failedEmails.filter(item => item.credentials.includes('Mobile:')).length
         },
         timestamp: new Date().toISOString()
       });
@@ -3450,8 +3454,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: 0,
         updated: 0,
         created: 0,
-        skipped: 0,
-        skippedItems: [] as Array<{ client: any; reason: string }>,
+        failed: 0,
+        failures: [] as Array<{ clientCode: string; reason: string }>,
         errors: [] as Array<{ client: any; error: string }>
       };
 
@@ -3489,8 +3493,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       for (const result of processedClients) {
-        
         const clientData = result.client;
+
+        // Fail records with no valid client code
+        if (!clientData.code || clientData.code === 'UNKNOWN') {
+          results.failed++;
+          results.failures.push({ clientCode: clientData.code || '', reason: 'Missing or invalid client code' });
+          continue;
+        }
+
         try {
 
           // Check if client code already exists
@@ -3683,26 +3694,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
         } catch (error) {
-          results.errors.push({ 
-            client: clientData, 
-            error: error instanceof Error ? error.message : 'Unknown error' 
-          });
+          const errMsg = error instanceof Error ? error.message : 'Unknown error';
+          results.failed++;
+          results.failures.push({ clientCode: clientData.code || 'UNKNOWN', reason: errMsg });
+          results.errors.push({ client: clientData, error: errMsg });
         }
       }
 
-      results.skipped = results.skippedItems.length;
-      res.json({
-        message: results.updated > 0 && results.created > 0
-          ? `Client sync completed: ${results.created} created, ${results.updated} updated${results.skipped > 0 ? `, ${results.skipped} skipped` : ''}`
+      const isPartialSync = results.failed > 0 && results.success > 0;
+      let clientSyncMessage;
+      if (results.failed === 0) {
+        clientSyncMessage = results.updated > 0 && results.created > 0
+          ? `Client sync completed successfully: ${results.created} created, ${results.updated} updated`
           : results.updated > 0
-            ? `Client sync completed: ${results.updated} updated${results.skipped > 0 ? `, ${results.skipped} skipped` : ''}`
+            ? `Client sync completed successfully: ${results.updated} updated`
             : results.created > 0
-              ? `Client sync completed: ${results.created} created${results.skipped > 0 ? `, ${results.skipped} skipped` : ''}`
-              : 'Client sync completed',
-        results: {
-          ...results,
-          skippedItems: results.skippedItems
+              ? `Client sync completed successfully: ${results.created} created`
+              : 'Client sync completed successfully';
+      } else if (isPartialSync) {
+        clientSyncMessage = `Client sync completed successfully with partial insert: ${results.created} created, ${results.updated} updated, ${results.failed} failed`;
+      } else {
+        clientSyncMessage = `Client sync failed: ${results.failed} record(s) could not be processed`;
+      }
+      res.json({
+        message: clientSyncMessage,
+        summary: {
+          total: clients.length,
+          created: results.created,
+          updated: results.updated,
+          failed: results.failed
         },
+        failures: results.failures,
         timestamp: new Date().toISOString()
       });
     } catch (error) {
@@ -3782,9 +3804,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: 0,
         created: 0,
         updated: 0,
-        skipped: 0,
-        skippedItems: [] as Array<{ transaction: any; reason: string }>,
-        errors: [] as Array<{ transaction: any; error: string }>
+        failed: 0,
+        failures: [] as Array<{ clientCode: string; guiid: string; reason: string }>
       };
 
       let transactions: any[] = [];
@@ -3866,11 +3887,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       for (const txnData of transactions) {
+        // Handle completely empty records as errors
+        const rawClientCode = txnData['Client Code'] || txnData.clientCode || txnData.client_code || '';
+        const rawAmount = txnData['Transaction Amount'] || txnData.amount || '';
+        if (!rawClientCode && !rawAmount) {
+          results.failed++;
+          results.failures.push({ clientCode: '', guiid: txnData['Transaction GUID'] || txnData.guiid || '', reason: 'Empty or null transaction record - missing client code and amount' });
+          continue;
+        }
+
         try {
-          console.log('=== Processing transaction ===');
-          console.log('Raw transaction data:', JSON.stringify(txnData, null, 2));
-          console.log('Available keys in txnData:', Object.keys(txnData));
-          
           // Apply field name normalization to ensure we have the right field names
           const normalizedTxn = {
             clientCode: txnData['Client Code'] || txnData.clientCode || txnData.client_code || txnData['ClientCode'] || '',
@@ -3880,56 +3906,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
             remark: txnData['Narration'] || txnData.remark || txnData.narration || txnData.description || '',
             guiid: txnData['Transaction GUID'] || txnData.guiid || txnData.transaction_guid || txnData['TransactionGUID'] || ''
           };
-          
-          console.log('Normalized transaction:', JSON.stringify(normalizedTxn, null, 2));
-          console.log('Client code extracted:', normalizedTxn.clientCode, 'Type:', typeof normalizedTxn.clientCode);
-          
+
           // Validate required fields using normalized data
           if (!normalizedTxn.clientCode || normalizedTxn.clientCode.toString().trim() === '') {
-            console.log('Client code validation failed for:', normalizedTxn);
-            console.log('Available fields in original transaction:', Object.keys(txnData));
-            results.errors.push({ transaction: txnData, error: 'Client code is required' });
+            results.failed++;
+            results.failures.push({ clientCode: '', guiid: normalizedTxn.guiid, reason: 'Client code is required' });
             continue;
           }
-          
-          console.log('Client code validation passed:', normalizedTxn.clientCode);
+
+          // Validate GUID is not empty
+          if (!normalizedTxn.guiid || normalizedTxn.guiid.toString().trim() === '') {
+            results.failed++;
+            results.failures.push({ clientCode: normalizedTxn.clientCode, guiid: '', reason: 'Transaction GUID is required and cannot be empty' });
+            continue;
+          }
 
           // Validate transaction type and determine indicator ID
           let indicatorId: number;
           if (normalizedTxn.transactionType) {
             indicatorId = indicatorMap[normalizedTxn.transactionType];
             if (!indicatorId) {
-              results.errors.push({ 
-                transaction: txnData, 
-                error: `Invalid transaction type '${normalizedTxn.transactionType}'. Must be one of: Investment Data, Payout Data, Withdrawal Data, Closure Data` 
+              results.failed++;
+              results.failures.push({
+                clientCode: normalizedTxn.clientCode,
+                guiid: normalizedTxn.guiid,
+                reason: `Invalid transaction type '${normalizedTxn.transactionType}'. Must be one of: Investment, Payout, Withdrawal, Closure`
               });
               continue;
             }
           } else {
-            results.errors.push({ transaction: txnData, error: 'Transaction type is required' });
+            results.failed++;
+            results.failures.push({ clientCode: normalizedTxn.clientCode, guiid: normalizedTxn.guiid, reason: 'Transaction type is required' });
             continue;
           }
 
           if (!normalizedTxn.amount || isNaN(parseFloat(normalizedTxn.amount))) {
-            results.errors.push({ transaction: txnData, error: 'Valid amount is required' });
+            results.failed++;
+            results.failures.push({ clientCode: normalizedTxn.clientCode, guiid: normalizedTxn.guiid, reason: 'Valid amount is required' });
             continue;
           }
 
           // Find client by code
-          console.log('Looking for client with code:', normalizedTxn.clientCode);
           const client = await storage.getMstClientByCode(normalizedTxn.clientCode.toString());
           if (!client) {
-            console.log('Client not found in database for code:', normalizedTxn.clientCode);
-            results.errors.push({ transaction: txnData, error: `Client with code ${normalizedTxn.clientCode} not found` });
+            results.failed++;
+            results.failures.push({ clientCode: normalizedTxn.clientCode, guiid: normalizedTxn.guiid, reason: `Client with code '${normalizedTxn.clientCode}' not found` });
             continue;
           }
-          console.log('Client found:', { clientId: client.clientId, code: client.code, name: client.name });
 
           // Parse transaction date - handle DD-MMM-YY format
           let transactionDate = new Date();
           if (normalizedTxn.transactionDate) {
             let parsedDate: Date;
-            
+
             if (typeof normalizedTxn.transactionDate === 'number') {
               // Excel serial date number
               parsedDate = new Date((normalizedTxn.transactionDate - 25569) * 86400 * 1000);
@@ -3946,12 +3975,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   };
                   const month = monthMap[parts[1]];
                   let year = parseInt(parts[2]);
-                  
+
                   // Handle 2-digit year (assume 20xx for years 00-50, 19xx for 51-99)
                   if (year < 100) {
                     year += year <= 50 ? 2000 : 1900;
                   }
-                  
+
                   if (!isNaN(day) && month !== undefined && !isNaN(year)) {
                     parsedDate = new Date(year, month, day);
                   } else {
@@ -3966,7 +3995,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             } else {
               parsedDate = new Date(normalizedTxn.transactionDate);
             }
-            
+
             if (!isNaN(parsedDate.getTime())) {
               transactionDate = parsedDate;
             }
@@ -3985,7 +4014,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             createdDate: new Date()
           };
 
-          console.log('Creating/updating transaction:', newTransaction);
           const existingTxn = normalizedTxn.guiid ? await storage.getTransactionByGuid(normalizedTxn.guiid) : null;
           const createdTransaction = await storage.createOrUpdateTransactionByGuid(newTransaction);
           console.log('Transaction created/updated:', createdTransaction);
@@ -3997,27 +4025,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
         } catch (error) {
-          results.errors.push({ 
-            transaction: txnData, 
-            error: error instanceof Error ? error.message : 'Unknown error' 
-          });
+          const errMsg = error instanceof Error ? error.message : 'Unknown error';
+          const clientCode = txnData['Client Code'] || txnData.clientCode || txnData.client_code || '';
+          const guiid = txnData['Transaction GUID'] || txnData.guiid || '';
+          results.failed++;
+          results.failures.push({ clientCode, guiid, reason: errMsg });
         }
       }
 
-      results.skipped = results.skippedItems.length;
-      const syncStatus = results.skipped > 0 ? 'partially completed' : 'completed';
+      const syncStatus = results.failed > 0 ? 'completed with errors' : 'completed';
+      const txnSyncMessage = results.updated > 0 && results.created > 0
+        ? `Transaction sync ${syncStatus}: ${results.created} created, ${results.updated} updated${results.failed > 0 ? `, ${results.failed} failed` : ''}`
+        : results.updated > 0
+          ? `Transaction sync ${syncStatus}: ${results.updated} updated${results.failed > 0 ? `, ${results.failed} failed` : ''}`
+          : results.created > 0
+            ? `Transaction sync ${syncStatus}: ${results.created} created${results.failed > 0 ? `, ${results.failed} failed` : ''}`
+            : `Transaction sync ${syncStatus}`;
       res.json({
-        message: results.updated > 0 && results.created > 0
-          ? `Transaction sync ${syncStatus}: ${results.created} created, ${results.updated} updated${results.skipped > 0 ? `, ${results.skipped} skipped` : ''}`
-          : results.updated > 0
-            ? `Transaction sync ${syncStatus}: ${results.updated} updated${results.skipped > 0 ? `, ${results.skipped} skipped` : ''}`
-            : results.created > 0
-              ? `Transaction sync ${syncStatus}: ${results.created} created${results.skipped > 0 ? `, ${results.skipped} skipped` : ''}`
-              : `Transaction sync ${syncStatus}`,
-        results: {
-          ...results,
-          skippedItems: results.skippedItems
+        message: txnSyncMessage,
+        summary: {
+          total: transactions.length,
+          created: results.created,
+          updated: results.updated,
+          failed: results.failed
         },
+        failures: results.failures,
         timestamp: new Date().toISOString()
       });
 
@@ -4064,9 +4096,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const results = {
-        success: 0,
-        skipped: 0,
-        errors: [] as Array<{ row: number; message: string }>
+        created: 0,
+        updated: 0,
+        failed: 0,
+        failures: [] as Array<{ row: number; reason: string }>
       };
 
       // Process each row
@@ -4074,35 +4107,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const row = data[i] as any;
         const rowIndex = i + 2; // Excel rows start from 1, plus header row
 
-        try {
-          // Debug: Log all available keys for this row
-          if (i === 0) {
-            console.log('Available keys:', Object.keys(row));
-            console.log('Raw row data:', row);
-          }
-          
-          // Map exact column names from your Excel - try multiple variations
-          const clientCode = row['Client Code'] || row['ClientCode'] || row['Client_Code'];
-          const transactionType = row['Transaction Type'] || row['TransactionType'] || row['Transaction_Type'];
-          const amount = row['Transaction Amount'] || row['TransactionAmount'] || row['Transaction_Amount'];
-          const transactionDate = row['Transaction Date'] || row['TransactionDate'] || row['Transaction_Date'];
-          const remark = row['Narration'] || row['narration'] || '';
-          const guiid = row['Transaction GUID'] || row['TransactionGUID'] || row['Transaction_GUID'] || '';
+        // Map exact column names from your Excel - try multiple variations
+        const clientCode = row['Client Code'] || row['ClientCode'] || row['Client_Code'];
+        const transactionType = row['Transaction Type'] || row['TransactionType'] || row['Transaction_Type'];
+        const amount = row['Transaction Amount'] || row['TransactionAmount'] || row['Transaction_Amount'];
+        const transactionDate = row['Transaction Date'] || row['TransactionDate'] || row['Transaction_Date'];
+        const remark = row['Narration'] || row['narration'] || '';
+        const guiid = row['Transaction GUID'] || row['TransactionGUID'] || row['Transaction_GUID'] || '';
 
+        // Handle completely empty rows as errors
+        if (!clientCode && !transactionType && !amount) {
+          results.failed++;
+          results.failures.push({ row: rowIndex, reason: 'Empty or blank row - missing all required fields (Client Code, Transaction Type, Amount)' });
+          continue;
+        }
+
+        try {
           console.log(`Row ${rowIndex}:`, { clientCode, transactionType, amount, transactionDate });
 
           if (!clientCode) {
-            results.errors.push({ row: rowIndex, message: `Client Code is required. Available fields: ${Object.keys(row).join(', ')}` });
+            results.failed++;
+            results.failures.push({ row: rowIndex, reason: `Client Code is missing. Available fields: ${Object.keys(row).join(', ')}` });
+            continue;
+          }
+
+          // Validate GUID is not empty
+          if (!guiid || guiid.toString().trim() === '') {
+            results.failed++;
+            results.failures.push({ row: rowIndex, reason: 'Transaction GUID is required and cannot be empty' });
             continue;
           }
 
           if (!transactionType) {
-            results.errors.push({ row: rowIndex, message: `Transaction Type is required. Available fields: ${Object.keys(row).join(', ')}` });
+            results.failed++;
+            results.failures.push({ row: rowIndex, reason: `Transaction Type is missing. Available fields: ${Object.keys(row).join(', ')}` });
             continue;
           }
 
           if (!amount || isNaN(parseFloat(amount))) {
-            results.errors.push({ row: rowIndex, message: `Valid amount is required. Found: '${amount}'. Available fields: ${Object.keys(row).join(', ')}` });
+            results.failed++;
+            results.failures.push({ row: rowIndex, reason: `Valid amount is required. Found: '${amount}'` });
             continue;
           }
 
@@ -4110,51 +4154,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const clients = await storage.getAllMstClients();
           const client = clients.find(c => c.code === clientCode);
           if (!client) {
-            results.errors.push({ row: rowIndex, message: `Client with code '${clientCode}' not found in database` });
+            results.failed++;
+            results.failures.push({ row: rowIndex, reason: `Client with code '${clientCode}' not found in database` });
             continue;
           }
 
           // Validate amount range
           const numericAmount = parseFloat(amount);
           if (numericAmount <= 0) {
-            results.errors.push({ row: rowIndex, message: `Amount must be positive. Found: ${numericAmount}` });
+            results.failed++;
+            results.failures.push({ row: rowIndex, reason: `Amount must be positive. Found: ${numericAmount}` });
             continue;
           }
           if (numericAmount > 999999999.99) {
-            results.errors.push({ row: rowIndex, message: `Amount exceeds maximum limit (999999999.99). Found: ${numericAmount}` });
+            results.failed++;
+            results.failures.push({ row: rowIndex, reason: `Amount exceeds maximum limit (999999999.99). Found: ${numericAmount}` });
             continue;
           }
 
           // Validate remark length
           if (remark && remark.length > 500) {
-            results.errors.push({ row: rowIndex, message: `Remark must be 500 characters or less. Found: ${remark.length} characters` });
+            results.failed++;
+            results.failures.push({ row: rowIndex, reason: `Remark must be 500 characters or less. Found: ${remark.length} characters` });
             continue;
           }
 
           // Validate GUID length
           if (guiid && guiid.length > 200) {
-            results.errors.push({ row: rowIndex, message: `Transaction GUID must be 200 characters or less. Found: ${guiid.length} characters` });
+            results.failed++;
+            results.failures.push({ row: rowIndex, reason: `Transaction GUID must be 200 characters or less. Found: ${guiid.length} characters` });
             continue;
           }
 
           // Map transaction type to indicator ID
           const indicatorId = indicatorMap[transactionType];
           if (!indicatorId) {
-            results.errors.push({ 
-              row: rowIndex, 
-              message: `Invalid transaction type '${transactionType}'. Must be one of: Investment Data, Payout Data, Withdrawal Data, Closure Data` 
+            results.failed++;
+            results.failures.push({
+              row: rowIndex,
+              reason: `Invalid transaction type '${transactionType}'. Must be one of: Investment, Payout, Withdrawal, Closure`
             });
             continue;
           }
 
           // Parse date properly - handle DD-MMM-YY format and Excel dates
           let processedDate: Date;
-          
+
           if (!transactionDate) {
-            results.errors.push({ row: rowIndex, message: 'Transaction Date is required' });
+            results.failed++;
+            results.failures.push({ row: rowIndex, reason: 'Transaction Date is required' });
             continue;
           }
-          
+
           if (typeof transactionDate === 'number') {
             // Excel serial date number
             processedDate = new Date((transactionDate - 25569) * 86400 * 1000);
@@ -4171,12 +4222,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 };
                 const month = monthMap[parts[1]];
                 let year = parseInt(parts[2]);
-                
+
                 // Handle 2-digit year (assume 20xx for years 00-50, 19xx for 51-99)
                 if (year < 100) {
                   year += year <= 50 ? 2000 : 1900;
                 }
-                
+
                 if (!isNaN(day) && month !== undefined && !isNaN(year)) {
                   processedDate = new Date(year, month, day);
                 } else {
@@ -4192,14 +4243,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Fallback to current date if no valid date found
             processedDate = new Date();
           }
-          
+
           // Validate the parsed date
           if (isNaN(processedDate.getTime())) {
-            results.errors.push({ row: rowIndex, message: `Invalid date format '${transactionDate}'. Use DD-MMM-YY format (e.g., 29-Dec-25) or DD-MM-YYYY` });
+            results.failed++;
+            results.failures.push({ row: rowIndex, reason: `Invalid date format '${transactionDate}'. Use DD-MMM-YY (e.g., 29-Dec-25) or DD-MM-YYYY` });
             continue;
           }
 
-          // Create or update transaction in the new transaction table based on GUID
+          // Create or update transaction based on GUID
           const newTransaction = {
             transactionDate: processedDate,
             clientId: client.clientId,
@@ -4212,27 +4264,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
             createdDate: new Date()
           };
 
-          const createdTransaction = await storage.createOrUpdateTransactionByGuid(newTransaction);
-          results.success++;
+          const existingTxn = guiid ? await storage.getTransactionByGuid(guiid) : null;
+          await storage.createOrUpdateTransactionByGuid(newTransaction);
+          if (existingTxn) {
+            results.updated++;
+          } else {
+            results.created++;
+          }
 
         } catch (error) {
-          results.errors.push({ row: rowIndex, message: `Processing error: ${error instanceof Error ? error.message : String(error)}` });
+          results.failed++;
+          results.failures.push({ row: rowIndex, reason: `Processing error: ${error instanceof Error ? error.message : String(error)}` });
         }
       }
 
-      // Return results in the same format as JSON uploads for consistency
-      const success = results.errors.length === 0;
-      const message = success 
-        ? `Successfully processed ${results.success} transactions` 
-        : `Processed ${results.success} transactions with ${results.errors.length} errors`;
+      const hasErrors = results.failed > 0;
+      const totalSuccessful = results.created + results.updated;
+      const message = !hasErrors
+        ? `Successfully processed ${totalSuccessful} transactions (${results.created} created, ${results.updated} updated)`
+        : `Processed ${totalSuccessful} transactions with ${results.failed} failure(s)`;
 
       res.json({
-        success,
+        success: !hasErrors,
         message,
-        results: {
-          success: results.success,
-          errors: results.errors
+        summary: {
+          total: data.length,
+          created: results.created,
+          updated: results.updated,
+          failed: results.failed
         },
+        failures: results.failures,
         timestamp: new Date().toISOString()
       });
 

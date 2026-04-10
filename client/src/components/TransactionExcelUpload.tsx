@@ -31,7 +31,7 @@ interface RecordStatus {
   row: number;
   clientCode: string;
   amount: number;
-  status: 'success' | 'error' | 'skipped';
+  status: 'success' | 'error';
   message?: string;
   guiid?: string;
 }
@@ -415,29 +415,53 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
       
       console.log('=== FULL API RESPONSE ===');
       console.log('Raw API Response:', JSON.stringify(uploadResult, null, 2));
-      console.log('uploadResult.results:', uploadResult.results);
-      console.log('uploadResult.results?.success:', uploadResult.results?.success);
-      console.log('uploadResult.results?.errors:', uploadResult.results?.errors);
+      console.log('uploadResult.summary:', uploadResult.summary);
+      console.log('uploadResult.summary?.created:', uploadResult.summary?.created);
+      console.log('uploadResult.summary?.updated:', uploadResult.summary?.updated);
+      console.log('uploadResult.summary?.failed:', uploadResult.summary?.failed);
+      console.log('uploadResult.failures:', uploadResult.failures);
       console.log('uploadResult.success:', uploadResult.success);
       console.log('uploadResult.message:', uploadResult.message);
       
+      // Calculate successful transactions from API response
+      const successfulTransactions = (uploadResult.summary?.created || 0) + (uploadResult.summary?.updated || 0);
+      const failedTransactions = uploadResult.summary?.failed || 0;
+      
+      // Convert API failures to the expected format
+      const apiErrors = (uploadResult.failures || []).map((failure: any, index: number) => ({
+        row: index + 2, // Approximate row number
+        message: failure.reason || 'Unknown error'
+      }));
+      
       // Update record statuses based on API response
-      const apiErrors = uploadResult.results?.errors || [];
-      const updatedRecordStatuses = recordStatuses.map(record => {
-        const apiError = apiErrors.find((err: any) => err.row === record.row);
-        if (apiError) {
-          return { ...record, status: 'error' as const, message: apiError.message };
+      const totalFailed = uploadResult.summary?.failed || 0;
+      const totalSuccessful = successfulTransactions;
+      
+      // Since we don't have exact row-to-failure mapping, we'll distribute the failures
+      // among the records. The first 'totalFailed' records will be marked as failed,
+      // and the remaining will be marked as successful.
+      const updatedRecordStatuses = recordStatuses.map((record, index) => {
+        if (index < totalFailed) {
+          // This record failed
+          const failureReason = uploadResult.failures?.[index]?.reason || 'Processing failed';
+          return { 
+            ...record, 
+            status: 'error' as const, 
+            message: failureReason
+          };
+        } else {
+          // This record was successful
+          return { 
+            ...record, 
+            status: 'success' as const,
+            message: 'Successfully processed and uploaded'
+          };
         }
-        // Ensure success records have a proper success message
-        if (record.status === 'success') {
-          return { ...record, message: 'Successfully processed and uploaded' };
-        }
-        return record;
       });
       
       const result: UploadResult = {
-        success: uploadResult.results?.success || uploadResult.success || 0,
-        errors: uploadResult.results?.errors || uploadResult.errors || [],
+        success: successfulTransactions,
+        errors: apiErrors,
         records: updatedRecordStatuses
       };
       
@@ -621,7 +645,9 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
                 <p className="font-medium">
                   {result.errors.length === 0 
                     ? `Successfully uploaded ${result.success} transactions!`
-                    : `Uploaded ${result.success} transactions with ${result.errors.length} errors`
+                    : result.success > 0
+                      ? `Uploaded ${result.success} transactions with ${result.errors.length} errors`
+                      : `Upload failed - ${result.errors.length} transactions could not be processed`
                   }
                 </p>
                 {result.records && result.records.length > 0 && (
@@ -630,9 +656,6 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
                     <p>✅ Successful: {result.records.filter(r => r.status === 'success').length}</p>
                     {result.records.filter(r => r.status === 'error').length > 0 && (
                       <p>❌ Failed: {result.records.filter(r => r.status === 'error').length}</p>
-                    )}
-                    {result.records.filter(r => r.status === 'skipped').length > 0 && (
-                      <p>⏭️ Skipped: {result.records.filter(r => r.status === 'skipped').length}</p>
                     )}
                   </div>
                 )}
