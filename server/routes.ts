@@ -3946,6 +3946,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             continue;
           }
 
+          // Validate amount is greater than 0
+          const amountValue = parseFloat(normalizedTxn.amount);
+          if (amountValue <= 0) {
+            results.failed++;
+            results.failures.push({ clientCode: normalizedTxn.clientCode, guiid: normalizedTxn.guiid, reason: 'Amount must be greater than 0' });
+            continue;
+          }
+
           // Find client by code
           const client = await storage.getMstClientByCode(normalizedTxn.clientCode.toString());
           if (!client) {
