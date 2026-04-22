@@ -397,7 +397,7 @@ export function TransactionExcelUpload({ transactionType, onUploadComplete }: Tr
         console.log('Uploading Excel file to API');
         const formData = new FormData();
         formData.append('file', file);
-        
+
         response = await fetch('/api/transactions/excel-upload', {
           method: 'POST',
           body: formData

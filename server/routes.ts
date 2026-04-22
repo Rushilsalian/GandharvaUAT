@@ -4095,6 +4095,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'No data found in the uploaded file' });
       }
 
+      console.log('\n===== EXCEL UPLOAD: RAW DATA =====');
+      console.log(`Total rows parsed: ${data.length}`);
+      data.forEach((row, idx) => {
+        console.log(`Row ${idx + 2}:`, JSON.stringify(row, null, 2));
+      });
+      console.log('===================================\n');
+
       // Enhanced indicator mapping: 1=Investment, 2=Payout, 3=Withdrawal, 4=Closure
       const indicatorMap: Record<string, number> = {
         'Investment': 1, 'investment': 1, 'Investment Data': 1, 'INVESTMENT': 1,
@@ -4273,6 +4280,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
 
           const existingTxn = guiid ? await storage.getTransactionByGuid(guiid) : null;
+
+          console.log(`\n----- Row ${rowIndex}: ${existingTxn ? 'UPDATE' : 'INSERT'} -----`);
+          console.log('Prepared transaction data:', JSON.stringify(newTransaction, null, 2));
+          if (existingTxn) {
+            console.log(`Updating existing transaction ID: ${existingTxn.transactionId}, GUID: ${guiid}`);
+          } else {
+            console.log(`Inserting new transaction for GUID: ${guiid}`);
+          }
+          console.log('-------------------------------\n');
+
           await storage.createOrUpdateTransactionByGuid(newTransaction);
           if (existingTxn) {
             results.updated++;

@@ -357,7 +357,7 @@ export function InvestmentExcelUpload({ onUploadComplete }: InvestmentExcelUploa
 
         const transaction = {
           clientCode: row['Client Code'],
-          indicatorName: 'Investment',
+          indicatorName: row['Transaction Type'] || row['Transaction_Type'] || row['TransactionType'],
           amount: parseFloat(row['Transaction Amount']).toString(),
           remark: row['Narration'] || '',
           guiid: row['Transaction GUID'] || '',
