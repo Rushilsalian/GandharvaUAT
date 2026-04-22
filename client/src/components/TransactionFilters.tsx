@@ -151,7 +151,7 @@ export function TransactionFilters({
 
   const getActiveFiltersCount = () => {
     let count = 0;
-    if (!isDefaultDateRange()) count++;
+    // if (!isDefaultDateRange()) count++;
     if (filters.clientId && !hideClientFilter) count++;
     if (filters.description) count++;
     return count;
@@ -182,15 +182,57 @@ export function TransactionFilters({
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <CardTitle className="flex items-baseline gap-2">
               <Filter className="h-4 w-4" />
             Filters
+
+            <div className="space-y-2">
+               
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {filters.dateRange?.from ? (
+                      filters.dateRange.to ? (
+                        <>
+                          {format(filters.dateRange.from, "LLL dd, y")} -{" "}
+                          {format(filters.dateRange.to, "LLL dd, y")}
+                        </>
+                      ) : (
+                        format(filters.dateRange.from, "LLL dd, y")
+                      )
+                    ) : (
+                      <span>Pick a date range</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="range"
+                    selected={filters.dateRange}
+                    onSelect={handleDateRangeChange}
+                    numberOfMonths={2}
+                    month={month}
+                    onMonthChange={setMonth}
+                    components={{
+                      Caption: (props) => (
+                        <CustomCaption {...props} setMonth={setMonth} />
+                      ),
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
             {getActiveFiltersCount() > 0 && (
               <Badge variant="secondary">{getActiveFiltersCount()}</Badge>
             )}
             {/* 🔥 FILTER BADGES HERE */}
-            {!isDefaultDateRange() && filters.dateRange?.from && (
+            {/* {!isDefaultDateRange() && filters.dateRange?.from && (
              <Badge variant="outline"className="flex items-center gap-1 whitespace-nowrap mt-[5px]">
                 {format(filters.dateRange.from, "MMM dd")}
                 {filters.dateRange.to &&
@@ -200,7 +242,7 @@ export function TransactionFilters({
                   onClick={() => handleDateRangeChange(getDefaultDateRange())}
                 />
               </Badge>
-            )}
+            )} */}
             {typeof filters.clientId === "string" && !hideClientFilter && (
               <Badge variant="outline"className="flex items-center gap-1 whitespace-nowrap mt-[5px]">
                 {clients.find((c) => c.id === filters.clientId)?.user
@@ -227,6 +269,8 @@ export function TransactionFilters({
                 />
               </Badge>
             )}
+
+            
           </CardTitle>
           <div className="flex items-center gap-4">
             {excelUploadButton}
@@ -269,7 +313,7 @@ export function TransactionFilters({
             } gap-4`}
           >
             {/* Date Range Filter */}
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <label className="text-sm font-medium">Date Range</label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -309,7 +353,7 @@ export function TransactionFilters({
                   />
                 </PopoverContent>
               </Popover>
-            </div>
+            </div> */}
 
             {/* Client Filter - Hidden for client users */}
             {!hideClientFilter && (
