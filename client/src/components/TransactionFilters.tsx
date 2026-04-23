@@ -186,6 +186,9 @@ export function TransactionFilters({
           <CardTitle className="flex items-baseline gap-2">
               <Filter className="h-4 w-4" />
             Filters
+            {getActiveFiltersCount() > 0 && (
+              <Badge variant="secondary">{getActiveFiltersCount()}</Badge>
+            )}
 
             <div className="space-y-2">
                
@@ -228,9 +231,7 @@ export function TransactionFilters({
                 </PopoverContent>
               </Popover>
             </div>
-            {getActiveFiltersCount() > 0 && (
-              <Badge variant="secondary">{getActiveFiltersCount()}</Badge>
-            )}
+            
             {/* 🔥 FILTER BADGES HERE */}
             {/* {!isDefaultDateRange() && filters.dateRange?.from && (
              <Badge variant="outline"className="flex items-center gap-1 whitespace-nowrap mt-[5px]">
