@@ -3243,8 +3243,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 modifiedDate: new Date()
               };
               
-              if (clientData.email) userUpdateData.email = clientData.email;
-              if (clientData.mobile) userUpdateData.mobile = clientData.mobile;
+              // Handle email update with duplicate check
+              if (clientData.email) {
+                const existingUserWithEmail = await storage.getMstUserByEmail(clientData.email);
+                if (existingUserWithEmail && existingUserWithEmail.userId !== associatedUser.userId) {
+                  // Email is duplicate, update user to null and keep what came from excel in client
+                  userUpdateData.email = null;
+                  console.log(`Email ${clientData.email} is duplicate, setting user email to null for client ${clientData.client_code}`);
+                } else {
+                  userUpdateData.email = clientData.email;
+                }
+              }
+              
+              // Handle mobile update with duplicate check
+              if (clientData.mobile) {
+                const existingUserWithMobile = await storage.getMstUserByMobile(clientData.mobile);
+                if (existingUserWithMobile && existingUserWithMobile.userId !== associatedUser.userId) {
+                  // Mobile is duplicate, update user to null and keep what came from excel in client
+                  userUpdateData.mobile = null;
+                  console.log(`Mobile ${clientData.mobile} is duplicate, setting user mobile to null for client ${clientData.client_code}`);
+                } else {
+                  userUpdateData.mobile = clientData.mobile;
+                }
+              }
               
               await storage.updateMstUser(associatedUser.userId, userUpdateData);
               console.log(`User updated for client ${clientData.client_code}`);
@@ -3545,8 +3566,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 modifiedDate: new Date()
               };
               
-              if (clientData.email) userUpdateData.email = clientData.email;
-              if (clientData.mobile) userUpdateData.mobile = clientData.mobile;
+              // Handle email update with duplicate check
+              if (clientData.email) {
+                const existingUserWithEmail = await storage.getMstUserByEmail(clientData.email);
+                if (existingUserWithEmail && existingUserWithEmail.userId !== associatedUser.userId) {
+                  // Email is duplicate, update user to null and keep what came from sync in client
+                  userUpdateData.email = null;
+                  console.log(`Email ${clientData.email} is duplicate, setting user email to null for client ${clientData.code}`);
+                } else {
+                  userUpdateData.email = clientData.email;
+                }
+              }
+              
+              // Handle mobile update with duplicate check
+              if (clientData.mobile) {
+                const existingUserWithMobile = await storage.getMstUserByMobile(clientData.mobile);
+                if (existingUserWithMobile && existingUserWithMobile.userId !== associatedUser.userId) {
+                  // Mobile is duplicate, update user to null and keep what came from sync in client
+                  userUpdateData.mobile = null;
+                  console.log(`Mobile ${clientData.mobile} is duplicate, setting user mobile to null for client ${clientData.code}`);
+                } else {
+                  userUpdateData.mobile = clientData.mobile;
+                }
+              }
               
               await storage.updateMstUser(associatedUser.userId, userUpdateData);
               console.log(`User updated for client ${clientData.code}`);
