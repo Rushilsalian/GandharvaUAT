@@ -2,7 +2,7 @@ import { useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from 'wouter';
 import { toast } from './use-toast';
-import { isSessionExpired, clearSessionData } from '../lib/sessionUtils';
+import { isSessionExpired, clearSessionData, updateLastActivity } from '../lib/sessionUtils';
 
 export const useSessionExpiration = () => {
   const { logout, isLoggedIn } = useAuth();
@@ -29,6 +29,21 @@ export const useSessionExpiration = () => {
     });
     setLocation('/');
   }, [logout, setLocation]);
+
+  // Reset inactivity timer on any user activity
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    const ACTIVITY_EVENTS = ['mousedown', 'mousemove', 'keydown', 'touchstart', 'scroll', 'click'];
+
+    const onActivity = () => updateLastActivity();
+
+    ACTIVITY_EVENTS.forEach(event => window.addEventListener(event, onActivity, { passive: true }));
+
+    return () => {
+      ACTIVITY_EVENTS.forEach(event => window.removeEventListener(event, onActivity));
+    };
+  }, [isLoggedIn]);
 
   // Check session validity periodically
   useEffect(() => {

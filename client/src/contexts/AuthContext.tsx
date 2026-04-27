@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { isSessionExpired, clearSessionData } from '../lib/sessionUtils';
+import { isSessionExpired, clearSessionData, initializeSession } from '../lib/sessionUtils';
 import { apiClient } from '../lib/apiClient';
 
 interface User {
@@ -133,7 +133,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         sessionStorage.setItem('loginTime', loginTime.toString());
         if (data.client) sessionStorage.setItem('client', JSON.stringify(data.client));
         if (data.role) sessionStorage.setItem('role', JSON.stringify(data.role));
-        
+        initializeSession();
+
         // Update apiClient with token
         apiClient.setToken(data.token);
       } else {
@@ -185,7 +186,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         sessionStorage.setItem('session', JSON.stringify(data.session));
         sessionStorage.setItem('loginTime', loginTime.toString());
         if (data.role) sessionStorage.setItem('role', JSON.stringify(data.role));
-        
+        initializeSession();
+
         // Update apiClient with token
         apiClient.setToken(data.token);
       } else {
@@ -281,7 +283,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         // Update apiClient with stored token
         apiClient.setToken(storedToken);
-        
+
+        // Stamp activity so the inactivity timer starts from now on page reload
+        initializeSession();
+
         // Auto-refresh session to get latest data
         refreshSession();
       } catch (error) {

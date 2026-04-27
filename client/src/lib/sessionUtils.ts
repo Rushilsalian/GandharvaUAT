@@ -1,4 +1,4 @@
-export const SESSION_TIMEOUT = 30 * 60 * 1000; // 15 minutes
+export const SESSION_TIMEOUT = 3 * 60 * 60 * 1000; // 3 hours inactivity
 
 export const initializeSession = (): void => {
   sessionStorage.setItem('lastActivity', Date.now().toString());
