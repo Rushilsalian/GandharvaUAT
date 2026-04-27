@@ -156,13 +156,13 @@ export const bulkClientValidationSchema = z.object({
     }
   }),
   dob: z.string().optional().nullable(),
-  pan_no: z.string().optional().nullable(),
-  aadhaar_no: z.string().optional().nullable(),
+  pan_no: z.union([z.string(), z.number()]).optional().nullable().transform(val => (val !== null && val !== undefined && val !== '') ? val.toString() : null),
+  aadhaar_no: z.union([z.string(), z.number()]).optional().nullable().transform(val => (val !== null && val !== undefined && val !== '') ? val.toString() : null),
   address: z.string().optional().nullable(),
   city: z.string().optional().nullable(),
-  pincode: z.string().optional().nullable(),
+  pincode: z.union([z.string(), z.number()]).optional().nullable().transform(val => (val !== null && val !== undefined && val !== '') ? val.toString() : null),
   branch: z.string().optional().nullable(),
-  reference_code: z.string().optional().nullable(),
+  reference_code: z.union([z.string(), z.number()]).optional().nullable().transform(val => (val !== null && val !== undefined && val !== '') ? val.toString() : null),
   opening_investment: z.union([
     z.string(),
     z.number()

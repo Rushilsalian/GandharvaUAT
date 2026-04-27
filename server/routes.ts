@@ -3137,6 +3137,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Process all client records directly without strict validation
       // Validation will happen during individual client processing
       const validClients = data.map((client, index) => {
+        // Log raw Excel row so we can see exactly what came in
+        console.log(`RAW Excel row ${index + 1}:`, {
+          client_code: client.client_code,
+          name: client.name,
+          email: client.email,
+          mobile: client.mobile,
+          email_type: typeof client.email,
+          mobile_type: typeof client.mobile
+        });
         try {
           const validated = bulkClientValidationSchema.parse(client);
           console.log(`Client ${index + 1} (${client.client_code}) validation success:`, {
@@ -3146,13 +3155,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           return validated;
         } catch (error) {
-          // For validation errors, still try to create the client with available data
+          // Fallback: schema threw (likely client_code or name not a string)
+          // Still rescue email/mobile from raw data using same transforms
           console.log(`Validation warning for client ${client.client_code}:`, error instanceof Error ? error.message : String(error));
+
+          let fallbackEmail: string | null = null;
+          if (client.email && client.email !== '' && client.email !== 'N/A' && client.email !== '.') {
+            try {
+              const emailStr = client.email.toString().trim();
+              if (validateEmail(emailStr)) fallbackEmail = emailStr;
+            } catch { /* leave null */ }
+          }
+
+          let fallbackMobile: string | null = null;
+          if (client.mobile && client.mobile !== '' && client.mobile !== 'N/A') {
+            try {
+              const normalized = normalizeMobile(client.mobile.toString());
+              if (validateMobile(normalized)) fallbackMobile = normalized;
+            } catch { /* leave null */ }
+          }
+
           const fallback = {
-            client_code: client.client_code || 'UNKNOWN',
-            name: client.name || 'Unknown',
-            mobile: null, // Will be set to null if invalid
-            email: null,  // Will be set to null if invalid
+            client_code: client.client_code ? client.client_code.toString() : 'UNKNOWN',
+            name: client.name ? client.name.toString() : 'Unknown',
+            mobile: fallbackMobile,
+            email: fallbackEmail,
             dob: client.dob || null,
             pan_no: client.pan_no || null,
             aadhaar_no: client.aadhaar_no || null,
@@ -3163,7 +3190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             reference_code: client.reference_code || null,
             opening_investment: client.opening_investment || null
           };
-          console.log(`Using fallback data for ${client.client_code}:`, {
+          console.log(`Fallback data for ${fallback.client_code}:`, {
             email: fallback.email,
             mobile: fallback.mobile
           });
@@ -3230,12 +3257,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               modifiedDate: new Date()
               // Note: opening_investment is intentionally NOT included to preserve existing value
             };
-            
+
             await storage.updateMstClient(existingClient.clientId, updateData);
-            
+
             // Also update associated user's mobile and email if user exists
             const users = await storage.getAllMstUsers();
             const associatedUser = users.find(u => u.clientId === existingClient.clientId);
+            console.log(`[USER-SYNC] client=${clientData.client_code} email=${clientData.email} mobile=${clientData.mobile} associatedUserId=${associatedUser?.userId ?? 'NONE'}`);
             if (associatedUser) {
               const userUpdateData: any = {
                 modifiedById: 1,
@@ -3269,8 +3297,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               await storage.updateMstUser(associatedUser.userId, userUpdateData);
               console.log(`User updated for client ${clientData.client_code}`);
+            } else if (clientData.email || clientData.mobile) {
+              // No user exists for this client yet — create one now that contact info is available
+              let userEmail = clientData.email || null;
+              let userMobile = clientData.mobile || null;
+
+              if (userEmail) {
+                const existingUserWithEmail = await storage.getMstUserByEmail(userEmail);
+                if (existingUserWithEmail) {
+                  console.log(`Email ${userEmail} already exists for another user, setting to null for new user of client ${clientData.client_code}`);
+                  userEmail = null;
+                }
+              }
+
+              if (userMobile) {
+                const existingUserWithMobile = await storage.getMstUserByMobile(userMobile);
+                if (existingUserWithMobile) {
+                  console.log(`Mobile ${userMobile} already exists for another user, setting to null for new user of client ${clientData.client_code}`);
+                  userMobile = null;
+                }
+              }
+
+              const password = 'Gandharva@123';
+              const newUserData = {
+                userName: clientData.name || clientData.client_code,
+                password,
+                email: userEmail,
+                mobile: userMobile,
+                roleId: 3,
+                clientId: existingClient.clientId,
+                isActive: 1,
+                createdById: 1,
+                createdByUser: 'bulk-upload',
+                createdDate: new Date(),
+                mobileVerified: null,
+                emailVerified: null,
+                modifiedById: null,
+                modifiedByUser: null,
+                modifiedDate: null,
+                deletedById: null,
+                deletedByUser: null,
+                deletedDate: null
+              };
+
+              const createdUser = await storage.createMstUser(newUserData);
+              console.log(`New user created for existing client ${clientData.client_code} (User ID: ${createdUser.userId})`);
+
+              if (userEmail) {
+                const emailSent = await sendWelcomeEmail(userEmail, clientData.name || 'Client', password);
+                if (emailSent) {
+                  emailResults.sent++;
+                } else {
+                  emailResults.failed++;
+                  emailResults.failedEmails.push({ email: userEmail, credentials: `Login: ${userEmail}, Password: ${password}` });
+                }
+              } else if (userMobile) {
+                emailResults.failedEmails.push({ email: userMobile, credentials: `Mobile: ${userMobile}, Login: ${userMobile}, Password: ${password}` });
+              }
             }
-            
+
             console.log(`Client ${clientData.client_code} updated successfully`);
             results.success++;
             results.updated++;
@@ -3592,8 +3677,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               await storage.updateMstUser(associatedUser.userId, userUpdateData);
               console.log(`User updated for client ${clientData.code}`);
+            } else if (clientData.email || clientData.mobile) {
+              // No user exists for this client yet — create one now that contact info is available
+              let userEmail = clientData.email || null;
+              let userMobile = clientData.mobile || null;
+
+              if (userEmail) {
+                const existingUserWithEmail = await storage.getMstUserByEmail(userEmail);
+                if (existingUserWithEmail) {
+                  console.log(`Email ${userEmail} already exists for another user, setting to null for new user of client ${clientData.code}`);
+                  userEmail = null;
+                }
+              }
+
+              if (userMobile) {
+                const existingUserWithMobile = await storage.getMstUserByMobile(userMobile);
+                if (existingUserWithMobile) {
+                  console.log(`Mobile ${userMobile} already exists for another user, setting to null for new user of client ${clientData.code}`);
+                  userMobile = null;
+                }
+              }
+
+              const password = 'Gandharva@123';
+              const newUserData = {
+                userName: clientData.name || clientData.code,
+                password,
+                email: userEmail,
+                mobile: userMobile,
+                roleId: 3,
+                clientId: existingClient.clientId,
+                isActive: 1,
+                createdById: 1,
+                createdByUser: 'sync-api',
+                createdDate: new Date(),
+                mobileVerified: null,
+                emailVerified: null,
+                modifiedById: null,
+                modifiedByUser: null,
+                modifiedDate: null,
+                deletedById: null,
+                deletedByUser: null,
+                deletedDate: null
+              };
+
+              const createdUser = await storage.createMstUser(newUserData);
+              console.log(`New user created for existing client ${clientData.code} (User ID: ${createdUser.userId})`);
             }
-            
+
             console.log(`Client ${clientData.code} updated successfully`);
             results.success++;
             results.updated++;

@@ -36,9 +36,10 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
         const workbook = XLSX.read(buffer, { type: 'array' });
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
         const data = XLSX.utils.sheet_to_json(worksheet);
+        console.log('Excel data:', data);
         totalRecords = data.length;
       }
-
+      console.log('Total records to process:', totalRecords);
       const response = await fetch('/api/clients/bulk-upload', {
         method: 'POST',
         body: formData,
@@ -131,7 +132,7 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
 
   const handleUpload = async () => {
     if (!selectedFile) return;
-    
+    console.log('Starting upload for file:', selectedFile.name);
     setUploadProgress(10);
     
     // Simulate progress during upload
@@ -144,7 +145,7 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
         return prev + 10;
       });
     }, 200);
-    
+    console.log('Initiating upload mutation');
     uploadMutation.mutate(selectedFile);
   };
 
