@@ -3318,41 +3318,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
               }
 
-              const password = 'Gandharva@123';
-              const newUserData = {
-                userName: clientData.name || clientData.client_code,
-                password,
-                email: userEmail,
-                mobile: userMobile,
-                roleId: 3,
-                clientId: existingClient.clientId,
-                isActive: 1,
-                createdById: 1,
-                createdByUser: 'bulk-upload',
-                createdDate: new Date(),
-                mobileVerified: null,
-                emailVerified: null,
-                modifiedById: null,
-                modifiedByUser: null,
-                modifiedDate: null,
-                deletedById: null,
-                deletedByUser: null,
-                deletedDate: null
-              };
+              if (!userEmail && !userMobile) {
+                console.log(`Skipping user creation for client ${clientData.client_code}: email and mobile already exist for other users`);
+              } else {
+                const password = 'Gandharva@123';
+                const newUserData = {
+                  userName: clientData.name || clientData.client_code,
+                  password,
+                  email: userEmail,
+                  mobile: userMobile,
+                  roleId: 3,
+                  clientId: existingClient.clientId,
+                  isActive: 1,
+                  createdById: 1,
+                  createdByUser: 'bulk-upload',
+                  createdDate: new Date(),
+                  mobileVerified: null,
+                  emailVerified: null,
+                  modifiedById: null,
+                  modifiedByUser: null,
+                  modifiedDate: null,
+                  deletedById: null,
+                  deletedByUser: null,
+                  deletedDate: null
+                };
 
-              const createdUser = await storage.createMstUser(newUserData);
-              console.log(`New user created for existing client ${clientData.client_code} (User ID: ${createdUser.userId})`);
+                const createdUser = await storage.createMstUser(newUserData);
+                console.log(`New user created for existing client ${clientData.client_code} (User ID: ${createdUser.userId})`);
 
-              if (userEmail) {
-                const emailSent = await sendWelcomeEmail(userEmail, clientData.name || 'Client', password);
-                if (emailSent) {
-                  emailResults.sent++;
-                } else {
+                if (userEmail) {
+                  const emailSent = await sendWelcomeEmail(userEmail, clientData.name || 'Client', password);
+                  if (emailSent) {
+                    emailResults.sent++;
+                  } else {
+                    emailResults.failed++;
+                    emailResults.failedEmails.push({ email: userEmail, credentials: `Login: ${userEmail}, Password: ${password}` });
+                  }
+                } else if (userMobile) {
                   emailResults.failed++;
-                  emailResults.failedEmails.push({ email: userEmail, credentials: `Login: ${userEmail}, Password: ${password}` });
+                  emailResults.failedEmails.push({ email: userMobile, credentials: `Mobile: ${userMobile}, Login: ${userMobile}, Password: ${password}` });
                 }
-              } else if (userMobile) {
-                emailResults.failedEmails.push({ email: userMobile, credentials: `Mobile: ${userMobile}, Login: ${userMobile}, Password: ${password}` });
               }
             }
 
@@ -3678,7 +3683,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               await storage.updateMstUser(associatedUser.userId, userUpdateData);
               console.log(`User updated for client ${clientData.code}`);
             } else if (clientData.email || clientData.mobile) {
-              // No user exists for this client yet — create one now that contact info is available
+              // No user exists for this client yet — create one using same logic as first-time insert
               let userEmail = clientData.email || null;
               let userMobile = clientData.mobile || null;
 
@@ -3698,30 +3703,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
               }
 
-              const password = 'Gandharva@123';
-              const newUserData = {
-                userName: clientData.name || clientData.code,
-                password,
-                email: userEmail,
-                mobile: userMobile,
-                roleId: 3,
-                clientId: existingClient.clientId,
-                isActive: 1,
-                createdById: 1,
-                createdByUser: 'sync-api',
-                createdDate: new Date(),
-                mobileVerified: null,
-                emailVerified: null,
-                modifiedById: null,
-                modifiedByUser: null,
-                modifiedDate: null,
-                deletedById: null,
-                deletedByUser: null,
-                deletedDate: null
-              };
+              if (!userEmail && !userMobile) {
+                console.log(`Skipping user creation for client ${clientData.code}: email and mobile already exist for other users`);
+              } else {
+                const password = 'Gandharva@123';
+                const newUserData = {
+                  userName: clientData.name || clientData.code,
+                  password,
+                  email: userEmail,
+                  mobile: userMobile,
+                  roleId: 3,
+                  clientId: existingClient.clientId,
+                  isActive: 1,
+                  createdById: 1,
+                  createdByUser: 'sync-api',
+                  createdDate: new Date(),
+                  mobileVerified: null,
+                  emailVerified: null,
+                  modifiedById: null,
+                  modifiedByUser: null,
+                  modifiedDate: null,
+                  deletedById: null,
+                  deletedByUser: null,
+                  deletedDate: null
+                };
 
-              const createdUser = await storage.createMstUser(newUserData);
-              console.log(`New user created for existing client ${clientData.code} (User ID: ${createdUser.userId})`);
+                const createdUser = await storage.createMstUser(newUserData);
+                console.log(`New user created for existing client ${clientData.code} (User ID: ${createdUser.userId})`);
+
+                if (userEmail) {
+                  const emailSent = await sendWelcomeEmail(userEmail, clientData.name || 'Client', password);
+                  if (!emailSent) {
+                    results.errors.push({ client: clientData, error: `Email failed - Login: ${userEmail}, Password: ${password}` });
+                  }
+                } else if (userMobile) {
+                  results.errors.push({ client: clientData, error: `Mobile-only user - Mobile: ${userMobile}, Login: ${userMobile}, Password: ${password}` });
+                }
+              }
             }
 
             console.log(`Client ${clientData.code} updated successfully`);
