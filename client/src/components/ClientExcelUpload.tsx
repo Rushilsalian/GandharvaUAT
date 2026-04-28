@@ -16,6 +16,8 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [processedRows, setProcessedRows] = useState(0);
+  const [totalRows, setTotalRows] = useState(0);
   const [uploadResults, setUploadResults] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -37,7 +39,8 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
         const data = XLSX.utils.sheet_to_json(worksheet);
         console.log('Excel data:', data);
-        totalRecords = data.length;
+        totalRecords = data.length;   
+        setTotalRows(totalRecords);  
       }
       console.log('Total records to process:', totalRecords);
       const response = await fetch('/api/clients/bulk-upload', {
@@ -56,13 +59,15 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
       setUploadProgress(100);
       setUploadResults(data);
       onUploadComplete(data);
-      setTimeout(() => {
-        setSelectedFile(null);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
+      
+        if (!data.success || data.summary?.failed > 0) {
+          return;
         }
-      }, 3000);
-    },
+        // ✅ reload only on full success
+        setTimeout(() => {
+          window.location.reload();
+        }, 3000);
+      },
     onError: (error: any) => {
       console.error('Upload error:', error);
       console.log('Full error response:', error.response);
@@ -72,6 +77,13 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
       setUploadResults(errorData);
     },
   });
+
+  const getProcessedRows = () => {
+  if (uploadProgress < 40) return 0;
+
+  const processingProgress = (uploadProgress - 40) / 60;
+  return Math.floor(processingProgress * totalRows);
+};
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -253,7 +265,9 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Uploading and processing...</span>
-                <span>{uploadProgress}%</span>
+                <span>
+                  {getProcessedRows()} / {totalRows} rows
+                </span>
               </div>
               <Progress value={uploadProgress} className="w-full" />
             </div>

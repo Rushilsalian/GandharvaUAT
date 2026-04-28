@@ -182,8 +182,8 @@ export function TransactionFilters({
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between gap-4">
-          <CardTitle className="flex items-baseline gap-2">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <CardTitle className="flex flex-wrap items-center gap-2">
               <Filter className="h-4 w-4" />
             Filters
             {getActiveFiltersCount() > 0 && (
@@ -196,7 +196,7 @@ export function TransactionFilters({
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full justify-start text-left font-normal"
+                     className="w-full sm:w-auto justify-start text-left font-normal"
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {filters.dateRange?.from ? (
@@ -273,7 +273,7 @@ export function TransactionFilters({
 
             
           </CardTitle>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-2 justify-start lg:justify-end">
             {excelUploadButton}
             {getActiveFiltersCount() > 0 && (
               <Button
