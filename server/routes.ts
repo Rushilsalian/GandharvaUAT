@@ -3594,6 +3594,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             branch: clientData.branch || null,
             branchId: clientData.branchId || null,
             referenceId: clientData.referenceId || null,
+            reference_code: clientData.reference_code || null,
             openingInvestment: clientData.openingInvestment || null,
             openingWithdrawl: clientData.openingWithdrawl || null,
             openingPayout: clientData.openingPayout || null,
@@ -3623,7 +3624,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // Handle branch - create if not exists, get branchId if exists
             const branchId = await handleBranchForClient(clientData.branch);
-            
+
+            // Resolve reference_code to referenceId if provided
+            const resolvedReferenceId = clientData.reference_code
+              ? (await storage.getMstClientByCode(clientData.reference_code))?.clientId || null
+              : clientData.referenceId || null;
+
             // Update client data but preserve opening_investment
             const updateData = {
               name: clientData.name || 'Unknown',
@@ -3637,7 +3643,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               address: clientData.address || null,
               city: clientData.city || null,
               pincode: clientData.pincode || null,
-              referenceId: clientData.referenceId || null,
+              referenceId: resolvedReferenceId,
               modifiedById: 1,
               modifiedByUser: 'sync-api',
               modifiedDate: new Date()
@@ -3752,6 +3758,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Handle branch - create if not exists, get branchId if exists
           const branchId = await handleBranchForClient(clientData.branch);
 
+          // Resolve reference_code to referenceId if provided
+          const newClientReferenceId = clientData.reference_code
+            ? (await storage.getMstClientByCode(clientData.reference_code))?.clientId || null
+            : clientData.referenceId || null;
+
           // Create client first with validated and normalized data
           const newClient = {
             code: clientData.code,
@@ -3766,7 +3777,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             address: clientData.address || null,
             city: clientData.city || null,
             pincode: clientData.pincode || null,
-            referenceId: clientData.referenceId || null,
+            referenceId: newClientReferenceId,
             openingInvestment: clientData.openingInvestment || null,
             openingWithdrawl: clientData.openingWithdrawl || null,
             openingPayout: clientData.openingPayout || null,

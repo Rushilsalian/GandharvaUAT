@@ -205,6 +205,7 @@ export const thirdPartyClientValidationSchema = z.object({
   branch: z.string().optional().nullable(),
   branchId: z.number().optional().nullable(),
   referenceId: z.number().optional().nullable(),
+  reference_code: z.union([z.string(), z.number()]).optional().nullable().transform(val => (val !== null && val !== undefined && val !== '') ? val.toString() : null),
   openingInvestment: z.union([
     z.string(),
     z.number()
