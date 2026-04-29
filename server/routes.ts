@@ -1878,7 +1878,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const openingInvestments = clients.map(client => ({
-        clientId: client.clientId,
+        id: client.clientId, 
         clientCode: client.code,
         clientName: client.name,
         opening_investment: client.openingInvestment || '0'
