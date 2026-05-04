@@ -426,9 +426,9 @@ export default function WithdrawalPage() {
                 <thead>
                   <tr className="border-b">
                     <th className="text-left p-2 font-medium whitespace-nowrap w-[80px]">Date</th>
-                    <th className="text-left p-2 font-medium whitespace-nowrap w-[80px]">Client Code</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Client Code</th>
                     <th className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Client</th>
-                    <th className="text-right p-2 font-medium whitespace-nowrap w-[120px]">Amount</th>
+                    <th className="text-left p-2 font-medium whitespace-nowrap w-[120px]">Amount</th>
                     <th className="text-left p-2 font-medium whitespace-nowrap w-[280px]">Description</th>
                   </tr>
                 </thead>

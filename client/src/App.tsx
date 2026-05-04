@@ -158,7 +158,7 @@ function AppContent() {
                     <SidebarTrigger data-testid="button-sidebar-toggle" />
                     <ThemeToggle />
                   </header>
-                  <main className="flex-1 overflow-auto p-3">
+                  <main className="flex-1 p-3">
                     <Router userRole={user?.role || "admin"} isLoggedIn={isLoggedIn} onLogin={handleLogin} onSignup={handleSignup} />
                   </main>
                 </div>

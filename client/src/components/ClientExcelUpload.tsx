@@ -210,7 +210,7 @@ export function ClientExcelUpload({ onUploadComplete }: ClientExcelUploadProps) 
               <Upload className="h-5 w-5" />
               Bulk Client Upload
             </CardTitle>
-            <Button onClick={downloadTemplate} variant="outline" size="sm" className="flex items-center gap-2">
+            <Button onClick={downloadTemplate} variant="outline" size="sm" className="flex items-center gap-2 px-1">
               <Download className="h-4 w-4" />
               Download Template
             </Button>
