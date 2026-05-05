@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -42,6 +42,7 @@ import { setGlobalSessionHandlers } from "@/lib/api";
 import { apiClient } from "@/lib/apiClient";
 import { SessionGuard } from "@/components/SessionGuard";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
+import { isSessionExpired } from "@/lib/sessionUtils";
 
 function Router({ userRole, isLoggedIn, onLogin, onSignup }: { userRole: "admin" | "leader" | "client", isLoggedIn: boolean, onLogin?: (email: string, password: string) => Promise<void>, onSignup?: (email: string, password: string, name: string) => Promise<void> }) {
   const { client } = useAuth();
@@ -122,12 +123,20 @@ function Router({ userRole, isLoggedIn, onLogin, onSignup }: { userRole: "admin"
 function AppContent() {
   const { user, isLoggedIn, login, signup, logout } = useAuth();
   const { handleSessionExpired, handleUnauthorized } = useSessionExpiration();
+  const [location] = useLocation();
 
   // Set up global session handlers
   useEffect(() => {
     setGlobalSessionHandlers(handleSessionExpired, handleUnauthorized);
     apiClient.setSessionHandlers(handleSessionExpired, handleUnauthorized);
   }, [handleSessionExpired, handleUnauthorized]);
+
+  // Check session on every route change
+  useEffect(() => {
+    if (isLoggedIn && isSessionExpired()) {
+      handleSessionExpired('Session expired. Please login again.');
+    }
+  }, [location, isLoggedIn, handleSessionExpired]);
 
   const handleLogin = async (email: string, password: string) => {
     await login(email, password);

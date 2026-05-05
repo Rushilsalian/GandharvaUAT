@@ -263,7 +263,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const loginTime = sessionStorage.getItem('loginTime');
     
     if (storedToken && storedUser && loginTime) {
+      // Always check session expiration first on page load/refresh
       if (isSessionExpired()) {
+        console.log('Session expired on page load, logging out');
         logout();
         return;
       }
@@ -293,6 +295,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         console.error('Failed to restore session:', error);
         logout();
       }
+    } else if (storedToken || storedUser) {
+      // Partial session data found, clear everything
+      console.log('Incomplete session data found, clearing all');
+      logout();
     }
   }, []);
 
