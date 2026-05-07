@@ -21,6 +21,36 @@ export const isSessionExpired = (): boolean => {
   return inactiveTime > SESSION_TIMEOUT;
 };
 
+// Synchronous session validation that immediately clears expired sessions
+export const validateAndCleanSession = (): boolean => {
+  const authToken = sessionStorage.getItem('authToken');
+  const lastActivity = sessionStorage.getItem('lastActivity');
+  const loginTime = sessionStorage.getItem('loginTime');
+  
+  // No token means no session
+  if (!authToken) {
+    clearSessionData();
+    return false;
+  }
+  
+  // No activity timestamp means session is invalid
+  if (!lastActivity || !loginTime) {
+    clearSessionData();
+    return false;
+  }
+  
+  // Check if session is expired
+  const currentTime = Date.now();
+  const inactiveTime = currentTime - parseInt(lastActivity);
+  
+  if (inactiveTime > SESSION_TIMEOUT) {
+    clearSessionData();
+    return false;
+  }
+  
+  return true;
+};
+
 export const getSessionTimeRemaining = (): number => {
   const lastActivity = sessionStorage.getItem('lastActivity');
   if (!lastActivity) return 0;

@@ -42,7 +42,7 @@ import { setGlobalSessionHandlers } from "@/lib/api";
 import { apiClient } from "@/lib/apiClient";
 import { SessionGuard } from "@/components/SessionGuard";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
-import { isSessionExpired } from "@/lib/sessionUtils";
+import { validateAndCleanSession } from "@/lib/sessionUtils";
 
 function Router({ userRole, isLoggedIn, onLogin, onSignup }: { userRole: "admin" | "leader" | "client", isLoggedIn: boolean, onLogin?: (email: string, password: string) => Promise<void>, onSignup?: (email: string, password: string, name: string) => Promise<void> }) {
   const { client } = useAuth();
@@ -133,7 +133,7 @@ function AppContent() {
 
   // Check session on every route change
   useEffect(() => {
-    if (isLoggedIn && isSessionExpired()) {
+    if (isLoggedIn && !validateAndCleanSession()) {
       handleSessionExpired('Session expired. Please login again.');
     }
   }, [location, isLoggedIn, handleSessionExpired]);

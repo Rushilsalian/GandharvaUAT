@@ -1,4 +1,5 @@
 // API utility functions with JWT authentication
+import { validateAndCleanSession } from './sessionUtils';
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -24,6 +25,14 @@ export async function apiRequest(
   options: RequestInit = {}
 ): Promise<any> {
   const token = sessionStorage.getItem('authToken');
+  
+  // Check session validity before making any authenticated request
+  if (token && !validateAndCleanSession()) {
+    if (globalSessionExpiredHandler) {
+      globalSessionExpiredHandler('Session expired. Please login again.');
+    }
+    throw new ApiError(401, 'Session expired');
+  }
   
   const config: RequestInit = {
     ...options,

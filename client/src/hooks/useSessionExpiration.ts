@@ -2,14 +2,13 @@ import { useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from 'wouter';
 import { toast } from './use-toast';
-import { isSessionExpired, clearSessionData, updateLastActivity } from '../lib/sessionUtils';
+import { validateAndCleanSession, updateLastActivity } from '../lib/sessionUtils';
 
 export const useSessionExpiration = () => {
   const { logout, isLoggedIn } = useAuth();
   const [, setLocation] = useLocation();
 
   const handleSessionExpired = useCallback((message: string = 'Session expired. Please login again.') => {
-    clearSessionData();
     logout();
     toast({
       title: "Session Expired",
@@ -20,7 +19,6 @@ export const useSessionExpiration = () => {
   }, [logout, setLocation]);
 
   const handleUnauthorized = useCallback((message: string = 'Session not authorized. Please login again.') => {
-    clearSessionData();
     logout();
     toast({
       title: "Unauthorized Access",
@@ -50,7 +48,7 @@ export const useSessionExpiration = () => {
     if (!isLoggedIn) return;
 
     const checkSession = () => {
-      if (isSessionExpired()) {
+      if (!validateAndCleanSession()) {
         handleSessionExpired();
       }
     };

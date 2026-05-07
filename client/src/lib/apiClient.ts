@@ -1,4 +1,6 @@
 // API client with session management
+import { validateAndCleanSession } from './sessionUtils';
+
 class ApiClient {
   private baseURL: string;
   private token: string | null = null;
@@ -37,6 +39,15 @@ class ApiClient {
   }
 
   private getHeaders(): HeadersInit {
+    // Check session validity before making any authenticated request
+    if (this.token && !validateAndCleanSession()) {
+      this.setToken(null);
+      if (this.onSessionExpired) {
+        this.onSessionExpired('Session expired. Please login again.');
+      }
+      throw new Error('Session expired');
+    }
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };

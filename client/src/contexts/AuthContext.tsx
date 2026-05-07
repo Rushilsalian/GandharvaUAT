@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { isSessionExpired, clearSessionData, initializeSession } from '../lib/sessionUtils';
+import { validateAndCleanSession, clearSessionData, initializeSession } from '../lib/sessionUtils';
 import { apiClient } from '../lib/apiClient';
 
 interface User {
@@ -255,21 +255,29 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   // Check for existing session on mount
   useEffect(() => {
+    // Synchronously validate session first - this will clear expired sessions immediately
+    const isValidSession = validateAndCleanSession();
+    
+    if (!isValidSession) {
+      // Session was invalid/expired, ensure we're logged out
+      setUser(null);
+      setClient(null);
+      setRole(null);
+      setSession(null);
+      setToken(null);
+      setIsLoggedIn(false);
+      apiClient.setToken(null);
+      return;
+    }
+    
+    // If we reach here, session is valid, restore the state
     const storedToken = sessionStorage.getItem('authToken');
     const storedUser = sessionStorage.getItem('user');
     const storedSession = sessionStorage.getItem('session');
     const storedClient = sessionStorage.getItem('client');
     const storedRole = sessionStorage.getItem('role');
-    const loginTime = sessionStorage.getItem('loginTime');
     
-    if (storedToken && storedUser && loginTime) {
-      // Always check session expiration first on page load/refresh
-      if (isSessionExpired()) {
-        console.log('Session expired on page load, logging out');
-        logout();
-        return;
-      }
-      
+    if (storedToken && storedUser) {
       try {
         const userData = JSON.parse(storedUser);
         const sessionData = storedSession && storedSession !== 'undefined' ? JSON.parse(storedSession) : null;
@@ -295,10 +303,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         console.error('Failed to restore session:', error);
         logout();
       }
-    } else if (storedToken || storedUser) {
-      // Partial session data found, clear everything
-      console.log('Incomplete session data found, clearing all');
-      logout();
     }
   }, []);
 
